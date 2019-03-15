@@ -2,6 +2,6 @@
 output
 run/*
 analysis
-*.DS_Store
+.DS_Store
 dat
 exe/*
