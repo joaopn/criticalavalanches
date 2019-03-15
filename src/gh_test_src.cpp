@@ -72,9 +72,6 @@ class asystem {
   std::vector< neuron* > neurons;
   std::vector< electrode* > electrodes;
 
-  std::vector< std::list<neuron *> > boxes;
-  std::vector< std::vector<int> > neighbour_boxes;
-
   // construct system
   asystem(double sys_size_ = 1., double elec_frac_ = .25,
     size_t num_neur_ = 144000, size_t num_outgoing_ = 1000,
@@ -93,22 +90,15 @@ class asystem {
     delta_l_nn = -exp(-neuron_density * M_PI)
       + erf(sqrt(neuron_density * M_PI))/2./sqrt(neuron_density);
 
-    // choose r so that approx num_outgoing neighbours are accessible
-    outgoing_distance = sqrt(sys_size*sys_size*num_outgoing/M_PI
-        /double(num_neur));
-    init_domain_decomp(outgoing_distance);
-
     // create neurons
     for (size_t i = 0; i < num_neur; i++) {
       neuron *n = new neuron(udis(rng)*sys_size, udis(rng)*sys_size, i);
       neurons.push_back(n);
     }
 
-    // assign neurons to boxes of domain decomposition
-    for (size_t i = 0; i < neurons.size(); i++) {
-      set_box(neurons[i]);
-      assert(get_box(neurons[i]) < num_boxes*num_boxes);
-    }
+    // choose r so that approx num_outgoing neighbours are accessible
+    outgoing_distance = sqrt(sys_size*sys_size*num_outgoing/M_PI
+        /double(num_neur));
 
     // create connections
     double mc = connect_neurons_using_interaction_radius(outgoing_distance);
@@ -136,55 +126,6 @@ class asystem {
       }
     }
 
-  }
-
-  // ------------------------------------------------------------------ //
-  // domain decomposition
-  // ------------------------------------------------------------------ //
-  inline int get_box(neuron *p) {
-    int nx, ny;
-    nx = std::floor(p->x/box_size);
-    ny = std::floor(p->y/box_size);
-    // printf("%lu %d %d %e %e\n", p->id, nx, ny, p->x, p->y);
-    return nx + num_boxes*ny;
-  }
-
-  inline void set_box(neuron *p) {
-    int my_box = get_box(p);
-    boxes[my_box].push_front(p);
-  }
-
-  inline void remove_from_box(int my_box, neuron *p) {
-    boxes[my_box].remove(p);
-  }
-
-  void init_domain_decomp(double target_box_size) {
-
-    size_t nb = size_t(std::floor(sys_size/target_box_size));
-    if (nb < 4) {
-      printf("not enough boxes, skipping domain decomposition\n");
-      num_boxes = 1;
-      box_size = sys_size;
-      boxes.push_back(std::list<neuron*> ());
-      std::vector<int> boxes_to_check = {0};
-      neighbour_boxes.push_back(boxes_to_check);
-    } else {
-      for (int i = 0; i<nb*nb; i++) {
-        int ir = ((i%nb+1==nb)  ?     i+1-nb : i+1 );
-        int il = ((i%nb-1<0)    ?     i-1+nb : i-1 );
-        int iu = ((i-nb<0)      ? nb*nb+i-nb : i-nb);
-        int id = ((i+nb>=nb*nb) ? i+nb-nb*nb : i+nb);
-        int iur = ((iu%nb+1==nb) ? iu+1-nb : iu+1 );
-        int iul = ((iu%nb-1<0)   ? iu-1+nb : iu-1 );
-        int idr = ((id%nb+1==nb) ? id+1-nb : id+1 );
-        int idl = ((id%nb-1<0)   ? id-1+nb : id-1 );
-        std::vector<int> boxes_to_check = {i, ir, il, iu, id, iur, iul, idr, idl};
-        neighbour_boxes.push_back(boxes_to_check);
-        boxes.push_back(std::list<neuron*> ());
-      }
-      num_boxes = nb;
-      box_size = sys_size/double(num_boxes);
-    }
   }
 
   // ------------------------------------------------------------------ //
@@ -222,41 +163,6 @@ class asystem {
     }
     printf("\33[2Kdone\n");
     return avg_connection_count/double(neurons.size());
-  }
-
-  void connect_neurons_using_connection_count() {
-    // connect to neighbours using domain decomp and connection count
-    for (size_t i = 0; i < neurons.size(); i++) {
-      printf("connecting: %lu/%lu\r", i, neurons.size());
-      neuron *src = neurons[i];
-      std::vector<int> boxes_to_check = neighbour_boxes[get_box(src)];
-      double shortest_distance = std::numeric_limits<double>::max();
-      double min_distance      = std::numeric_limits<double>::min();
-
-      // printf("i: %lu\n", i);
-      while (src->outgoing.size() < num_outgoing) {
-        neuron *past = nullptr;
-        for (auto const &b : boxes_to_check) {
-          for (std::list<neuron*>::iterator tar = boxes[b].begin();
-            tar != boxes[b].end(); ++tar) {
-            // if (boxes[b].size() == 0) continue;
-            if (src == (*tar)) continue;
-            double d = get_dist_squ(src, *tar);
-            if (d <= min_distance) continue;
-            if (d <= shortest_distance) {
-              shortest_distance = d;
-              past = (*tar);
-            }
-          }
-        }
-
-        assert(past != nullptr && "num_outgoing < num_neur?");
-        src->outgoing.push_back(past);
-        min_distance = shortest_distance;
-        shortest_distance = std::numeric_limits<double>::max();
-      }
-    }
-    printf("\33[2Kdone\n");
   }
 
   // check again later, if wanted
