@@ -1,7 +1,7 @@
 *.zip
 output
-run*
+run/*
 analysis
 *.DS_Store
 dat
-exe
+exe/*
