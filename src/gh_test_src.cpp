@@ -26,6 +26,7 @@ class neuron {
   double y;
   size_t id;
   std::vector< neuron* > outgoing;
+  std::vector< double > outgoing_probability;
   std::vector< electrode* > electrodes;
   std::vector< double > electrode_contributions;
 
@@ -43,12 +44,13 @@ class electrode {
   double y;
   size_t id;
   neuron *closest_neuron;
-  double closest_neuron_distance;
+  double closest_neuron_distance_squ;
 
   electrode(double x_, double y_, double id_ = 0) {
     x = x_;
     y = y_;
     id = id_;
+    closest_neuron_distance_squ = std::numeric_limits<double>::max();
   }
 };
 
@@ -103,7 +105,6 @@ class asystem {
     // create connections
     double mc = connect_neurons_using_interaction_radius(outgoing_distance);
     // connect_neurons_no_dc();
-    // connect_neurons_using_connection_count();
 
     printf("system created:\n");
     printf("\tnumber of neurons: %lu\n", num_neur);
@@ -125,6 +126,61 @@ class asystem {
         ne += 1;
       }
     }
+
+    // calculate contributions to electrodes and probabilities to activate
+    double w_squ = 2.*pow(4., 2.);
+    double m_loc = 1.01;
+    // todo: this should NOT go with delta_l_nn but be fixed
+    // double dik_min_squ = pow(.2*delta_l_nn, 2.);
+    double dik_min_squ = pow(de/10., 2.);
+    // if we do not ensure this, neurons will always be too close to some elec
+    assert(dik_min_squ < pow(.5*de, 2.));
+    for (size_t i = 0; i < neurons.size(); i++) {
+      neuron *src = neurons[i];
+      // electrode contributions (and minimum distance fix)
+      src->electrode_contributions.reserve(electrodes.size());
+      for (size_t k = 0; k < electrodes.size(); k++) {
+        electrode *e = electrodes[k];
+        double dik_squ = get_dist_squ(src, e);
+        // if neuron too close to electrode, move neuron a bit
+        if (dik_squ < dik_min_squ) {
+          double dx = src->x - e->x;
+          double dy = src->y - e->y;
+          double a = dy/dx;
+          double r = 1.01*pow(dik_min_squ/dik_squ, .5);
+          double xn = e->x + dx*r;
+          double yn = e->y + a*dx*r;
+          src->x = xn-std::floor(xn/sys_size)*sys_size;
+          src->y = yn-std::floor(yn/sys_size)*sys_size;
+          dik_squ = get_dist_squ(src, e);
+          assert(dik_squ > dik_min_squ);
+        }
+
+        double idik = pow(dik_squ, -1./2.);
+        src->electrode_contributions.push_back(idik);
+        // subsampling closest neurons
+        if (dik_squ < e->closest_neuron_distance_squ) {
+          e->closest_neuron_distance_squ = dik_squ;
+          e->closest_neuron = src;
+        }
+      }
+      // activation probabilities
+      size_t n_cout = src->outgoing.size();
+      src->outgoing_probability.reserve(n_cout);
+      double norm = 0.;
+      for (size_t j = 0; j < n_cout; j++) {
+        double dij_squ = get_dist_squ(src, src->outgoing[j]);
+        double pij = m_loc*exp(-dij_squ/w_squ);
+        src->outgoing_probability.push_back(pij);
+        norm += pij;
+      }
+      // normalize probabilities
+      norm /= double(n_cout);
+      for (size_t j = 0; j < n_cout; j++) {
+        src->outgoing_probability[j] /= norm;
+      }
+    }
+
 
   }
 
@@ -257,10 +313,6 @@ class asystem {
   void save_config(std::string filename) {
     save_config(filename, neurons);
   }
-
-
-  void init_electordes() {
-  }
 };
 
 
@@ -268,7 +320,7 @@ int main(int argc, char* argv[]) {
 
   double sys_size     = 1.;
   double elec_frac    = .25;
-  size_t num_neur     = 2000;
+  size_t num_neur     = 20000;
   size_t num_outgoing = 1000;
   size_t num_elec     = 100;
 
