@@ -63,6 +63,7 @@ class asystem {
   size_t num_elec;
   size_t num_boxes;
   double sys_size;
+  double elec_frac;
   double box_size;
   double delta_l;
   double delta_l_nn;
@@ -75,12 +76,14 @@ class asystem {
   std::vector< std::vector<int> > neighbour_boxes;
 
   // construct system
-  asystem(size_t num_neur_ = 144000, size_t num_outgoing_ = 1000,
+  asystem(double sys_size_ = 1., double elec_frac_ = .25,
+    size_t num_neur_ = 144000, size_t num_outgoing_ = 1000,
     size_t num_elec_ = 100) {
     num_neur = num_neur_;
     num_outgoing = num_outgoing_;
     num_elec = num_elec_;
-    sys_size = 1.;
+    sys_size = sys_size_;
+    elec_frac = elec_frac_;
     neuron_density = double(num_neur)/sys_size/sys_size;
 
     // analytic solution for average inter neuron distance delta_l
@@ -124,7 +127,7 @@ class asystem {
 
     // create electrodes to spread over a quater of the system (each direction)
     size_t ne = 0;
-    double de = sys_size/double(sqrt(num_elec));
+    double de = sys_size*elec_frac/sqrt(double(num_elec));
     for (size_t i = 0; i < sqrt(num_elec); i++) {
       for (size_t j = 0; j < sqrt(num_elec); j++) {
         electrode *e = new electrode(j*de, i*de, ne);
@@ -357,8 +360,20 @@ class asystem {
 
 int main(int argc, char* argv[]) {
 
-  asystem *sys = new asystem(100000);
-  // sys->save_config("/Users/paul/Desktop/neurons.dat");
-  // sys->save_config("/Users/paul/Desktop/electrodes.dat", sys->electrodes);
+  double sys_size     = 1.;
+  double elec_frac    = .25;
+  size_t num_neur     = 2000;
+  size_t num_outgoing = 1000;
+  size_t num_elec     = 100;
+
+  asystem *sys = new asystem(sys_size, elec_frac, num_neur, num_outgoing, num_elec);
+  sys->save_config("/Users/paul/Desktop/neurons_1.dat");
+  sys->save_config("/Users/paul/Desktop/electrodes_1.dat", sys->electrodes);
+
+  delete sys;
+  // num_neur = 50000;
+  // sys = new asystem(sys_size, elec_frac, num_neur, num_outgoing, num_elec);
+  // sys->save_config("/Users/paul/Desktop/neurons_2.dat");
+  // sys->save_config("/Users/paul/Desktop/electrodes_2.dat", sys->electrodes);
 
 }

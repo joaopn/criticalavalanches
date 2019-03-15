@@ -9,9 +9,11 @@ CFLAGS = -std=c++11 -O3 -Wno-unused-result -fdiagnostics-color=always
 DEBUGFLAGS = -std=c++11 -g -Wno-unused-result -fdiagnostics-color=always
 
 all: ./src/gh_test_src.cpp
+	@mkdir -p ./exe
 	$(CC) $(CFLAGS) ./src/gh_test_src.cpp -o ./exe/gh_test_src
 
 debug: ./src/gh_test_src.cpp
+	@mkdir -p ./exe
 	$(CC) $(DEBUGFLAGS) ./src/gh_test_src.cpp -o ./exe/gh_test_src
 
 clean:
