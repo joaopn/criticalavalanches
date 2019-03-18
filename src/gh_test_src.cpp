@@ -8,9 +8,13 @@
 #include <cmath>
 #include <vector>
 #include <list>
+#include <deque>
 #include <random>
 #include "assert.h"
 #include <memory>         // std::unique_ptr
+#include <zlib.h>         // compression
+
+#define NDEBUG            // uncomment to enable assertion checks
 
 // rng and distributions
 std::mt19937 rng(316);
@@ -21,14 +25,14 @@ std::binomial_distribution<int> bdis(10, 0.5);
 class electrode;
 class neuron {
  public:
-  bool active;
+  bool   active;
   double x;
   double y;
   size_t id;
-  std::vector< neuron* > outgoing;
-  std::vector< double > outgoing_probability;
+  std::vector< neuron* >    outgoing;
   std::vector< electrode* > electrodes;
-  std::vector< double > electrode_contributions;
+  std::vector< double >     outgoing_probability;
+  std::vector< double >     electrode_contributions;
 
   neuron(double x_, double y_, double id_ = 0) {
     active = false;
@@ -40,6 +44,8 @@ class neuron {
 
 class electrode {
  public:
+  double cs_signal;
+  bool   ss_signal;
   double x;
   double y;
   size_t id;
@@ -51,6 +57,8 @@ class electrode {
     y = y_;
     id = id_;
     closest_neuron_distance_squ = std::numeric_limits<double>::max();
+    cs_signal = 0.;
+    ss_signal = false;
   }
 };
 
@@ -71,8 +79,17 @@ class asystem {
   double delta_l_nn;
   double neuron_density;
   double outgoing_distance;
-  std::vector< neuron* > neurons;
+  std::vector< neuron* >    neurons;
   std::vector< electrode* > electrodes;
+
+  // keep track of active neurons
+  std::deque < neuron* > active_neurons;
+  size_t num_active_new;
+  size_t num_active_old;
+
+  // signal recording
+  std::vector< std::vector< double > > electrode_cs_histories;
+  std::vector< std::vector< bool > >   electrode_ss_histories;
 
   // construct system
   asystem(double sys_size_ = 1., double elec_frac_ = .25,
@@ -84,6 +101,8 @@ class asystem {
     sys_size = sys_size_;
     elec_frac = elec_frac_;
     neuron_density = double(num_neur)/sys_size/sys_size;
+    num_active_old = 0;
+    num_active_new = 0;
 
     // analytic solution for average inter neuron distance delta_l
     delta_l = pow(sys_size, 3.)/6. * ( sqrt(2.) + log(1. + sqrt(2.)) );
@@ -106,7 +125,7 @@ class asystem {
     double mc = connect_neurons_using_interaction_radius(outgoing_distance);
     // connect_neurons_no_dc();
 
-    printf("system created:\n");
+    printf("system created\n");
     printf("\tnumber of neurons: %lu\n", num_neur);
     printf("\toutgoing connections per neuron: ~%lu\n", num_outgoing);
     printf("\t\t(measured: %.2f)\n", mc);
@@ -116,7 +135,7 @@ class asystem {
       delta_l_nn);
     printf("\t\t(measured: %.2e)\n", measure_avg_nearest_neighbour_distance());
 
-    // create electrodes to spread over a quater of the system (each direction)
+    // create electrodes to spread over a frac of the system (each direction)
     size_t ne = 0;
     double de = sys_size*elec_frac/sqrt(double(num_elec));
     for (size_t i = 0; i < sqrt(num_elec); i++) {
@@ -124,63 +143,19 @@ class asystem {
         electrode *e = new electrode(j*de, i*de, ne);
         electrodes.push_back(e);
         ne += 1;
+        // init electrode histories
+        electrode_ss_histories.push_back(std::vector< bool >());
+        electrode_ss_histories.back().reserve(1000);
+        electrode_cs_histories.push_back(std::vector< double >());
+        electrode_cs_histories.back().reserve(1000);
       }
     }
 
-    // calculate contributions to electrodes and probabilities to activate
-    double w_squ = 2.*pow(4., 2.);
-    double m_loc = 1.01;
-    // todo: this should NOT go with delta_l_nn but be fixed
-    // double dik_min_squ = pow(.2*delta_l_nn, 2.);
-    double dik_min_squ = pow(de/10., 2.);
-    // if we do not ensure this, neurons will always be too close to some elec
-    assert(dik_min_squ < pow(.5*de, 2.));
-    for (size_t i = 0; i < neurons.size(); i++) {
-      neuron *src = neurons[i];
-      // electrode contributions (and minimum distance fix)
-      src->electrode_contributions.reserve(electrodes.size());
-      for (size_t k = 0; k < electrodes.size(); k++) {
-        electrode *e = electrodes[k];
-        double dik_squ = get_dist_squ(src, e);
-        // if neuron too close to electrode, move neuron a bit
-        if (dik_squ < dik_min_squ) {
-          double dx = src->x - e->x;
-          double dy = src->y - e->y;
-          double a = dy/dx;
-          double r = 1.01*pow(dik_min_squ/dik_squ, .5);
-          double xn = e->x + dx*r;
-          double yn = e->y + a*dx*r;
-          src->x = xn-std::floor(xn/sys_size)*sys_size;
-          src->y = yn-std::floor(yn/sys_size)*sys_size;
-          dik_squ = get_dist_squ(src, e);
-          assert(dik_squ > dik_min_squ);
-        }
+    printf("electrodes placed\n");
+    printf("\tnumber of electrodes: %lu^2 = %lu\n", sqrt(num_elec), ne);
+    printf("\telectrode distance: %.2e\n", de);
 
-        double idik = pow(dik_squ, -1./2.);
-        src->electrode_contributions.push_back(idik);
-        // subsampling closest neurons
-        if (dik_squ < e->closest_neuron_distance_squ) {
-          e->closest_neuron_distance_squ = dik_squ;
-          e->closest_neuron = src;
-        }
-      }
-      // activation probabilities
-      size_t n_cout = src->outgoing.size();
-      src->outgoing_probability.reserve(n_cout);
-      double norm = 0.;
-      for (size_t j = 0; j < n_cout; j++) {
-        double dij_squ = get_dist_squ(src, src->outgoing[j]);
-        double pij = m_loc*exp(-dij_squ/w_squ);
-        src->outgoing_probability.push_back(pij);
-        norm += pij;
-      }
-      // normalize probabilities
-      norm /= double(n_cout);
-      for (size_t j = 0; j < n_cout; j++) {
-        src->outgoing_probability[j] /= norm;
-      }
-    }
-
+    set_contributions_and_probabilities();
 
   }
 
@@ -202,6 +177,7 @@ class asystem {
   }
 
   double connect_neurons_using_interaction_radius(double radius) {
+    printf("connecting neurons with radius %.2e\n", radius);
     double dist_squ_limit = radius*radius;
     size_t avg_connection_count = 0;
     for (size_t i = 0; i < neurons.size(); i++) {
@@ -251,6 +227,63 @@ class asystem {
     }
   }
 
+  void set_contributions_and_probabilities() {
+    printf("calculating contributions to each electrode\n");
+    // calculate contributions to electrodes and probabilities to activate
+    double w_squ = 2.*pow(4., 2.);
+    double m_loc = 1.1;
+    // todo: this should NOT go with delta_l_nn but be fixed
+    // double dik_min_squ = pow(.2*delta_l_nn, 2.);
+    double dik_min_squ = pow(de/10., 2.);
+    // if we do not ensure this, neurons will always be too close to some elec
+    assert(dik_min_squ < pow(.5*de, 2.));
+    for (size_t i = 0; i < neurons.size(); i++) {
+      printf("contributions: %lu/%lu\r", i, neurons.size());
+      neuron *src = neurons[i];
+      // electrode contributions and minimum distance fix
+      src->electrode_contributions.reserve(electrodes.size());
+      for (size_t k = 0; k < electrodes.size(); k++) {
+        electrode *e = electrodes[k];
+        double dik_squ = get_dist_squ(src, e);
+        // if neuron too close to electrode, move neuron a bit
+        if (dik_squ < dik_min_squ) {
+          double dx = src->x - e->x;
+          double dy = src->y - e->y;
+          double a = dy/dx;
+          double r = 1.01*pow(dik_min_squ/dik_squ, .5);
+          double xn = e->x + dx*r;
+          double yn = e->y + a*dx*r;
+          src->x = xn-std::floor(xn/sys_size)*sys_size;
+          src->y = yn-std::floor(yn/sys_size)*sys_size;
+          dik_squ = get_dist_squ(src, e);
+          assert(dik_squ > dik_min_squ);
+        }
+
+        double idik = pow(dik_squ, -1./2.);
+        src->electrode_contributions.push_back(idik);
+        // subsampling closest neurons
+        if (dik_squ < e->closest_neuron_distance_squ) {
+          e->closest_neuron_distance_squ = dik_squ;
+          e->closest_neuron = src;
+        }
+      }
+      // activation probabilities
+      size_t n_cout = src->outgoing.size();
+      src->outgoing_probability.reserve(n_cout);
+      double norm = 0.;
+      for (size_t j = 0; j < n_cout; j++) {
+        double dij_squ = get_dist_squ(src, src->outgoing[j]);
+        double pij = m_loc*exp(-dij_squ/w_squ);
+        src->outgoing_probability.push_back(pij);
+        norm += pij;
+      }
+      // normalize probabilities
+      for (size_t j = 0; j < n_cout; j++) {
+        src->outgoing_probability[j] /= norm;
+      }
+    }
+  }
+
   // delta_l_nn
   double measure_avg_nearest_neighbour_distance() {
     double avg_dist = 0;
@@ -293,12 +326,131 @@ class asystem {
     return dl;
   }
 
+  // ------------------------------------------------------------------ //
+  // simulation
+  // ------------------------------------------------------------------ //
+  inline void activate_neuron(neuron *n) {
+    if (n->active == false) {
+      n->active = true;
+      num_active_new += 1;
+      active_neurons.push_back(n);
+      // update electrodes
+      for (size_t i = 0; i < electrodes.size(); i++) {
+        electrode *e = electrodes[i];
+        e->cs_signal += n->electrode_contributions[i];
+        if (e->closest_neuron == n) e->ss_signal = true;
+      }
+    }
+  }
+
+  // only call deactivation on first element of active_neurons
+  inline void deactivate_neuron(neuron *n) {
+    assert(n->active == true);
+    assert(n == active_neurons.front());
+    n->active = false;
+    active_neurons.pop_front();
+  }
+
+  void update_step() {
+
+    double rate_h = 0.1;
+    num_active_new = 0;
+
+    // spontanious activation
+    for (size_t i = 0; i < neurons.size(); i++) {
+      if (udis(rng) < rate_h) activate_neuron(neurons[i]);
+    }
+
+    // spread activity. if active, no activation possible
+    for (size_t i = 0; i < num_active_old; i++) {
+      neuron *src = active_neurons[i];
+      for (size_t j = 0; j < src->outgoing.size(); j++) {
+        if (udis(rng) < src->outgoing_probability[j]) {
+          activate_neuron(src->outgoing[j]);
+        }
+      }
+    }
+    assert(active_neurons.size() == num_active_new+num_active_old);
+
+    // deactivate
+    for (size_t i = 0; i < num_active_old; i++) {
+      deactivate_neuron(active_neurons.front());
+    }
+    assert(active_neurons.size() == num_active_new);
+
+    num_active_old = num_active_new;
+    num_active_new = 0;
+  }
+
+  void measure_step() {
+    assert(electrodes.size() == electrode_cs_histories.size());
+    for (size_t i = 0; i < electrodes.size(); i++) {
+      electrode *e = electrodes[i];
+      electrode_cs_histories[i].push_back(e->cs_signal);
+      electrode_ss_histories[i].push_back(e->ss_signal);
+      e->cs_signal = 0.;
+      e->ss_signal = false;
+    }
+  }
+};
+
+
+class exporter {
+ public:
+  std::vector< gzFile > gz_files;
+  asystem *sys;
+
+  exporter(std::string filepath, asystem *sys_) {
+    printf("exporting files to %s\n", filepath.c_str());
+    fflush(stdout);
+    system(("mkdir -p " + filepath).c_str());
+    sys = sys_;
+
+    for (size_t i = 0; i < sys->electrodes.size(); i++) {
+      char temp[2048];
+      sprintf(temp, "%s/elec%03lu.gz", filepath.c_str(), i);
+      gzFile zfile = gzopen(temp, "w");
+      std::stringstream header;
+      header << "#electrude_id=" << sys->electrodes[i]->id << std::endl;
+      header << "#x=" << sys->electrodes[i]->x << std::endl;
+      header << "#y=" << sys->electrodes[i]->y << std::endl;
+      header << "#coarse_signal\t" << "ss_signal\n";
+      gzprintf(zfile, header.str().c_str());
+      gz_files.push_back(zfile);
+    }
+  }
+
+  void finalize() {
+    for (size_t i = 0; i < gz_files.size(); i++) {
+      gzclose(gz_files[i]);
+    }
+  }
+
+  // write cached electrode histores, assumes nested vectors of bool or double
+  template <typename T1, typename T2>
+  void write_histories(T1 &cs_histories, T2 &ss_histories) {
+    assert(cs_histories.size() == gz_files.size());
+    for (size_t i = 0; i < cs_histories.size(); i++) {
+      for (size_t j = 0; j < cs_histories[i].size(); j++) {
+        gzprintf(gz_files[i], "%e\t%lu\n",
+          cs_histories[i][j], size_t(ss_histories[i][j]));
+      }
+      cs_histories[i].resize(0);
+      ss_histories[i].resize(0);
+    }
+  }
+  void write_histories() {
+    write_histories(sys->electrode_cs_histories, sys->electrode_ss_histories);
+  }
+
+  // write system configuration. vectors with ptrs to electordes or neurons
   template <typename T1>
-  void save_config(std::string filename,
+  void write_config(std::string filename,
     std::vector<T1> &config_to_save) {
     std::ofstream file (filename, std::ofstream::out);
-    file << "#L=" <<std::setprecision(0)<<std::fixed << sys_size <<std::endl;
-    file << "#N=" << config_to_save.size() <<std::endl;
+    file << std::setprecision(0) << std::fixed;
+    file << "#L=" << sys->sys_size <<std::endl;
+    file << "#N_exported=" << config_to_save.size() <<std::endl;
     file << "#x y" << std::endl;
     file << std::setprecision(7) << std::scientific;
     for (size_t i = 0; i<config_to_save.size(); i++) {
@@ -308,30 +460,65 @@ class asystem {
     file.close();
     file.clear();
   }
-
-  // overload for default argument of full system
-  void save_config(std::string filename) {
-    save_config(filename, neurons);
-  }
 };
-
 
 int main(int argc, char* argv[]) {
 
   double sys_size     = 1.;
   double elec_frac    = .25;
-  size_t num_neur     = 20000;
+  size_t num_neur     = 144000;
   size_t num_outgoing = 1000;
   size_t num_elec     = 100;
 
   asystem *sys = new asystem(sys_size, elec_frac, num_neur, num_outgoing, num_elec);
-  sys->save_config("/Users/paul/Desktop/neurons_1.dat");
-  sys->save_config("/Users/paul/Desktop/electrodes_1.dat", sys->electrodes);
+  exporter *exp = new exporter("/Users/paul/Desktop/exporter/", sys);
+
+  for (size_t i = 0; i < 1000; i++) {
+    printf("step %05lu, activity ~ %.1f\r",
+      i, sys->num_active_old/double(num_neur));
+    fflush(stdout);
+    sys->update_step();
+    sys->measure_step();
+    if (i%100==0) exp->write_histories();
+  }
+  printf("\33[2Kdone\n");
+  exp->finalize();
+
+  return 0;
+
+
+  // ------------------------------------------------------------------ //
+  // topology test
+  // ------------------------------------------------------------------ //
+  exp->write_config("/Users/paul/Desktop/neurons_2.dat", sys->neurons);
+  exp->write_config("/Users/paul/Desktop/electrodes_2.dat", sys->electrodes);
+
+  std::vector< neuron* > test(100, nullptr);
+  for (size_t i = 0; i < sys->electrodes.size(); i++) {
+    electrode *e = sys->electrodes[i];
+    printf("%lu %e %e\n", e->id, e->x, e->y);
+    neuron *n = e->closest_neuron;
+    printf("\t%lu %e %e\n", n->id, n->x, n->y);
+    test[i] = n;
+  }
+  exp->write_config("/Users/paul/Desktop/closest_2.dat", test);
+
+  neuron *t = sys->neurons[size_t(udis(rng)*num_neur)];
+  std::vector< neuron* > foo = {t};
+
+  double d = 0.;
+  for (size_t i = 0; i < t->outgoing.size(); i++) {
+    d += t->outgoing_probability[i];
+    printf("prob: %e %e\n", t->outgoing_probability[i], d);
+  }
+
+  for (size_t i = 0; i < t->electrode_contributions.size(); i++) {
+    printf("contrib: %e\n", t->electrode_contributions[i]);
+  }
+
+  exp->write_config("/Users/paul/Desktop/conn_2.dat", foo);
+  exp->write_config("/Users/paul/Desktop/conns_2.dat", t->outgoing);
 
   delete sys;
-  // num_neur = 50000;
-  // sys = new asystem(sys_size, elec_frac, num_neur, num_outgoing, num_elec);
-  // sys->save_config("/Users/paul/Desktop/neurons_2.dat");
-  // sys->save_config("/Users/paul/Desktop/electrodes_2.dat", sys->electrodes);
 
 }
