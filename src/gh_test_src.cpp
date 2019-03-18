@@ -123,17 +123,16 @@ class asystem {
 
     // create connections
     double mc = connect_neurons_using_interaction_radius(outgoing_distance);
-    // connect_neurons_no_dc();
 
     printf("system created\n");
     printf("\tnumber of neurons: %lu\n", num_neur);
     printf("\toutgoing connections per neuron: ~%lu\n", num_outgoing);
-    printf("\t\t(measured: %.2f)\n", mc);
+    // printf("\t\t(measured: %.2f)\n", mc);
     printf("\taverage distance between neurons: %.2e\n", delta_l);
     // printf("\t\t(measured: %.2e)\n", measure_avg_distance());
     printf("\taverage distance between nearest neighbours: %.2e\n",
       delta_l_nn);
-    printf("\t\t(measured: %.2e)\n", measure_avg_nearest_neighbour_distance());
+    // printf("\t\t(measured: %.2e)\n", measure_avg_nearest_neighbour_distance());
 
     // create electrodes to spread over a frac of the system (each direction)
     size_t ne = 0;
@@ -152,10 +151,13 @@ class asystem {
     }
 
     printf("electrodes placed\n");
-    printf("\tnumber of electrodes: %lu^2 = %lu\n", sqrt(num_elec), ne);
+    printf("\tnumber of electrodes: %lu^2 = %lu\n",
+      size_t(sqrt(num_elec)), ne);
     printf("\telectrode distance: %.2e\n", de);
 
-    set_contributions_and_probabilities();
+    // precalculate how much each neuron's spike contributes to an electrode
+    // and set the probabilities for recurrent activations
+    set_contributions_and_probabilities(de);
 
   }
 
@@ -197,46 +199,16 @@ class asystem {
     return avg_connection_count/double(neurons.size());
   }
 
-  // check again later, if wanted
-  // https://stackoverflow.com/questions/42061788/c-get-k-smallest-elementsindices-from-vector-with-ties
-  void connect_neurons_no_dc() {
-    for (size_t i = 0; i < neurons.size(); i++) {
-      neuron *src = neurons[i];
-      double shortest_distance = std::numeric_limits<double>::max();
-      double min_distance      = std::numeric_limits<double>::min();
-
-      printf("neurons: %lu/%lu\r", i, neurons.size());
-      while (src->outgoing.size() < num_outgoing) {
-        neuron *past = nullptr;
-
-        for (size_t j = 0; j < neurons.size(); j++) {
-          neuron *tar = neurons[j];
-          double d = get_dist_squ(src, tar);
-          if (tar == src) continue;
-          if (d <= min_distance) continue;
-          if (d <= shortest_distance) {
-            shortest_distance = d;
-            past = tar;
-          }
-        }
-
-        src->outgoing.push_back(past);
-        min_distance = shortest_distance;
-        shortest_distance = std::numeric_limits<double>::max();
-      }
-    }
-  }
-
-  void set_contributions_and_probabilities() {
+  void set_contributions_and_probabilities(double elec_distance) {
     printf("calculating contributions to each electrode\n");
     // calculate contributions to electrodes and probabilities to activate
     double w_squ = 2.*pow(4., 2.);
     double m_loc = 1.1;
     // todo: this should NOT go with delta_l_nn but be fixed
     // double dik_min_squ = pow(.2*delta_l_nn, 2.);
-    double dik_min_squ = pow(de/10., 2.);
+    double dik_min_squ = pow(elec_distance/10., 2.);
     // if we do not ensure this, neurons will always be too close to some elec
-    assert(dik_min_squ < pow(.5*de, 2.));
+    assert(dik_min_squ < pow(.5*elec_distance, 2.));
     for (size_t i = 0; i < neurons.size(); i++) {
       printf("contributions: %lu/%lu\r", i, neurons.size());
       neuron *src = neurons[i];
@@ -282,6 +254,7 @@ class asystem {
         src->outgoing_probability[j] /= norm;
       }
     }
+    printf("\33[2Kdone\n");
   }
 
   // delta_l_nn
@@ -474,7 +447,7 @@ int main(int argc, char* argv[]) {
   exporter *exp = new exporter("/Users/paul/Desktop/exporter/", sys);
 
   for (size_t i = 0; i < 1000; i++) {
-    printf("step %05lu, activity ~ %.1f\r",
+    printf("step %05lu, activity ~ %.3f\r",
       i, sys->num_active_old/double(num_neur));
     fflush(stdout);
     sys->update_step();
