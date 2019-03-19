@@ -130,13 +130,16 @@ class asystem {
 
     printf("system created\n");
     printf("\tnumber of neurons: %lu\n", num_neur);
+    printf("\th: %.3e\n", h_prob);
+    printf("\tm: %.3e\n", m_micro);
     printf("\toutgoing connections per neuron: ~%lu\n", num_outgoing);
-    // printf("\t\t(measured: %.2f)\n", mc);
+    printf("\t\t(measured: %.2f)\n", mc);
+    printf("\tconnection distance: %.2e\n", outgoing_distance);
     printf("\taverage distance between neurons: %.2e\n", delta_l);
-    // printf("\t\t(measured: %.2e)\n", measure_avg_distance());
+    printf("\t\t(measured: %.2e)\n", measure_avg_distance());
     printf("\taverage distance between nearest neighbours: %.2e\n",
       delta_l_nn);
-    // printf("\t\t(measured: %.2e)\n", measure_avg_nearest_neighbour_distance());
+    printf("\t\t(measured: %.2e)\n", measure_avg_nearest_neighbour_distance());
 
     // create electrodes to spread over a frac of the system (each direction)
     size_t ne = 0;
@@ -481,15 +484,18 @@ int main(int argc, char* argv[]) {
     num_elec, m_micro, h);
   exporter *exp = new exporter(path, sys, seed);
 
+  // todo thermalization
   for (size_t i = 0; i < size_t(time_steps); i++) {
-    printf("step %05lu, activity ~ %.3f\r",
-      i, sys->num_active_old/double(num_neur));
-    fflush(stdout);
+    // printf("step %05lu, activity ~ %.3f\r",
+      // i, sys->num_active_old/double(num_neur));
+    // fflush(stdout);
     sys->update_step();
     sys->measure_step();
     if(i%100==0) exp->write_histories();
-    if(10*i%size_t(time_steps)==0) printf("\33[2K~%.1f%%\n", i/time_steps*100);
+    if(10*i%size_t(time_steps)==0) printf("\33[2K~%.1f%% activity ~ %.3f\n",
+      i/time_steps*100, sys->num_active_old/double(num_neur));
   }
+  exp->write_histories();
   printf("\33[2Kdone\n");
   exp->finalize();
 

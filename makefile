@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS = -std=c++11 -O3 -Wno-unused-result -fdiagnostics-color=always
+CFLAGS = -std=c++11 -O3 -Wno-unused-result #-fdiagnostics-color=always
 LFLAGS = -lstdc++ -lz
 DEBUGFLAGS = $(CFLAGS) -g
 
