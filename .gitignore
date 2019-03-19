@@ -1,6 +1,5 @@
 *.zip
 output
-run/*
 analysis
 .DS_Store
 dat

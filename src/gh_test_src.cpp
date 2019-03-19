@@ -79,6 +79,8 @@ class asystem {
   double delta_l_nn;
   double neuron_density;
   double outgoing_distance;
+  double m_micro;
+  double h_prob;
   std::vector< neuron* >    neurons;
   std::vector< electrode* > electrodes;
 
@@ -94,12 +96,14 @@ class asystem {
   // construct system
   asystem(double sys_size_ = 1., double elec_frac_ = .25,
     size_t num_neur_ = 144000, size_t num_outgoing_ = 1000,
-    size_t num_elec_ = 100) {
-    num_neur = num_neur_;
-    num_outgoing = num_outgoing_;
-    num_elec = num_elec_;
-    sys_size = sys_size_;
-    elec_frac = elec_frac_;
+    size_t num_elec_ = 100, double m_micro_ = 1.0, double h_prob_ = 0.1) {
+    num_neur       = num_neur_;
+    num_outgoing   = num_outgoing_;
+    num_elec       = num_elec_;
+    sys_size       = sys_size_;
+    elec_frac      = elec_frac_;
+    m_micro        = m_micro_;
+    h_prob         = h_prob_;
     neuron_density = double(num_neur)/sys_size/sys_size;
     num_active_old = 0;
     num_active_new = 0;
@@ -203,7 +207,7 @@ class asystem {
     printf("calculating contributions to each electrode\n");
     // calculate contributions to electrodes and probabilities to activate
     double w_squ = 2.*pow(4., 2.);
-    double m_loc = 1.1;
+    // double m_micro = 1.1;
     // todo: this should NOT go with delta_l_nn but be fixed
     // double dik_min_squ = pow(.2*delta_l_nn, 2.);
     double dik_min_squ = pow(elec_distance/10., 2.);
@@ -245,7 +249,7 @@ class asystem {
       double norm = 0.;
       for (size_t j = 0; j < n_cout; j++) {
         double dij_squ = get_dist_squ(src, src->outgoing[j]);
-        double pij = m_loc*exp(-dij_squ/w_squ);
+        double pij = m_micro*exp(-dij_squ/w_squ);
         src->outgoing_probability.push_back(pij);
         norm += pij;
       }
@@ -317,12 +321,12 @@ class asystem {
 
   void update_step() {
 
-    double rate_h = 0.1;
+    // double h_prob = 0.1;
     num_active_new = 0;
 
     // spontanious activation and resetting
     for (size_t i = 0; i < neurons.size(); i++) {
-      if (udis(rng) < rate_h) {
+      if (udis(rng) < h_prob) {
         activate_neuron(neurons[i]);
       } else {
         neurons[i]->active = false;
@@ -372,15 +376,19 @@ class exporter {
   std::vector< gzFile > gz_files;
   asystem *sys;
 
-  exporter(std::string filepath, asystem *sys_) {
-    printf("exporting files to %s\n", filepath.c_str());
-    fflush(stdout);
-    system(("mkdir -p " + filepath).c_str());
+  exporter(std::string filepath, asystem *sys_, size_t seed) {
     sys = sys_;
+    char filechar[2048];
+    sprintf(filechar, "%s/N%06lu_m%.3f_s%05lu/",
+      filepath.c_str(), sys->num_neur, sys->m_micro, seed);
+
+    printf("exporting files to %s\n", filechar);
+    fflush(stdout);
+    system(("mkdir -p " + std::string(filechar)).c_str());
 
     for (size_t i = 0; i < sys->electrodes.size(); i++) {
       char temp[2048];
-      sprintf(temp, "%s/elec%03lu.gz", filepath.c_str(), i);
+      sprintf(temp, "%s/elec%03lu.gz", filechar, i);
       gzFile zfile = gzopen(temp, "w");
       std::stringstream header;
       header << "#electrude_id=" << sys->electrodes[i]->id << std::endl;
@@ -436,22 +444,51 @@ class exporter {
 
 int main(int argc, char* argv[]) {
 
-  double sys_size     = 1.;
-  double elec_frac    = .25;
-  size_t num_neur     = 144000;
-  size_t num_outgoing = 1000;
-  size_t num_elec     = 100;
+  double sys_size     = 1.;         // sytem size
+  double time_steps   = 1e3;        // number of time steps
+  size_t num_neur     = 144000;     // number of neurons
+  size_t num_outgoing = 1000;       // average outgoing connections per neuron
+  size_t num_elec     = 100;        // total number of electrodes
+  double elec_frac    = .25;        // electrodes cover part of system per dim
+  size_t seed         = 314;        // seed for the random number generator
+  double m_micro      = 1.0;        // branching parameter applied locally
+  double h            = .01;        // probability for spontaneous activation
+  std::string path    = "";         // output path for results
 
-  asystem *sys = new asystem(sys_size, elec_frac, num_neur, num_outgoing, num_elec);
-  exporter *exp = new exporter("/Users/paul/Desktop/exporter/", sys);
+  for (size_t i=0; i < argc; i++) {
+    if (i+1 != argc) {
+      if(std::string(argv[i])=="-T") time_steps     = atof(argv[i+1]);
+      if(std::string(argv[i])=="-N") num_neur       = atof(argv[i+1]);
+      if(std::string(argv[i])=="-k") num_outgoing   = atof(argv[i+1]);
+      if(std::string(argv[i])=="-e") num_elec       = atof(argv[i+1]);
+      if(std::string(argv[i])=="-f") elec_frac      = atof(argv[i+1]);
+      if(std::string(argv[i])=="-s") seed           = atof(argv[i+1]);
+      if(std::string(argv[i])=="-m") m_micro        = atof(argv[i+1]);
+      if(std::string(argv[i])=="-h") h              = atof(argv[i+1]);
+      if(std::string(argv[i])=="-o") path           =      argv[i+1] ;
+    }
+  }
 
-  for (size_t i = 0; i < 1000; i++) {
+  if (path == "") {
+    printf("specify output path with '-o'\n");
+    return -1;
+  }
+
+  rng.seed(1000+seed);
+  rng.discard(70000);
+
+  asystem *sys = new asystem(sys_size, elec_frac, num_neur, num_outgoing,
+    num_elec, m_micro, h);
+  exporter *exp = new exporter(path, sys, seed);
+
+  for (size_t i = 0; i < size_t(time_steps); i++) {
     printf("step %05lu, activity ~ %.3f\r",
       i, sys->num_active_old/double(num_neur));
     fflush(stdout);
     sys->update_step();
     sys->measure_step();
-    if (i%100==0) exp->write_histories();
+    if(i%100==0) exp->write_histories();
+    if(10*i%size_t(time_steps)==0) printf("\33[2K~%.1f%%\n", i/time_steps*100);
   }
   printf("\33[2Kdone\n");
   exp->finalize();
