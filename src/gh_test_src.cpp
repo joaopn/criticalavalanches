@@ -303,25 +303,16 @@ class asystem {
   // simulation
   // ------------------------------------------------------------------ //
   inline void activate_neuron(neuron *n) {
-    if (n->active == false) {
-      n->active = true;
-      num_active_new += 1;
-      active_neurons.push_back(n);
-      // update electrodes
-      for (size_t i = 0; i < electrodes.size(); i++) {
-        electrode *e = electrodes[i];
-        e->cs_signal += n->electrode_contributions[i];
-        if (e->closest_neuron == n) e->ss_signal = true;
-      }
+    // manually check not to activate already active neurons!
+    n->active = true;
+    num_active_new += 1;
+    active_neurons.push_back(n);
+    // update electrodes
+    for (size_t i = 0; i < electrodes.size(); i++) {
+      electrode *e = electrodes[i];
+      e->cs_signal += n->electrode_contributions[i];
+      if (e->closest_neuron == n) e->ss_signal = true;
     }
-  }
-
-  // only call deactivation on first element of active_neurons
-  inline void deactivate_neuron(neuron *n) {
-    assert(n->active == true);
-    assert(n == active_neurons.front());
-    n->active = false;
-    active_neurons.pop_front();
   }
 
   void update_step() {
@@ -329,26 +320,34 @@ class asystem {
     double rate_h = 0.1;
     num_active_new = 0;
 
-    // spontanious activation
+    // spontanious activation and resetting
     for (size_t i = 0; i < neurons.size(); i++) {
-      if (udis(rng) < rate_h) activate_neuron(neurons[i]);
+      if (udis(rng) < rate_h) {
+        activate_neuron(neurons[i]);
+      } else {
+        neurons[i]->active = false;
+      }
     }
 
     // spread activity. if active, no activation possible
     for (size_t i = 0; i < num_active_old; i++) {
       neuron *src = active_neurons[i];
       for (size_t j = 0; j < src->outgoing.size(); j++) {
-        if (udis(rng) < src->outgoing_probability[j]) {
+        if (udis(rng) < src->outgoing_probability[j]
+          && !src->outgoing[j]->active) {
           activate_neuron(src->outgoing[j]);
         }
       }
     }
     assert(active_neurons.size() == num_active_new+num_active_old);
 
-    // deactivate
-    for (size_t i = 0; i < num_active_old; i++) {
-      deactivate_neuron(active_neurons.front());
-    }
+    // deactivate by cleaning list of active neurons
+    // for (size_t i = 0; i < num_active_old; i++) {
+    //   active_neurons.pop_front();
+    // }
+    active_neurons.erase(active_neurons.begin(),
+      active_neurons.begin() + num_active_old);
+
     assert(active_neurons.size() == num_active_new);
 
     num_active_old = num_active_new;
