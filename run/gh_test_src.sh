@@ -21,7 +21,7 @@ date
 # -r is a dummy arguments for repetitions
 # -s seed set to taskid
 id=$(($SGE_TASK_ID - 1))
-vargs=(-N\ {144000,72000,36000,18000}\ -r\ {0..50}\ -s\ $id\ -o\ ./dat/\ -h\ 1.1e-4\ -m\ 0.9)
+vargs=(-N\ {144000,72000,36000,18000}\ -r\ {0..50}\ -s\ $id\ -o\ ./dat/\ -h\ 1.1e-4\ -m\ 0.9\ -T\ 1e5)
 echo $(./exe/gh_test_src $(echo ${vargs[$id]}))
 
 ./exe/gh_test_src $(echo ${vargs[$id]})

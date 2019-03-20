@@ -1,20 +1,18 @@
-#include "fstream"
+#include <fstream>
 #include <sstream>        // std::stringstream, std::stringbuf
 #include <iostream>       // std::cout, std::fixed
 #include <iomanip>        // std::setprecision
-#include <ctime>          // std::time
 #include <algorithm>      // std::remove_if
-#include "stdio.h"
 #include <cmath>
 #include <vector>
 #include <list>
 #include <deque>
 #include <random>
-#include "assert.h"
 #include <memory>         // std::unique_ptr
+#include <assert.h>
 #include <zlib.h>         // compression
-
-#define NDEBUG            // uncomment to enable assertion checks
+#include <stdio.h>
+#include <ctime>
 
 // rng and distributions
 std::mt19937 rng(316);
@@ -200,7 +198,9 @@ class asystem {
           avg_connection_count += 1;
         }
       }
+      #ifndef NDEBUG
       printf("connecting: %lu/%lu\r", i, neurons.size());
+      #endif
     }
     printf("\33[2Kdone\n");
     return avg_connection_count/double(neurons.size());
@@ -217,7 +217,9 @@ class asystem {
     // if we do not ensure this, neurons will always be too close to some elec
     assert(dik_min_squ < pow(.5*elec_distance, 2.));
     for (size_t i = 0; i < neurons.size(); i++) {
+      #ifndef NDEBUG
       printf("contributions: %lu/%lu\r", i, neurons.size());
+      #endif
       neuron *src = neurons[i];
       // electrode contributions and minimum distance fix
       src->electrode_contributions.reserve(electrodes.size());
@@ -322,9 +324,8 @@ class asystem {
     }
   }
 
-  void update_step() {
+  inline void update_step() {
 
-    // double h_prob = 0.1;
     num_active_new = 0;
 
     // spontanious activation and resetting
@@ -358,15 +359,16 @@ class asystem {
     assert(active_neurons.size() == num_active_new);
 
     num_active_old = num_active_new;
-    num_active_new = 0;
   }
 
-  void measure_step() {
+  inline void measure_step(bool record = true) {
     assert(electrodes.size() == electrode_cs_histories.size());
     for (size_t i = 0; i < electrodes.size(); i++) {
       electrode *e = electrodes[i];
-      electrode_cs_histories[i].push_back(e->cs_signal);
-      electrode_ss_histories[i].push_back(e->ss_signal);
+      if (record) {
+        electrode_cs_histories[i].push_back(e->cs_signal);
+        electrode_ss_histories[i].push_back(e->ss_signal);
+      }
       e->cs_signal = 0.;
       e->ss_signal = false;
     }
@@ -484,16 +486,31 @@ int main(int argc, char* argv[]) {
     num_elec, m_micro, h);
   exporter *exp = new exporter(path, sys, seed);
 
-  // todo thermalization
+  // thermalization with ~1/h time steps, dont run with h=0!
+  printf("thermalizing for %.0e time steps\n", 1./h);
+  for (size_t i = 0; i < size_t(1./h); i++) {
+    #ifndef NDEBUG
+    printf("step %05lu, activity ~ %.3f\r",
+      i, sys->num_active_old/double(num_neur));
+    #endif
+    if(10*i%size_t(1./h)==0) printf("\33[2K~%.1f%% activity ~ %.3f\n",
+        i*h*100, sys->num_active_old/double(num_neur));
+
+    sys->update_step();
+    sys->measure_step(false);
+  }
+  printf("simulating for %.0e time steps\n", time_steps);
   for (size_t i = 0; i < size_t(time_steps); i++) {
-    // printf("step %05lu, activity ~ %.3f\r",
-      // i, sys->num_active_old/double(num_neur));
-    // fflush(stdout);
+    #ifndef NDEBUG
+    printf("step %05lu, activity ~ %.3f\r",
+      i, sys->num_active_old/double(num_neur));
+    #endif
+    if(10*i%size_t(time_steps)==0) printf("\33[2K~%.1f%% activity ~ %.3f\n",
+        i/time_steps*100, sys->num_active_old/double(num_neur));
+
     sys->update_step();
     sys->measure_step();
     if(i%100==0) exp->write_histories();
-    if(10*i%size_t(time_steps)==0) printf("\33[2K~%.1f%% activity ~ %.3f\n",
-      i/time_steps*100, sys->num_active_old/double(num_neur));
   }
   exp->write_histories();
   printf("\33[2Kdone\n");
