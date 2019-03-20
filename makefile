@@ -12,4 +12,4 @@ debug: ./src/gh_test_src.cpp
 	$(CC) $(DEBUGFLAGS) ./src/gh_test_src.cpp -o ./exe/gh_test_src $(LFLAGS)
 
 clean:
-	rm -f ./exe/*
+	@rm -rf ./exe/*

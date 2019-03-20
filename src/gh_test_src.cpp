@@ -8,11 +8,10 @@
 #include <list>
 #include <deque>
 #include <random>
-#include <memory>         // std::unique_ptr
 #include <assert.h>
 #include <zlib.h>         // compression
-#include <stdio.h>
-#include <ctime>
+
+#include "io_helper.hpp"
 
 // rng and distributions
 std::mt19937 rng(316);
@@ -113,6 +112,11 @@ class asystem {
     delta_l_nn = -exp(-neuron_density * M_PI)
       + erf(sqrt(neuron_density * M_PI))/2./sqrt(neuron_density);
 
+    printf("creating system\n");
+    printf("\tnumber of neurons: %lu\n", num_neur);
+    printf("\th: %.3e\n", h_prob);
+    printf("\tm: %.3e\n", m_micro);
+
     // create neurons
     for (size_t i = 0; i < num_neur; i++) {
       neuron *n = new neuron(udis(rng)*sys_size, udis(rng)*sys_size, i);
@@ -126,10 +130,6 @@ class asystem {
     // create connections
     double mc = connect_neurons_using_interaction_radius(outgoing_distance);
 
-    printf("system created\n");
-    printf("\tnumber of neurons: %lu\n", num_neur);
-    printf("\th: %.3e\n", h_prob);
-    printf("\tm: %.3e\n", m_micro);
     printf("\toutgoing connections per neuron: ~%lu\n", num_outgoing);
     printf("\t\t(measured: %.2f)\n", mc);
     printf("\tconnection distance: %.2e\n", outgoing_distance);
@@ -202,7 +202,7 @@ class asystem {
       printf("connecting: %lu/%lu\r", i, neurons.size());
       #endif
     }
-    printf("\33[2Kdone\n");
+    printf("\33[2Kdone\n\n");
     return avg_connection_count/double(neurons.size());
   }
 
@@ -263,7 +263,7 @@ class asystem {
         src->outgoing_probability[j] /= norm;
       }
     }
-    printf("\33[2Kdone\n");
+    printf("\33[2Kdone\n\n");
   }
 
   // delta_l_nn
@@ -447,6 +447,9 @@ class exporter {
   }
 };
 
+// ------------------------------------------------------------------ //
+// main
+// ------------------------------------------------------------------ //
 int main(int argc, char* argv[]) {
 
   double sys_size     = 1.;         // sytem size
@@ -490,30 +493,42 @@ int main(int argc, char* argv[]) {
   printf("thermalizing for %.0e time steps\n", 1./h);
   for (size_t i = 0; i < size_t(1./h); i++) {
     #ifndef NDEBUG
-    printf("step %05lu, activity ~ %.3f\r",
+    printf("%s, step %05lu, activity ~ %.3f\r", time_now().c_str(),
       i, sys->num_active_old/double(num_neur));
     #endif
-    if(10*i%size_t(1./h)==0) printf("\33[2K~%.1f%% activity ~ %.3f\n",
-        i*h*100, sys->num_active_old/double(num_neur));
+
+    if(i==0 || is_percent(i, size_t(1./h), 10.)||have_passed_hours(6.)) {
+      printf("\33[2K\t%s, progress ~%2.0f%%, activity ~%.3f\n",
+        time_now().c_str(),
+        is_percent(i, size_t(1./h), 10.),
+        sys->num_active_old/double(num_neur));
+    }
 
     sys->update_step();
     sys->measure_step(false);
   }
+
+
   printf("simulating for %.0e time steps\n", time_steps);
   for (size_t i = 0; i < size_t(time_steps); i++) {
     #ifndef NDEBUG
     printf("step %05lu, activity ~ %.3f\r",
       i, sys->num_active_old/double(num_neur));
     #endif
-    if(10*i%size_t(time_steps)==0) printf("\33[2K~%.1f%% activity ~ %.3f\n",
-        i/time_steps*100, sys->num_active_old/double(num_neur));
+
+    if(i==0 || is_percent(i, size_t(time_steps), 10.)||have_passed_hours(6.)) {
+      printf("\33[2K\t%s, progress ~%2.0f%%, activity ~%.3f\n",
+        time_now().c_str(),
+        is_percent(i, size_t(time_steps), 10.),
+        sys->num_active_old/double(num_neur));
+    }
 
     sys->update_step();
     sys->measure_step();
     if(i%100==0) exp->write_histories();
   }
   exp->write_histories();
-  printf("\33[2Kdone\n");
+  printf("\33[2Kdone\n\n");
   exp->finalize();
 
   return 0;
