@@ -9,7 +9,7 @@
 #include <deque>
 #include <random>
 #include <assert.h>
-#include <zlib.h>         // compression
+#include <zlib.h>
 
 #include "io_helper.hpp"
 
@@ -68,10 +68,8 @@ class asystem {
   size_t num_neur;
   size_t num_outgoing;
   size_t num_elec;
-  size_t num_boxes;
   double sys_size;
   double elec_frac;
-  double box_size;
   double delta_l;
   double delta_l_nn;
   double neuron_density;
@@ -87,13 +85,15 @@ class asystem {
   size_t num_active_old;
 
   // signal recording
-  std::vector< std::vector< double > > electrode_cs_histories;
-  std::vector< std::vector< bool > >   electrode_ss_histories;
+  size_t cache_size;
+  std::vector< std::vector< double > > cs_histories;  // time trace
+  std::vector< std::vector< size_t > > ss_histories;  // spike times
 
   // construct system
   asystem(double sys_size_ = 1., double elec_frac_ = .25,
           size_t num_neur_ = 144000, size_t num_outgoing_ = 1000,
-          size_t num_elec_ = 100, double m_micro_ = 1.0, double h_prob_ = 0.1) {
+          size_t num_elec_ = 100, double m_micro_ = 1.0,
+          double h_prob_ = 0.1) {
     num_neur       = num_neur_;
     num_outgoing   = num_outgoing_;
     num_elec       = num_elec_;
@@ -104,6 +104,7 @@ class asystem {
     neuron_density = double(num_neur)/sys_size/sys_size;
     num_active_old = 0;
     num_active_new = 0;
+    cache_size     = size_t(1e4);
 
     // analytic solution for average inter neuron distance delta_l
     delta_l = pow(sys_size, 3.)/6. * ( sqrt(2.) + log(1. + sqrt(2.)) );
@@ -155,10 +156,10 @@ class asystem {
         electrodes.push_back(e);
         ne += 1;
         // init electrode histories
-        electrode_ss_histories.push_back(std::vector< bool >());
-        electrode_ss_histories.back().reserve(1000);
-        electrode_cs_histories.push_back(std::vector< double >());
-        electrode_cs_histories.back().reserve(1000);
+        ss_histories.push_back(std::vector< size_t >());
+        ss_histories.back().reserve(cache_size);
+        cs_histories.push_back(std::vector< double >());
+        cs_histories.back().reserve(cache_size);
       }
     }
 
@@ -368,13 +369,13 @@ class asystem {
     num_active_old = num_active_new;
   }
 
-  inline void measure_step(bool record = true) {
-    assert(electrodes.size() == electrode_cs_histories.size());
+  inline void measure_step(size_t time = 0, bool record = true) {
+    assert(electrodes.size() == cs_histories.size());
     for (size_t i = 0; i < electrodes.size(); i++) {
       electrode *e = electrodes[i];
       if (record) {
-        electrode_cs_histories[i].push_back(e->cs_signal);
-        electrode_ss_histories[i].push_back(e->ss_signal);
+        cs_histories[i].push_back(e->cs_signal);
+        if (e->ss_signal) ss_histories[i].push_back(time);
       }
       e->cs_signal = 0.;
       e->ss_signal = false;
@@ -385,60 +386,85 @@ class asystem {
 
 class exporter {
  public:
-  std::vector< gzFile > gz_files;
   asystem *sys;
+  std::vector<gzFile> gz_files;
+  std::string h5filepath, h5dset_csname, h5dset_ssname;
+  hid_t h5file, h5dset_cs, h5dset_ss;
+  std::vector< size_t > cs_offset, ss_offset;
 
   exporter(std::string filepath, asystem *sys_, size_t seed) {
     sys = sys_;
-    char filechar[2048];
-    sprintf(filechar, "%s/N%06lu_m%.3f_s%05lu/",
-            filepath.c_str(), sys->num_neur, sys->m_micro, seed);
+    printf("exporting files to %s\n", filepath.c_str());
 
-    printf("exporting files to %s\n", filechar);
-    fflush(stdout);
-    system(("mkdir -p " + std::string(filechar)).c_str());
+    // open file and create groups
+    h5file = H5Fcreate((filepath+"/test.hdf5").c_str(), H5F_ACC_TRUNC,
+                       H5P_DEFAULT, H5P_DEFAULT);
+    H5Gcreate(h5file, "/meta", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Gcreate(h5file, "/data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
-    for (size_t i = 0; i < sys->electrodes.size(); i++) {
-      char temp[2048];
-      sprintf(temp, "%s/elec%03lu.gz", filechar, i);
-      gzFile zfile = gzopen(temp, "w");
-      std::stringstream header;
-      header << "#electrude_id=" << sys->electrodes[i]->id << std::endl;
-      header << "#x=" << sys->electrodes[i]->x << std::endl;
-      header << "#y=" << sys->electrodes[i]->y << std::endl;
-      header << "#coarse_signal\t" << "ss_signal\n";
-      gzprintf(zfile, header.str().c_str());
-      gz_files.push_back(zfile);
-    }
+    // write system details
+    hdf5_write_scalar(h5file, "/meta/seed",
+                      seed, H5T_NATIVE_HSIZE);
+    hdf5_write_scalar(h5file, "/meta/num_neur",
+                      sys->num_neur, H5T_NATIVE_HSIZE);
+    hdf5_write_scalar(h5file, "/meta/num_outgoing",
+                      sys->num_outgoing, H5T_NATIVE_HSIZE);
+    hdf5_write_scalar(h5file, "/meta/num_elec",
+                      sys->num_elec, H5T_NATIVE_HSIZE);
+    hdf5_write_scalar(h5file, "/meta/sys_size",
+                      sys->sys_size, H5T_NATIVE_DOUBLE);
+    hdf5_write_scalar(h5file, "/meta/elec_frac",
+                      sys->elec_frac, H5T_NATIVE_DOUBLE);
+    hdf5_write_scalar(h5file, "/meta/delta_l",
+                      sys->delta_l, H5T_NATIVE_DOUBLE);
+    hdf5_write_scalar(h5file, "/meta/delta_l_nn",
+                      sys->delta_l_nn, H5T_NATIVE_DOUBLE);
+    hdf5_write_scalar(h5file, "/meta/neuron_density",
+                      sys->neuron_density, H5T_NATIVE_DOUBLE);
+    hdf5_write_scalar(h5file, "/meta/outgoing_distance",
+                      sys->outgoing_distance, H5T_NATIVE_DOUBLE);
+    hdf5_write_scalar(h5file, "/meta/m_micro",
+                      sys->m_micro, H5T_NATIVE_DOUBLE);
+    hdf5_write_scalar(h5file, "/meta/h_prob",
+                      sys->h_prob, H5T_NATIVE_DOUBLE);
+
+    // create data sets
+    h5dset_cs = hdf5_create_appendable_nd(
+                    h5file, "/data/coarse", H5T_NATIVE_DOUBLE, sys->num_elec,
+                    sys->cache_size);
+    h5dset_ss = hdf5_create_appendable_nd(
+                    h5file, "/data/sub", H5T_NATIVE_HSIZE, sys->num_elec,
+                    sys->cache_size);
+
+    // remember length of each written electrode history (row)
+    cs_offset.resize(sys->num_elec, 0);
+    ss_offset.resize(sys->num_elec, 0);
+
   }
 
   void finalize() {
-    for (size_t i = 0; i < gz_files.size(); i++) {
-      gzclose(gz_files[i]);
-    }
+    H5Fclose(h5file);
+    H5Dclose(h5dset_cs);
+    H5Dclose(h5dset_ss);
   }
 
-  // write cached electrode histores, assumes nested vectors of bool or double
-  template <typename T1, typename T2>
-  void write_histories(T1 &cs_histories, T2 &ss_histories) {
-    assert(cs_histories.size() == gz_files.size());
-    for (size_t i = 0; i < cs_histories.size(); i++) {
-      for (size_t j = 0; j < cs_histories[i].size(); j++) {
-        gzprintf(gz_files[i], "%e\t%lu\n",
-                 cs_histories[i][j], size_t(ss_histories[i][j]));
-      }
-      cs_histories[i].resize(0);
-      ss_histories[i].resize(0);
-    }
-  }
+  // write cached electrode histories, ideally call this when they match chunks
   void write_histories() {
-    write_histories(sys->electrode_cs_histories, sys->electrode_ss_histories);
+    for (size_t i = 0; i < sys->electrodes.size(); i++) {
+      hdf5_append_nd(h5dset_cs, sys->cs_histories[i], H5T_NATIVE_DOUBLE, i,
+                     cs_offset[i]);
+      hdf5_append_nd(h5dset_ss, sys->ss_histories[i], H5T_NATIVE_HSIZE, i,
+                     ss_offset[i]);
+      cs_offset[i] += sys->cs_histories[i].size();
+      ss_offset[i] += sys->ss_histories[i].size();
+      sys->cs_histories[i].resize(0);
+      sys->ss_histories[i].resize(0);
+    }
   }
 
-  // write system configuration. vectors with ptrs to electordes or neurons
+  // write system configuration. vectors with ptrs to electrodes or neurons
   template <typename T1>
-  void write_config(std::string filename,
-                    std::vector<T1> &config_to_save) {
+  void write_config(std::string filename, std::vector<T1> &config_to_save) {
     std::ofstream file (filename, std::ofstream::out);
     file << std::setprecision(0) << std::fixed;
     file << "#L=" << sys->sys_size <<std::endl;
@@ -458,9 +484,6 @@ class exporter {
 // main
 // ------------------------------------------------------------------ //
 int main(int argc, char *argv[]) {
-
-  testnew();
-  return -1;
 
   double sys_size     = 1.;         // sytem size
   double time_steps   = 1e3;        // number of time steps
@@ -502,40 +525,28 @@ int main(int argc, char *argv[]) {
   // thermalization with ~1/h time steps, dont run with h=0!
   printf("thermalizing for %.0e time steps\n", 1./h);
   for (size_t i = 0; i < size_t(1./h); i++) {
-    #ifndef NDEBUG
-    printf("%s, step %05lu, activity ~ %.3f\r", time_now().c_str(),
-           i, sys->num_active_old/double(num_neur));
-    #endif
-
     if(i==0 || is_percent(i, size_t(1./h), 10.)||have_passed_hours(6.)) {
       printf("\33[2K\t%s, progress ~%2.0f%%, activity ~%.3f\n",
              time_now().c_str(),
              is_percent(i, size_t(1./h), 10.),
              sys->num_active_old/double(num_neur));
     }
-
     sys->update_step();
-    sys->measure_step(false);
+    sys->measure_step(i, false);
   }
 
 
   printf("simulating for %.0e time steps\n", time_steps);
   for (size_t i = 0; i < size_t(time_steps); i++) {
-    #ifndef NDEBUG
-    printf("step %05lu, activity ~ %.3f\r",
-           i, sys->num_active_old/double(num_neur));
-    #endif
-
     if(i==0 || is_percent(i, size_t(time_steps), 10.)||have_passed_hours(6.)) {
       printf("\33[2K\t%s, progress ~%2.0f%%, activity ~%.3f\n",
              time_now().c_str(),
              is_percent(i, size_t(time_steps), 10.),
              sys->num_active_old/double(num_neur));
     }
-
     sys->update_step();
-    sys->measure_step();
-    if(i%100==0) exp->write_histories();
+    sys->measure_step(i, true);
+    if(i%sys->cache_size==0) exp->write_histories();
   }
   exp->write_histories();
   printf("\33[2Kdone\n\n");
