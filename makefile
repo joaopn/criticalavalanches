@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS = -std=c++11 -O3 -Wno-unused-result -DNDEBUG #-fdiagnostics-color=always
-LFLAGS = -lstdc++ -lz
+LFLAGS = -lstdc++ -lz -lhdf5
 DEBUGFLAGS = -std=c++11 -g
 
 all: ./src/gh_test_src.cpp

@@ -26,8 +26,8 @@ class neuron {
   double x;
   double y;
   size_t id;
-  std::vector< neuron* >    outgoing;
-  std::vector< electrode* > electrodes;
+  std::vector< neuron * >    outgoing;
+  std::vector< electrode * > electrodes;
   std::vector< double >     outgoing_probability;
   std::vector< double >     electrode_contributions;
 
@@ -78,11 +78,11 @@ class asystem {
   double outgoing_distance;
   double m_micro;
   double h_prob;
-  std::vector< neuron* >    neurons;
-  std::vector< electrode* > electrodes;
+  std::vector< neuron * >    neurons;
+  std::vector< electrode * > electrodes;
 
   // keep track of active neurons
-  std::deque < neuron* > active_neurons;
+  std::deque < neuron * > active_neurons;
   size_t num_active_new;
   size_t num_active_old;
 
@@ -92,8 +92,8 @@ class asystem {
 
   // construct system
   asystem(double sys_size_ = 1., double elec_frac_ = .25,
-    size_t num_neur_ = 144000, size_t num_outgoing_ = 1000,
-    size_t num_elec_ = 100, double m_micro_ = 1.0, double h_prob_ = 0.1) {
+          size_t num_neur_ = 144000, size_t num_outgoing_ = 1000,
+          size_t num_elec_ = 100, double m_micro_ = 1.0, double h_prob_ = 0.1) {
     num_neur       = num_neur_;
     num_outgoing   = num_outgoing_;
     num_elec       = num_elec_;
@@ -110,12 +110,13 @@ class asystem {
 
     // analytic solution for average nearest-neighbour distance
     delta_l_nn = -exp(-neuron_density * M_PI)
-      + erf(sqrt(neuron_density * M_PI))/2./sqrt(neuron_density);
+                 + erf(sqrt(neuron_density * M_PI))/2./sqrt(neuron_density);
 
     printf("creating system\n");
     printf("\tnumber of neurons: %lu\n", num_neur);
     printf("\th: %.3e\n", h_prob);
     printf("\tm: %.3e\n", m_micro);
+    fflush(stdout);
 
     // create neurons
     for (size_t i = 0; i < num_neur; i++) {
@@ -125,19 +126,25 @@ class asystem {
 
     // choose r so that approx num_outgoing neighbours are accessible
     outgoing_distance = sqrt(sys_size*sys_size*num_outgoing/M_PI
-        /double(num_neur));
+                             /double(num_neur));
 
     // create connections
     double mc = connect_neurons_using_interaction_radius(outgoing_distance);
 
     printf("\toutgoing connections per neuron: ~%lu\n", num_outgoing);
+    #ifndef NDEBUG
     printf("\t\t(measured: %.2f)\n", mc);
+    #endif
     printf("\tconnection distance: %.2e\n", outgoing_distance);
     printf("\taverage distance between neurons: %.2e\n", delta_l);
+    #ifndef NDEBUG
     printf("\t\t(measured: %.2e)\n", measure_avg_distance());
+    #endif
     printf("\taverage distance between nearest neighbours: %.2e\n",
-      delta_l_nn);
+           delta_l_nn);
+    #ifndef NDEBUG
     printf("\t\t(measured: %.2e)\n", measure_avg_nearest_neighbour_distance());
+    #endif
 
     // create electrodes to spread over a frac of the system (each direction)
     size_t ne = 0;
@@ -157,13 +164,13 @@ class asystem {
 
     printf("electrodes placed\n");
     printf("\tnumber of electrodes: %lu^2 = %lu\n",
-      size_t(sqrt(num_elec)), ne);
+           size_t(sqrt(num_elec)), ne);
     printf("\telectrode distance: %.2e\n", de);
 
     // precalculate how much each neuron's spike contributes to an electrode
     // and set the probabilities for recurrent activations
     set_contributions_and_probabilities(de);
-
+    fflush(stdout);
   }
 
   // ------------------------------------------------------------------ //
@@ -198,11 +205,11 @@ class asystem {
           avg_connection_count += 1;
         }
       }
-      #ifndef NDEBUG
-      printf("connecting: %lu/%lu\r", i, neurons.size());
-      #endif
+      if(i==0 || is_percent(i, size_t(neurons.size()), 10.)) {
+        printf("\t%s, %lu/%lu\n", time_now().c_str(), i, neurons.size());
+      }
     }
-    printf("\33[2Kdone\n\n");
+    printf("done\n");
     return avg_connection_count/double(neurons.size());
   }
 
@@ -217,9 +224,9 @@ class asystem {
     // if we do not ensure this, neurons will always be too close to some elec
     assert(dik_min_squ < pow(.5*elec_distance, 2.));
     for (size_t i = 0; i < neurons.size(); i++) {
-      #ifndef NDEBUG
-      printf("contributions: %lu/%lu\r", i, neurons.size());
-      #endif
+      if(i==0 || is_percent(i, size_t(neurons.size()), 10.)) {
+        printf("\t%s, %lu/%lu\n", time_now().c_str(), i, neurons.size());
+      }
       neuron *src = neurons[i];
       // electrode contributions and minimum distance fix
       src->electrode_contributions.reserve(electrodes.size());
@@ -263,7 +270,7 @@ class asystem {
         src->outgoing_probability[j] /= norm;
       }
     }
-    printf("\33[2Kdone\n\n");
+    printf("done\n");
   }
 
   // delta_l_nn
@@ -342,7 +349,7 @@ class asystem {
       neuron *src = active_neurons[i];
       for (size_t j = 0; j < src->outgoing.size(); j++) {
         if (udis(rng) < src->outgoing_probability[j]
-          && !src->outgoing[j]->active) {
+            && !src->outgoing[j]->active) {
           activate_neuron(src->outgoing[j]);
         }
       }
@@ -354,7 +361,7 @@ class asystem {
     //   active_neurons.pop_front();
     // }
     active_neurons.erase(active_neurons.begin(),
-      active_neurons.begin() + num_active_old);
+                         active_neurons.begin() + num_active_old);
 
     assert(active_neurons.size() == num_active_new);
 
@@ -385,7 +392,7 @@ class exporter {
     sys = sys_;
     char filechar[2048];
     sprintf(filechar, "%s/N%06lu_m%.3f_s%05lu/",
-      filepath.c_str(), sys->num_neur, sys->m_micro, seed);
+            filepath.c_str(), sys->num_neur, sys->m_micro, seed);
 
     printf("exporting files to %s\n", filechar);
     fflush(stdout);
@@ -418,7 +425,7 @@ class exporter {
     for (size_t i = 0; i < cs_histories.size(); i++) {
       for (size_t j = 0; j < cs_histories[i].size(); j++) {
         gzprintf(gz_files[i], "%e\t%lu\n",
-          cs_histories[i][j], size_t(ss_histories[i][j]));
+                 cs_histories[i][j], size_t(ss_histories[i][j]));
       }
       cs_histories[i].resize(0);
       ss_histories[i].resize(0);
@@ -431,7 +438,7 @@ class exporter {
   // write system configuration. vectors with ptrs to electordes or neurons
   template <typename T1>
   void write_config(std::string filename,
-    std::vector<T1> &config_to_save) {
+                    std::vector<T1> &config_to_save) {
     std::ofstream file (filename, std::ofstream::out);
     file << std::setprecision(0) << std::fixed;
     file << "#L=" << sys->sys_size <<std::endl;
@@ -450,7 +457,10 @@ class exporter {
 // ------------------------------------------------------------------ //
 // main
 // ------------------------------------------------------------------ //
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
+
+  testnew();
+  return -1;
 
   double sys_size     = 1.;         // sytem size
   double time_steps   = 1e3;        // number of time steps
@@ -486,7 +496,7 @@ int main(int argc, char* argv[]) {
   rng.discard(70000);
 
   asystem *sys = new asystem(sys_size, elec_frac, num_neur, num_outgoing,
-    num_elec, m_micro, h);
+                             num_elec, m_micro, h);
   exporter *exp = new exporter(path, sys, seed);
 
   // thermalization with ~1/h time steps, dont run with h=0!
@@ -494,14 +504,14 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < size_t(1./h); i++) {
     #ifndef NDEBUG
     printf("%s, step %05lu, activity ~ %.3f\r", time_now().c_str(),
-      i, sys->num_active_old/double(num_neur));
+           i, sys->num_active_old/double(num_neur));
     #endif
 
     if(i==0 || is_percent(i, size_t(1./h), 10.)||have_passed_hours(6.)) {
       printf("\33[2K\t%s, progress ~%2.0f%%, activity ~%.3f\n",
-        time_now().c_str(),
-        is_percent(i, size_t(1./h), 10.),
-        sys->num_active_old/double(num_neur));
+             time_now().c_str(),
+             is_percent(i, size_t(1./h), 10.),
+             sys->num_active_old/double(num_neur));
     }
 
     sys->update_step();
@@ -513,14 +523,14 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < size_t(time_steps); i++) {
     #ifndef NDEBUG
     printf("step %05lu, activity ~ %.3f\r",
-      i, sys->num_active_old/double(num_neur));
+           i, sys->num_active_old/double(num_neur));
     #endif
 
     if(i==0 || is_percent(i, size_t(time_steps), 10.)||have_passed_hours(6.)) {
       printf("\33[2K\t%s, progress ~%2.0f%%, activity ~%.3f\n",
-        time_now().c_str(),
-        is_percent(i, size_t(time_steps), 10.),
-        sys->num_active_old/double(num_neur));
+             time_now().c_str(),
+             is_percent(i, size_t(time_steps), 10.),
+             sys->num_active_old/double(num_neur));
     }
 
     sys->update_step();
@@ -540,7 +550,7 @@ int main(int argc, char* argv[]) {
   exp->write_config("/Users/paul/Desktop/neurons_2.dat", sys->neurons);
   exp->write_config("/Users/paul/Desktop/electrodes_2.dat", sys->electrodes);
 
-  std::vector< neuron* > test(100, nullptr);
+  std::vector< neuron * > test(100, nullptr);
   for (size_t i = 0; i < sys->electrodes.size(); i++) {
     electrode *e = sys->electrodes[i];
     printf("%lu %e %e\n", e->id, e->x, e->y);
@@ -551,7 +561,7 @@ int main(int argc, char* argv[]) {
   exp->write_config("/Users/paul/Desktop/closest_2.dat", test);
 
   neuron *t = sys->neurons[size_t(udis(rng)*num_neur)];
-  std::vector< neuron* > foo = {t};
+  std::vector< neuron * > foo = {t};
 
   double d = 0.;
   for (size_t i = 0; i < t->outgoing.size(); i++) {
