@@ -9,7 +9,6 @@
 #include <deque>
 #include <random>
 #include <assert.h>
-#include <zlib.h>
 
 #include "io_helper.hpp"
 
@@ -387,7 +386,6 @@ class asystem {
 class exporter {
  public:
   asystem *sys;
-  std::vector<gzFile> gz_files;
   std::string h5filepath, h5dset_csname, h5dset_ssname;
   hid_t h5file, h5dset_cs, h5dset_ss;
   std::vector< size_t > cs_offset, ss_offset;
@@ -397,7 +395,7 @@ class exporter {
     printf("exporting files to %s\n", filepath.c_str());
 
     // open file and create groups
-    h5file = H5Fcreate((filepath+"/test.hdf5").c_str(), H5F_ACC_TRUNC,
+    h5file = H5Fcreate(filepath.c_str(), H5F_ACC_TRUNC,
                        H5P_DEFAULT, H5P_DEFAULT);
     H5Gcreate(h5file, "/meta", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     H5Gcreate(h5file, "/data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
