@@ -116,7 +116,6 @@ class asystem {
     printf("\tnumber of neurons: %lu\n", num_neur);
     printf("\th: %.3e\n", h_prob);
     printf("\tm: %.3e\n", m_micro);
-    fflush(stdout);
 
     // create neurons
     for (size_t i = 0; i < num_neur; i++) {
@@ -170,7 +169,6 @@ class asystem {
     // precalculate how much each neuron's spike contributes to an electrode
     // and set the probabilities for recurrent activations
     set_contributions_and_probabilities(de);
-    fflush(stdout);
   }
 
   // ------------------------------------------------------------------ //
@@ -392,11 +390,20 @@ class exporter {
 
   exporter(std::string filepath, asystem *sys_, size_t seed) {
     sys = sys_;
+
+    if (filepath.rfind('/')!=std::string::npos) {
+      std::string dirname = filepath;
+      dirname.erase(dirname.rfind('/'));
+      system(("mkdir -p " + dirname).c_str());
+    }
     printf("exporting files to %s\n", filepath.c_str());
 
     // open file and create groups
     h5file = H5Fcreate(filepath.c_str(), H5F_ACC_TRUNC,
                        H5P_DEFAULT, H5P_DEFAULT);
+
+    if(h5file < 0) exit(-1);
+
     H5Gcreate(h5file, "/meta", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     H5Gcreate(h5file, "/data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
@@ -513,6 +520,7 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  setbuf(stdout, NULL); // flush prints directly also on cluster
   rng.seed(1000+seed);
   rng.discard(70000);
 
@@ -524,7 +532,7 @@ int main(int argc, char *argv[]) {
   printf("thermalizing for %.0e time steps\n", 1./h);
   for (size_t i = 0; i < size_t(1./h); i++) {
     if(i==0 || is_percent(i, size_t(1./h), 10.)||have_passed_hours(6.)) {
-      printf("\33[2K\t%s, progress ~%2.0f%%, activity ~%.3f\n",
+      printf("\t%s, progress ~%2.0f%%, activity ~%.3f\n",
              time_now().c_str(),
              is_percent(i, size_t(1./h), 10.),
              sys->num_active_old/double(num_neur));
@@ -537,7 +545,7 @@ int main(int argc, char *argv[]) {
   printf("simulating for %.0e time steps\n", time_steps);
   for (size_t i = 0; i < size_t(time_steps); i++) {
     if(i==0 || is_percent(i, size_t(time_steps), 10.)||have_passed_hours(6.)) {
-      printf("\33[2K\t%s, progress ~%2.0f%%, activity ~%.3f\n",
+      printf("\t%s, progress ~%2.0f%%, activity ~%.3f\n",
              time_now().c_str(),
              is_percent(i, size_t(time_steps), 10.),
              sys->num_active_old/double(num_neur));
@@ -547,7 +555,7 @@ int main(int argc, char *argv[]) {
     if(i%sys->cache_size==0) exp->write_histories();
   }
   exp->write_histories();
-  printf("\33[2Kdone\n\n");
+  printf("done\n\n");
   exp->finalize();
 
   return 0;

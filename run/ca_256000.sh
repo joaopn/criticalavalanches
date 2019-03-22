@@ -5,7 +5,7 @@
 
 #$ -S /bin/bash
 #$ -N ca_256000
-#$ -q freya.q
+#$ -q rostam.q
 #$ -l h_vmem=6G # job is killed if exceeding this
 #$ -cwd
 #$ -o ./log/$TASK_ID.$JOB_ID
