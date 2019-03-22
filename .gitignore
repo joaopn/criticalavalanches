@@ -5,3 +5,5 @@ dat
 exe/*
 
 *.hdf5
+
+*.pyc
