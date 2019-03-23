@@ -121,6 +121,7 @@ class asystem {
     printf("\tnumber of neurons: %lu\n", num_neur);
     printf("\th: %.3e\n", h_prob);
     printf("\tm: %.3e\n", m_micro);
+    printf("\tw: %.3e\n", w_var);
 
     // create neurons
     for (size_t i = 0; i < num_neur; i++) {
