@@ -10,7 +10,8 @@
 #include <random>
 #include <assert.h>
 
-#include "io_helper.hpp"
+#include "helper_io.hpp"
+#include "helper_calc.hpp"
 
 // rng and distributions
 std::mt19937 rng(316);
@@ -75,6 +76,7 @@ class asystem {
   double outgoing_distance;
   double m_micro;
   double h_prob;
+  double w_var;
   std::vector< neuron * >    neurons;
   std::vector< electrode * > electrodes;
 
@@ -88,18 +90,20 @@ class asystem {
   std::vector< size_t > at_history;                   // global activity trace
   std::vector< std::vector< double > > cs_histories;  // coarse time trace
   std::vector< std::vector< size_t > > ss_histories;  // subs spike times
+  std::vector< std::vector< size_t > > at_hist_2d;    // live estimation of m
 
   // construct system
   asystem(double sys_size_ = 1., double elec_frac_ = .25,
           size_t num_neur_ = 144000, size_t num_outgoing_ = 1000,
           size_t num_elec_ = 100, double m_micro_ = 1.0,
-          double h_prob_ = 0.1) {
+          double w_var_ = 1., double h_prob_ = 0.1) {
     num_neur       = num_neur_;
     num_outgoing   = num_outgoing_;
     num_elec       = num_elec_;
     sys_size       = sys_size_;
     elec_frac      = elec_frac_;
     m_micro        = m_micro_;
+    w_var          = w_var_;
     h_prob         = h_prob_;
     neuron_density = double(num_neur)/sys_size/sys_size;
     num_active_old = 0;
@@ -216,11 +220,8 @@ class asystem {
   void set_contributions_and_probabilities(double elec_distance) {
     printf("calculating contributions to each electrode\n");
     // calculate contributions to electrodes and probabilities to activate
-    double w_squ = 2.*pow(4., 2.);
-    // double m_micro = 1.1;
-    // todo: this should NOT go with delta_l_nn but be fixed
-    // double dik_min_squ = pow(.2*delta_l_nn, 2.);
-    double dik_min_squ = pow(elec_distance/10., 2.);
+    double w_squ       = 2.*pow(w_var*delta_l_nn, 2.);
+    double dik_min_squ =    pow(elec_distance/10., 2.);
     // if we do not ensure this, neurons will always be too close to some elec
     assert(dik_min_squ < pow(.5*elec_distance, 2.));
     for (size_t i = 0; i < neurons.size(); i++) {
@@ -333,6 +334,7 @@ class asystem {
 
   inline void update_step() {
 
+    num_active_old = num_active_new;
     num_active_new = 0;
 
     // spontanious activation and resetting
@@ -364,13 +366,13 @@ class asystem {
                          active_neurons.begin() + num_active_old);
 
     assert(active_neurons.size() == num_active_new);
-
-    num_active_old = num_active_new;
   }
 
   inline void measure_step(size_t time = 0, bool record = true) {
-    assert(electrodes.size() == cs_histories.size());
-    if (record) at_history.push_back(num_active_old);
+    if (record) {
+      at_history.push_back(num_active_new);
+      update_act_hist(at_hist_2d, num_active_old, num_active_new);
+    }
     for (size_t i = 0; i < electrodes.size(); i++) {
       electrode *e = electrodes[i];
       if (record) {
@@ -431,6 +433,8 @@ class exporter {
                       sys->neuron_density, H5T_NATIVE_DOUBLE);
     hdf5_write_scalar(h5file, "/meta/outgoing_distance",
                       sys->outgoing_distance, H5T_NATIVE_DOUBLE);
+    hdf5_write_scalar(h5file, "/meta/w_var",
+                      sys->w_var, H5T_NATIVE_DOUBLE);
     hdf5_write_scalar(h5file, "/meta/m_micro",
                       sys->m_micro, H5T_NATIVE_DOUBLE);
     hdf5_write_scalar(h5file, "/meta/h_prob",
@@ -506,6 +510,7 @@ int main(int argc, char *argv[]) {
   double elec_frac    = .25;        // electrodes cover part of system per dim
   size_t seed         = 314;        // seed for the random number generator
   double m_micro      = 1.0;        // branching parameter applied locally
+  double w            = 4.;         // eff. conn-length [unit=nearestneur-dist]
   double h            = .01;        // probability for spontaneous activation
   std::string path    = "";         // output path for results
 
@@ -518,6 +523,7 @@ int main(int argc, char *argv[]) {
       if(std::string(argv[i])=="-f") elec_frac      = atof(argv[i+1]);
       if(std::string(argv[i])=="-s") seed           = atof(argv[i+1]);
       if(std::string(argv[i])=="-m") m_micro        = atof(argv[i+1]);
+      if(std::string(argv[i])=="-w") w              = atof(argv[i+1]);
       if(std::string(argv[i])=="-h") h              = atof(argv[i+1]);
       if(std::string(argv[i])=="-o") path           =      argv[i+1] ;
     }
@@ -528,22 +534,21 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  setbuf(stdout, NULL); // flush prints directly also on cluster
+  setbuf(stdout, NULL); // print direct without calling flush, also on cluster
   rng.seed(1000+seed);
   rng.discard(70000);
 
   asystem *sys = new asystem(sys_size, elec_frac, num_neur, num_outgoing,
-                             num_elec, m_micro, h);
+                             num_elec, m_micro, w, h);
   exporter *exp = new exporter(path, sys, seed);
 
-  // thermalization with ~1/h time steps, dont run with h=0!
+  // thermalization with ~1/h time steps, dont run with h=0
   printf("thermalizing for %.0e time steps\n", 1./h);
   for (size_t i = 0; i < size_t(1./h); i++) {
-    if(i==0 || is_percent(i, size_t(1./h), 10.)||have_passed_hours(6.)) {
+    if(is_percent(i, size_t(1./h), 10.) || have_passed_hours(6.)) {
       printf("\t%s, progress ~%2.0f%%, activity ~%.3f\n",
-             time_now().c_str(),
-             is_percent(i, size_t(1./h), 10.),
-             sys->num_active_old/double(num_neur));
+             time_now().c_str(), is_percent(i, size_t(1./h), 10.),
+             sys->num_active_old/double(sys->num_neur));
     }
     sys->update_step();
     sys->measure_step(i, false);
@@ -552,11 +557,17 @@ int main(int argc, char *argv[]) {
 
   printf("simulating for %.0e time steps\n", time_steps);
   for (size_t i = 0; i < size_t(time_steps); i++) {
-    if(i==0 || is_percent(i, size_t(time_steps), 10.)||have_passed_hours(6.)) {
-      printf("\t%s, progress ~%2.0f%%, activity ~%.3f\n",
-             time_now().c_str(),
-             is_percent(i, size_t(time_steps), 10.),
-             sys->num_active_old/double(num_neur));
+    if(is_percent(i, size_t(time_steps), 10.) || have_passed_hours(6.)) {
+      double act, var, mlr;
+      var = variance(sys->at_history, act);
+      act /= double(sys->num_neur);
+      mlr = m_from_lin_regr(sys->at_hist_2d);
+      printf("\t%s, ~%2.0f%%, last %.0e steps: act ~%.3f, cv ~%.2f, mlr ~%.5f, tau(2ms) ~%.1f\n",
+             time_now().c_str(), is_percent(i, size_t(time_steps), 10.),
+             double(sys->at_history.size()),
+             // tau assuming timesteps of 2ms
+             act, sqrt(var)/act, mlr, -2./log(mlr));
+      // exp->write_histories();
     }
     sys->update_step();
     sys->measure_step(i, true);
