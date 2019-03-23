@@ -85,8 +85,9 @@ class asystem {
 
   // signal recording
   size_t cache_size;
-  std::vector< std::vector< double > > cs_histories;  // time trace
-  std::vector< std::vector< size_t > > ss_histories;  // spike times
+  std::vector< size_t > at_history;                   // global activity trace
+  std::vector< std::vector< double > > cs_histories;  // coarse time trace
+  std::vector< std::vector< size_t > > ss_histories;  // subs spike times
 
   // construct system
   asystem(double sys_size_ = 1., double elec_frac_ = .25,
@@ -160,6 +161,7 @@ class asystem {
         cs_histories.back().reserve(cache_size);
       }
     }
+    at_history.reserve(cache_size);
 
     printf("electrodes placed\n");
     printf("\tnumber of electrodes: %lu^2 = %lu\n",
@@ -368,6 +370,7 @@ class asystem {
 
   inline void measure_step(size_t time = 0, bool record = true) {
     assert(electrodes.size() == cs_histories.size());
+    if (record) at_history.push_back(num_active_old);
     for (size_t i = 0; i < electrodes.size(); i++) {
       electrode *e = electrodes[i];
       if (record) {
@@ -385,7 +388,7 @@ class exporter {
  public:
   asystem *sys;
   std::string h5filepath, h5dset_csname, h5dset_ssname;
-  hid_t h5file, h5dset_cs, h5dset_ss;
+  hid_t h5file, h5dset_cs, h5dset_ss, h5dset_at;
   std::vector< size_t > cs_offset, ss_offset;
 
   exporter(std::string filepath, asystem *sys_, size_t seed) {
@@ -440,17 +443,20 @@ class exporter {
     h5dset_ss = hdf5_create_appendable_nd(
                     h5file, "/data/sub", H5T_NATIVE_HSIZE, sys->num_elec,
                     sys->cache_size);
+    h5dset_at = hdf5_create_appendable(
+                    h5file, "/data/activity", H5T_NATIVE_HSIZE,
+                    sys->cache_size);
 
     // remember length of each written electrode history (row)
     cs_offset.resize(sys->num_elec, 0);
     ss_offset.resize(sys->num_elec, 0);
-
   }
 
   void finalize() {
     H5Fclose(h5file);
     H5Dclose(h5dset_cs);
     H5Dclose(h5dset_ss);
+    H5Dclose(h5dset_at);
   }
 
   // write cached electrode histories, ideally call this when they match chunks
@@ -465,6 +471,8 @@ class exporter {
       sys->cs_histories[i].resize(0);
       sys->ss_histories[i].resize(0);
     }
+    hdf5_append(h5dset_at, sys->at_history, H5T_NATIVE_HSIZE);
+    sys->at_history.resize(0);
   }
 
   // write system configuration. vectors with ptrs to electrodes or neurons
