@@ -92,7 +92,9 @@ class asystem {
   std::vector< std::vector< size_t > > ss_histories;  // subs spike times
   std::vector< std::vector< size_t > > at_hist_2d;    // live estimation of m
 
+  // ------------------------------------------------------------------ //
   // construct system
+  // ------------------------------------------------------------------ //
   asystem(double sys_size_ = 1., double elec_frac_ = .25,
           size_t num_neur_ = 144000, size_t num_outgoing_ = 1000,
           size_t num_elec_ = 100, double m_micro_ = 1.0,
@@ -117,7 +119,11 @@ class asystem {
     delta_l_nn = -exp(-neuron_density * M_PI)
                  + erf(sqrt(neuron_density * M_PI))/2./sqrt(neuron_density);
 
+    #ifndef COALCOMP
     printf("creating system\n");
+    #else
+    printf("creating system with coalesence compensation\n");
+    #endif
     printf("\tnumber of neurons: %lu\n", num_neur);
     printf("\th: %.3e\n", h_prob);
     printf("\tm: %.3e\n", m_micro);
@@ -195,6 +201,7 @@ class asystem {
     return (x2+y2);
   }
 
+  // create connections with hard limit given by radius
   double connect_neurons_using_interaction_radius(double radius) {
     printf("connecting neurons with radius %.2e\n", radius);
     double dist_squ_limit = radius*radius;
@@ -218,18 +225,22 @@ class asystem {
     return avg_connection_count/double(neurons.size());
   }
 
+  // effective interaction radius is set in here via w_var
   void set_contributions_and_probabilities(double elec_distance) {
-    printf("calculating contributions to each electrode\n");
+    printf("calculating interaction radius and contributions to electrodes\n");
+    printf("\tw_eff ~%.1e r_max\n", w_var*delta_l_nn/outgoing_distance);
     // calculate contributions to electrodes and probabilities to activate
     double w_squ       = 2.*pow(w_var*delta_l_nn, 2.);
     double dik_min_squ =    pow(elec_distance/10., 2.);
     // if we do not ensure this, neurons will always be too close to some elec
     assert(dik_min_squ < pow(.5*elec_distance, 2.));
+
     for (size_t i = 0; i < neurons.size(); i++) {
       if(i==0 || is_percent(i, size_t(neurons.size()), 10.)) {
         printf("\t%s, %lu/%lu\n", time_now().c_str(), i, neurons.size());
       }
       neuron *src = neurons[i];
+
       // electrode contributions and minimum distance fix
       src->electrode_contributions.reserve(electrodes.size());
       for (size_t k = 0; k < electrodes.size(); k++) {
@@ -257,19 +268,21 @@ class asystem {
           e->closest_neuron = src;
         }
       }
-      // activation probabilities
+
+      // activation probabilities based on distance
       size_t n_cout = src->outgoing.size();
       src->outgoing_probability.reserve(n_cout);
       double norm = 0.;
       for (size_t j = 0; j < n_cout; j++) {
         double dij_squ = get_dist_squ(src, src->outgoing[j]);
-        double pij = m_micro*exp(-dij_squ/w_squ);
+        double pij = exp(-dij_squ/w_squ);
         src->outgoing_probability.push_back(pij);
         norm += pij;
       }
-      // normalize probabilities
+
+      // normalize probabilities to m_micro
       for (size_t j = 0; j < n_cout; j++) {
-        src->outgoing_probability[j] /= norm;
+        src->outgoing_probability[j] *= m_micro/norm;
       }
     }
     printf("done\n");
@@ -350,11 +363,41 @@ class asystem {
     // spread activity. if active, no activation possible
     for (size_t i = 0; i < num_active_old; i++) {
       neuron *src = active_neurons[i];
+      size_t num_recurrent = 0;
       for (size_t j = 0; j < src->outgoing.size(); j++) {
-        if (udis(rng) < src->outgoing_probability[j]
-            && !src->outgoing[j]->active) {
+        #ifndef COALCOMP
+        // default recurrent activations. if target already active, skip.
+        if (!src->outgoing[j]->active
+            && udis(rng) < src->outgoing_probability[j]) {
           activate_neuron(src->outgoing[j]);
         }
+        #else
+        // coalesence compensation, naively implemented.
+        // if random number says to activate, try current target.
+        // if current target already active, randomly try other connected
+        // neurons until successful
+        // this breaks locality a bit
+        if (udis(rng) < src->outgoing_probability[j]) {
+          if (!src->outgoing[j]->active) {
+            activate_neuron(src->outgoing[j]);
+            num_recurrent += 1;
+          } else if (num_recurrent < src->outgoing.size()) {
+            bool reassigned = false;
+            while (!reassigned) {
+              size_t new_j = floor(udis(rng)*src->outgoing.size());
+              if (!src->outgoing[new_j]->active) {
+                activate_neuron(src->outgoing[new_j]);
+                num_recurrent += 1;
+                reassigned = true;
+              }
+            }
+          } else {
+            printf("avoid this!\n");
+            exit(-1);
+          }
+        }
+        #endif
+
       }
     }
     assert(active_neurons.size() == num_active_new+num_active_old);
@@ -541,19 +584,19 @@ int main(int argc, char *argv[]) {
 
   asystem *sys = new asystem(sys_size, elec_frac, num_neur, num_outgoing,
                              num_elec, m_micro, w, h);
-  exporter *exp = new exporter(path, sys, seed);
+  exporter *out = new exporter(path, sys, seed);
 
   // thermalization with ~1/h time steps, dont run with h=0
-  printf("thermalizing for %.0e time steps\n", 1./h);
-  for (size_t i = 0; i < size_t(1./h); i++) {
-    if(is_percent(i, size_t(1./h), 10.) || have_passed_hours(6.)) {
-      printf("\t%s, progress ~%2.0f%%, activity ~%.3f\n",
-             time_now().c_str(), is_percent(i, size_t(1./h), 10.),
-             sys->num_active_old/double(sys->num_neur));
-    }
-    sys->update_step();
-    sys->measure_step(i, false);
-  }
+  // printf("thermalizing for %.0e time steps\n", 1./h);
+  // for (size_t i = 0; i < size_t(1./h); i++) {
+  //   if(is_percent(i, size_t(1./h), 10.) || have_passed_hours(6.)) {
+  //     printf("\t%s, progress ~%2.0f%%, activity ~%.3f\n",
+  //            time_now().c_str(), is_percent(i, size_t(1./h), 10.),
+  //            sys->num_active_old/double(sys->num_neur));
+  //   }
+  //   sys->update_step();
+  //   sys->measure_step(i, false);
+  // }
 
 
   printf("simulating for %.0e time steps\n", time_steps);
@@ -561,22 +604,21 @@ int main(int argc, char *argv[]) {
     if(is_percent(i, size_t(time_steps), 10.) || have_passed_hours(6.)) {
       double act, var, mlr;
       var = variance(sys->at_history, act);
-      act /= double(sys->num_neur);
       mlr = m_from_lin_regr(sys->at_hist_2d);
       printf("\t%s, ~%2.0f%%, last %.0e steps: act ~%.3f, cv ~%.2f, mlr ~%.5f, tau(2ms) ~%.1f\n",
              time_now().c_str(), is_percent(i, size_t(time_steps), 10.),
              double(sys->at_history.size()),
              // tau assuming timesteps of 2ms
-             act, sqrt(var)/act, mlr, -2./log(mlr));
-      // exp->write_histories();
+             act/sys->num_neur, sqrt(var)/act, mlr, -2./log(mlr));
+      // out->write_histories();
     }
     sys->update_step();
     sys->measure_step(i, true);
-    if(i%sys->cache_size==0) exp->write_histories();
+    if(i%sys->cache_size==0) out->write_histories();
   }
-  exp->write_histories();
+  out->write_histories();
   printf("done\n\n");
-  exp->finalize();
+  out->finalize();
 
   return 0;
 
@@ -584,8 +626,8 @@ int main(int argc, char *argv[]) {
   // ------------------------------------------------------------------ //
   // topology test
   // ------------------------------------------------------------------ //
-  exp->write_config("/Users/paul/Desktop/neurons_2.dat", sys->neurons);
-  exp->write_config("/Users/paul/Desktop/electrodes_2.dat", sys->electrodes);
+  out->write_config("/Users/paul/Desktop/neurons_2.dat", sys->neurons);
+  out->write_config("/Users/paul/Desktop/electrodes_2.dat", sys->electrodes);
 
   std::vector< neuron * > test(100, nullptr);
   for (size_t i = 0; i < sys->electrodes.size(); i++) {
@@ -595,7 +637,7 @@ int main(int argc, char *argv[]) {
     printf("\t%lu %e %e\n", n->id, n->x, n->y);
     test[i] = n;
   }
-  exp->write_config("/Users/paul/Desktop/closest_2.dat", test);
+  out->write_config("/Users/paul/Desktop/closest_2.dat", test);
 
   neuron *t = sys->neurons[size_t(udis(rng)*num_neur)];
   std::vector< neuron * > foo = {t};
@@ -610,8 +652,8 @@ int main(int argc, char *argv[]) {
     printf("contrib: %e\n", t->electrode_contributions[i]);
   }
 
-  exp->write_config("/Users/paul/Desktop/conn_2.dat", foo);
-  exp->write_config("/Users/paul/Desktop/conns_2.dat", t->outgoing);
+  out->write_config("/Users/paul/Desktop/conn_2.dat", foo);
+  out->write_config("/Users/paul/Desktop/conns_2.dat", t->outgoing);
 
   delete sys;
 
