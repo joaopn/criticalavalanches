@@ -5,8 +5,8 @@ Module for utilities.
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-22 12:58:11
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-22 17:54:34
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-03-25 10:08:17
 
 import h5py
 import numpy as np
@@ -41,8 +41,9 @@ def bin_data(data, binsize):
 		data_binned -- data binned in bins of size binsize.
 	"""
 
+
 	bin_array = np.arange(0,data.max(),binsize)
-	data_hist = np.histogram(data,bin_array)
+	data_hist = np.histogram(data,bin=bin_array)
 	data_binned = np.asmatrix(data_hist[0])
 
 	return data_binned
