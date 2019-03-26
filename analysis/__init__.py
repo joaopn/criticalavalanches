@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-24 19:03:08
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-25 18:42:45
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-03-26 13:51:08
 
-import analysis.utils as utils
 import analysis.avalanche as avalanche
-import analysis.filtering as filtering
-import analysis.fitting as fitting
+import analysis.plot as plot
 
 import powerlaw
 import numpy as np
