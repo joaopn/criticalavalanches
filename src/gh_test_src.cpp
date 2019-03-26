@@ -248,6 +248,7 @@ class asystem {
     return (x2+y2);
   }
 
+
   // create connections with hard limit given by radius
   double connect_neurons_using_interaction_radius(double radius) {
     printf("connecting neurons with radius %.2e\n", radius);
@@ -255,15 +256,28 @@ class asystem {
     size_t avg_connection_count = 0;
     for (size_t i = 0; i < neurons.size(); i++) {
       neuron *src = neurons[i];
-      src->outgoing.reserve(size_t(num_outgoing*1.1));
+
+      std::vector< std::pair <double, neuron *> > sortable;
+      sortable.reserve(size_t(num_outgoing*1.1));
+
       for (size_t j = 0; j < neurons.size(); j++) {
         neuron *tar = neurons[j];
         if (src == tar) continue;
-        if (get_dist_squ(src, tar) < dist_squ_limit) {
-          src->outgoing.push_back(tar);
+        double dist_squ = get_dist_squ(src, tar);
+        if (dist_squ < dist_squ_limit) {
+          sortable.push_back( std::make_pair(dist_squ, tar) );
           avg_connection_count += 1;
         }
       }
+
+      // sort outgoing connections by distance
+      sort(sortable.begin(), sortable.end());
+      src->outgoing.reserve(sortable.size());
+      for (size_t j = 0; j < sortable.size(); j++) {
+        src->outgoing.push_back(sortable[j].second);
+      }
+
+
       if(i==0 || is_percent(i, size_t(neurons.size()), 10.)) {
         printf("\t%s, %lu/%lu\n", time_now().c_str(), i, neurons.size());
       }
@@ -275,9 +289,9 @@ class asystem {
   // effective interaction radius is set in here via sigma
   void set_contributions_and_probabilities() {
     printf("calculating interaction radius and contributions to electrodes\n");
-    printf("\tsigma_eff: %.3e\n", sigma*neur_dist);
+    printf("\tsigma_eff: %.3e\n", sigma*d_max);
     // calculate contributions to electrodes and probabilities to activate
-    double sigma_squ   = 2.*pow(sigma*neur_dist, 2.);
+    double sigma_squ   = 2.*pow(sigma*d_max, 2.);
 
 
     for (size_t i = 0; i < neurons.size(); i++) {
@@ -421,28 +435,27 @@ class asystem {
           activate_neuron(src->outgoing[j]);
         }
         #else
-        // coalesence compensation, naively implemented.
+        // coalesence compensation
         // if random number says to activate, try current target.
-        // if current target already active, randomly try other connected
-        // neurons until successful
-        // this breaks locality a bit
+        // if current target already active, try the next closest (farther)
+        // connected neuron until successful or no more candidates
         if (udis(rng) < src->outgoing_probability[j]) {
           if (!src->outgoing[j]->active) {
             activate_neuron(src->outgoing[j]);
             num_recurrent += 1;
           } else if (num_recurrent < src->outgoing.size()) {
             bool reassigned = false;
-            while (!reassigned) {
-              size_t new_j = floor(udis(rng)*src->outgoing.size());
-              if (!src->outgoing[new_j]->active) {
-                activate_neuron(src->outgoing[new_j]);
+            while (!reassigned && j+1 < src->outgoing.size()) {
+              j += 1;
+              if (!src->outgoing[j]->active) {
+                activate_neuron(src->outgoing[j]);
                 num_recurrent += 1;
                 reassigned = true;
               }
             }
           } else {
-            printf("avoid this!\n");
-            exit(-1);
+            printf("\n\n num recurrenct reached limit! src id: %lu\n\n",
+              src->id);
           }
         }
         #endif
@@ -680,7 +693,7 @@ int main(int argc, char *argv[]) {
   double elec_dist    = 8.;         // electrode dist. [unit=nearestneur-dist]
   size_t seed         = 314;        // seed for the random number generator
   double m_micro      = 1.0;        // branching parameter applied locally
-  double sigma        = 4.;         // eff. conn-length [unit=nearestneur-dist]
+  double sigma        = .3;         // eff. conn-length [unit=d_max]
   double h            = .01;        // probability for spontaneous activation
   double delta_t      = 2.;         // time step size [ms]
   double cache_size   = 1e5;        // [num time steps] before hist is written
@@ -736,6 +749,7 @@ int main(int argc, char *argv[]) {
                              num_outgoing,
                              m_micro, sigma, h,
                              cache_size);
+
   exporter *out = new exporter(path, sys, seed);
 
 

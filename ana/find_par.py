@@ -11,7 +11,7 @@ import numpy as np
 # https://stackoverflow.com/questions/41231678/obtaining-a-exclusive-lock-when-writing-to-an-hdf5-file
 
 for name in ['non', 'rev', 'crit1', 'e5']:
-    f = h5py.File(f"/Users/paul/owncloud/mpi/simulation/critical_avalanches/gh_test_src/dat/test_{name}.hdf5", "r")
+    f = h5py.File(f"/Users/paul/owncloud/mpi/simulation/critical_avalanches/gh_test_src/prelim/test_{name}.hdf5", "r")
 
     dat = f["/data/activity"][5000:]
     plt.plot(dat)
