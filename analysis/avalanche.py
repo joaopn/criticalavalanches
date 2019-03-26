@@ -5,8 +5,8 @@ Module for the avalanche analysis of MEA datasets.
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-26 13:39:43
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-03-26 19:49:11
 
 import numpy as np
 import h5py
@@ -38,6 +38,12 @@ def threshold_data(data, threshold):
 
 	return data_thresholded
 
+def convert_timestamps(data,timesteps):
+
+	data_converted = np.zeros(timesteps)
+	data_converted[data] = 1
+	return data_converted
+
 def bin_data(data,binsize):
 
 	timesteps = data.size
@@ -67,23 +73,30 @@ def get_S(data):
 def run_analysis(
 	filepath='',
 	threshold=3,
-	channels=100,
-	timesteps = 500000,
+	channels=64,
+	timesteps = 100000,
 	binsize = 4,
-	datafolder = 'data/coarse'
+	datatype = 'coarse'
 	):
 
+	#Parameters
+	data_dir = 'data/'
+
 	#Analyses channel by channel
-	data_th = np.zeros(timesteps)
+	data_sum = np.zeros(timesteps)
 	for ch in range(channels):
 		
 		#Loads data
 		file = h5py.File(filepath,'r')
-		data_ch = file[datafolder][ch,:]
+		data_ch = file[data_dir + datatype][ch,:]
 
-		#Thresholds data		
-		data_th = data_th + threshold_data(data_ch,threshold)
+		#Analyzes sub and coarse channel data accordingly
+		if datatype is 'coarse':		
+			data_sum = data_sum + threshold_data(data_ch,threshold)
 
-	data_binned = bin_data(data_th,binsize)
+		elif datatype is 'sub':
+			data_sum = data_sum + convert_timestamps(data_ch,timesteps)
+
+	data_binned = bin_data(data_sum,binsize)
 
 	return data_binned
