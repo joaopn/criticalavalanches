@@ -8,7 +8,6 @@
   #include <memory>
 #endif
 
-
 // mimics printf into std::string
 // https://codereview.stackexchange.com/questions/187183/create-a-c-string-using-printf-style-formatting
 std::string format(const char *fmt, ...) {
@@ -119,10 +118,6 @@ void hdf5_write_scalar(hid_t h5file, std::string name, T &scalar,
                            H5P_DEFAULT, H5P_DEFAULT);
   //think about converting if difference between T and h5dtype
   status = H5Dwrite(dset, h5dtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, &scalar);
-  if (status < 0) {
-    printf("Could not write successfully, aborting.");
-    exit(-1);
-  }
   status = H5Dclose(dset);
   status = H5Sclose(dspace);
 }
@@ -140,10 +135,6 @@ void hdf5_write_vector(hid_t h5file, std::string name, std::vector<T> &vector,
                            H5P_DEFAULT, H5P_DEFAULT);
   //write array and close once done
   status = H5Dwrite(dset, h5dtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
-  if (status < 0) {
-    printf("Could not write successfully, aborting.");
-    exit(-1);
-  }
   status = H5Dclose(dset);
   status = H5Sclose(dspace);
 
@@ -191,10 +182,6 @@ void hdf5_append(hid_t dset, std::vector<T> &vector, hid_t h5dtype) {
   hsize_t out_dims[1] = {vector.size()};
   hid_t mspace = H5Screate_simple(1, out_dims, nullptr);
   status = H5Dwrite(dset, h5dtype, mspace, dspace, H5P_DEFAULT, buf);
-  if (status < 0) {
-    printf("Could not write successfully, aborting.");
-    exit(-1);
-  }
   status = H5Sclose(mspace);
   status = H5Sclose(dspace);
 }
@@ -253,10 +240,6 @@ void hdf5_append_nd(hid_t dset, std::vector<T> &vector, hid_t h5dtype,
 
   // write array
   status = H5Dwrite(dset, h5dtype, mspace, dspace, H5P_DEFAULT, buf);
-  if (status < 0) {
-    printf("Could not write successfully, aborting.");
-    exit(-1);
-  }
   status = H5Sclose(mspace);
   status = H5Sclose(dspace);
 }

@@ -9,6 +9,7 @@
 #include <deque>
 #include <random>
 #include <assert.h>
+#include <unistd.h>
 
 #include "helper_io.hpp"
 #include "helper_calc.hpp"
@@ -101,7 +102,8 @@ class asystem {
       size_t num_neur_, double neur_dist_,
       size_t num_elec_, double elec_dist_,
       size_t num_outgoing_,
-      double m_micro_, double sigma_, double h_prob_) {
+      double m_micro_, double sigma_, double h_prob_,
+      size_t cache_size_) {
     num_neur       = num_neur_;
     neur_dist      = neur_dist_;
     num_elec       = num_elec_;
@@ -109,7 +111,6 @@ class asystem {
     num_outgoing   = num_outgoing_;
 
     // find system size mathcing neur_distance numerically
-
     double delta_l_nn;
     sys_size = 2*sqrt(num_neur)*neur_dist;
 
@@ -122,10 +123,11 @@ class asystem {
     m_micro        = m_micro_;
     sigma          = sigma_;
     h_prob         = h_prob_;
+    cache_size     = cache_size_;
+
     num_active_old = 0;
     num_active_new = 0;
-    // aim for 1mb chunk size for hdf5
-    cache_size     = size_t(1e5);
+
 
     // analytic solution for average inter neuron distance delta_l
     delta_l = pow(sys_size, 3.)/6. * ( sqrt(2.) + log(1. + sqrt(2.)) );
@@ -222,6 +224,11 @@ class asystem {
     // precalculate how much each neuron's spike contributes to an electrode
     // and set the probabilities for recurrent activations
     set_contributions_and_probabilities();
+  }
+
+  ~asystem() {
+    for (size_t i = 0; i < neurons.size(); i++) delete neurons[i];
+    for (size_t i = 0; i < electrodes.size(); i++) delete electrodes[i];
   }
 
   // ------------------------------------------------------------------ //
@@ -581,12 +588,91 @@ class exporter {
   }
 };
 
+void find_parameters(size_t num_neur, double neur_dist,
+                     size_t num_elec, double elec_dist,
+                     size_t num_outgoing,
+                     double m_micro, double sigma, double h_prob,
+                     double delta_t,
+                     double tau_target, double tau_prec,
+                     double act_target, double act_prec,
+                     size_t thrm_steps, size_t time_steps,
+                     double dh, double dm
+                    ) {
+
+  double m_now = m_micro;
+  double h_now = h_prob;
+  bool found = false;
+
+
+  while (!found) {
+    printf("m = %e h = %e ", m_now, h_now);
+
+    // silence stdout
+    int old_stdout = dup(STDOUT_FILENO);
+    FILE *nullout = fopen("/dev/null", "w");
+    dup2(fileno(nullout), STDOUT_FILENO);
+
+    asystem *sys = new asystem(num_neur, neur_dist, num_elec, elec_dist,
+                               num_outgoing,
+                               m_now, sigma, h_now,
+                               time_steps);
+    // restore stdout
+    fclose(nullout);
+    dup2(old_stdout, STDOUT_FILENO);
+    close(old_stdout);
+    setbuf(stdout, NULL);
+    printf("created\n");
+
+    for (size_t i = 0; i < thrm_steps; i++) {
+      if(is_percent(i, thrm_steps, 1.))
+        printf("therm: %02.1f%%\r", is_percent(i, thrm_steps, 1.));
+      sys->update_step();
+      sys->measure_step(i, false);
+    }
+    for (size_t i = 0; i < time_steps; i++) {
+      if(is_percent(i, time_steps, 1.))
+        printf("simul: %02.1f%%\r", is_percent(i, time_steps, 1.));
+      sys->update_step();
+      sys->measure_step(i, true);
+    }
+
+    double act, var, mlr, tau, act_hz;
+    var = variance(sys->at_history, act);
+    mlr = m_from_lin_regr(sys->at_hist_2d);
+
+    tau = -delta_t/log(mlr);
+    act_hz = act/sys->num_neur/delta_t*1000.;
+    printf("last %.1e steps: act ~%4.2fHz, cv ~%.2f, ",
+           double(sys->at_history.size()),
+           act/sys->num_neur/delta_t*1000., sqrt(var)/act);
+    printf("mlr ~%.5f, tau ~%.1fms\n\n",
+           mlr, tau);
+
+    found = true;
+    if (fabs(tau - tau_target) > tau_prec) {
+      if      (tau < tau_target) m_now += dm;
+      else if (tau > tau_target) m_now -= dm;
+      found = false;
+    }
+    if (fabs(act_hz - act_target) > act_prec) {
+      if      (act_hz < act_target) h_now += dh;
+      else if (act_hz > act_target) h_now -= dh;
+      found = false;
+    }
+
+    delete sys;
+
+  }
+
+}
+
 // ------------------------------------------------------------------ //
 // main
 // ------------------------------------------------------------------ //
 int main(int argc, char *argv[]) {
 
   double time_steps   = 1e3;        // number of time steps
+  double thrm_steps   = 1e3;        // thermalization steps before measuring
   size_t num_neur     = 256000;     // number of neurons
   size_t num_outgoing = 1000;       // average outgoing connections per neuron
   size_t num_elec     = 64;         // total number of electrodes
@@ -596,11 +682,17 @@ int main(int argc, char *argv[]) {
   double m_micro      = 1.0;        // branching parameter applied locally
   double sigma        = 4.;         // eff. conn-length [unit=nearestneur-dist]
   double h            = .01;        // probability for spontaneous activation
+  double delta_t      = 2.;         // time step size [ms]
+  double cache_size   = 1e5;        // [num time steps] before hist is written
   std::string path    = "";         // output path for results
+
+  double dh = 1e-5;
+  double dm = 1e-5;
 
   for (size_t i=0; i < argc; i++) {
     if (i+1 != argc) {
       if(std::string(argv[i])=="-T" ) time_steps     = atof(argv[i+1]);
+      if(std::string(argv[i])=="-t" ) thrm_steps     = atof(argv[i+1]);
       if(std::string(argv[i])=="-N" ) num_neur       = atof(argv[i+1]);
       if(std::string(argv[i])=="-k" ) num_outgoing   = atof(argv[i+1]);
       if(std::string(argv[i])=="-e" ) num_elec       = atof(argv[i+1]);
@@ -610,7 +702,11 @@ int main(int argc, char *argv[]) {
       if(std::string(argv[i])=="-m" ) m_micro        = atof(argv[i+1]);
       if(std::string(argv[i])=="-g" ) sigma          = atof(argv[i+1]);
       if(std::string(argv[i])=="-h" ) h              = atof(argv[i+1]);
+      if(std::string(argv[i])=="-c" ) cache_size     = atof(argv[i+1]);
       if(std::string(argv[i])=="-o" ) path           =      argv[i+1] ;
+
+      if(std::string(argv[i])=="-dh") dh             = atof(argv[i+1]);
+      if(std::string(argv[i])=="-dm") dm             = atof(argv[i+1]);
     }
   }
 
@@ -623,40 +719,58 @@ int main(int argc, char *argv[]) {
   rng.seed(1000+seed);
   rng.discard(70000);
 
+  #ifdef FINDPAR
+  find_parameters(num_neur, neur_dist, num_elec, elec_dist,
+                  num_outgoing,
+                  m_micro, sigma, h,
+                  delta_t,
+                  400., 25.,
+                  1., 0.1,
+                  thrm_steps, time_steps,
+                  dh, dm);
+  return 0;
+  #endif
+
+
   asystem *sys = new asystem(num_neur, neur_dist, num_elec, elec_dist,
                              num_outgoing,
-                             m_micro, sigma, h);
+                             m_micro, sigma, h,
+                             cache_size);
   exporter *out = new exporter(path, sys, seed);
 
-  // thermalization with ~1/h time steps, dont run with h=0
-  // printf("thermalizing for %.0e time steps\n", 1./h);
-  // for (size_t i = 0; i < size_t(1./h); i++) {
-  //   if(is_percent(i, size_t(1./h), 10.) || have_passed_hours(6.)) {
-  //     printf("\t%s, progress ~%2.0f%%, activity ~%.3f\n",
-  //            time_now().c_str(), is_percent(i, size_t(1./h), 10.),
-  //            sys->num_active_old/double(sys->num_neur));
-  //   }
-  //   sys->update_step();
-  //   sys->measure_step(i, false);
-  // }
+
+  // hack to save some time by initializing to target cativity of 1Hz
+  for (size_t i = 0; i < size_t(1.*sys->num_neur*delta_t/1000.); i++) {
+    sys->activate_neuron(sys->neurons[size_t(udis(rng)*sys->num_neur)]);
+  }
+
+  printf("thermalizing for %.0e steps\n", thrm_steps);
+  for (size_t i = 0; i < thrm_steps; i++) {
+    sys->update_step();
+    sys->measure_step(i, false);
+  }
 
 
   printf("simulating for %.0e time steps\n", time_steps);
   for (size_t i = 0; i < size_t(time_steps); i++) {
-    if(is_percent(i, size_t(time_steps), 10.) || have_passed_hours(6.)) {
+    if(is_percent(i, size_t(time_steps), 5.) || have_passed_hours(6.)) {
       double act, var, mlr;
       var = variance(sys->at_history, act);
       mlr = m_from_lin_regr(sys->at_hist_2d);
-      printf("\t%s, ~%2.0f%%, last %.0e steps: act ~%.3f, cv ~%.2f, mlr ~%.5f, tau(2ms) ~%.1f\n",
-             time_now().c_str(), is_percent(i, size_t(time_steps), 10.),
+      printf("\t%s, ~%2.0f%%, last %.1e steps: act ~%4.2fHz, cv ~%.2f, ",
+             time_now().c_str(), is_percent(i, size_t(time_steps), 5.),
              double(sys->at_history.size()),
-             // tau assuming timesteps of 2ms
-             act/sys->num_neur, sqrt(var)/act, mlr, -2./log(mlr));
+             act/sys->num_neur/delta_t*1000., sqrt(var)/act);
+      printf("mlr ~%.5f, tau ~%.1fms\n",
+             mlr, -delta_t/log(mlr));
       // out->write_histories();
     }
     sys->update_step();
     sys->measure_step(i, true);
-    if(i%sys->cache_size==0) out->write_histories();
+    if(i%sys->cache_size==0) {
+      out->write_histories();
+      reset_act_hist(sys->at_hist_2d);
+    }
   }
   out->write_histories();
   printf("done\n\n");
