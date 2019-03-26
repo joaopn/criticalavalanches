@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-26 13:49:36
+# @Last Modified time: 2019-03-26 14:28:11
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,11 +19,8 @@ def pS(S,label='data'):
 	pS = pS/np.sum(pS)
 
 	#Plots it
-	plt.figure()
 	plt.loglog(pS,label=label)
-	plt.xlim(1,S_max)
+	plt.xlim(1,1e3)
 	plt.legend()
-	plt.xlabel('S')
-	plt.ylabel('p(S)')
-	plt.show()
+
 
