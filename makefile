@@ -7,6 +7,14 @@ all: ./src/gh_test_src.cpp
 	@mkdir -p ./exe
 	$(CC) $(CFLAGS) ./src/gh_test_src.cpp -o ./exe/gh_test_src $(LFLAGS)
 
+coalcomp: ./src/gh_test_src.cpp
+	@mkdir -p ./exe
+	$(CC) $(CFLAGS) -DCOALCOMP ./src/gh_test_src.cpp -o ./exe/gh_test_src $(LFLAGS)
+
+findpar: ./src/gh_test_src.cpp
+	@mkdir -p ./exe
+	$(CC) $(CFLAGS) -DFINDPAR ./src/gh_test_src.cpp -o ./exe/findpar $(LFLAGS)
+
 debug: ./src/gh_test_src.cpp
 	@mkdir -p ./exe
 	$(CC) $(DEBUGFLAGS) ./src/gh_test_src.cpp -o ./exe/gh_test_src $(LFLAGS)

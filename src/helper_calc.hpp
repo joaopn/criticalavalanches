@@ -11,6 +11,15 @@ inline void update_act_hist(std::vector<T> &act_hist, size_t a_old, size_t a_new
   act_hist[a_old][a_new] += 1;
 }
 
+template<typename T>
+void reset_act_hist(std::vector<T> &act_hist) {
+  for (size_t i = 1; i < act_hist.size(); i++) {
+    for (size_t j = 0; j < act_hist[i].size(); j++) {
+      act_hist[i][j] = 0;
+    }
+  }
+}
+
 // takes a 2d vector of the form H[act_old][act_new]
 template<typename T>
 double m_from_lin_regr(std::vector<T> &act_hist) {
