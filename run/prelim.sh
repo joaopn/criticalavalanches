@@ -4,7 +4,7 @@
 
 
 #$ -S /bin/bash
-#$ -N findpar
+#$ -N prelim
 #$ -q hel.q
 #$ -l h_vmem=6G # job is killed if exceeding this
 #$ -cwd
@@ -18,7 +18,7 @@ export OMP_NUM_THREADS=1
 
 date
 
-vargs=$(awk "NR==$(($SGE_TASK_ID + 1))" ./run/find_par.tsv)
+vargs=$(awk "NR==$(($SGE_TASK_ID + 1))" ./run/prelim.tsv)
 echo "./exe/gh_test_src ${vargs[$id]}"
 
 ./exe/gh_test_src ${vargs[$id]}
