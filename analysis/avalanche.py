@@ -5,8 +5,8 @@ Module for the avalanche analysis of MEA datasets.
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-27 11:21:36
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-03-27 17:49:48
 
 import numpy as np
 import h5py
@@ -33,7 +33,7 @@ def threshold_data(data, threshold):
 	
 	#For every positive excursion, finds max
 	for id in range(len(id_cross_plus)-1):
-		id_max = id_cross_plus[id]+np.argmax(data[id_cross_plus[id]:id_cross_plus[id+1]-1])
+		id_max = id_cross_plus[id]+np.argmax(data[id_cross_plus[id]:id_cross_plus[id+1]])
 		data_thresholded[id_max] = 1
 
 	return data_thresholded
@@ -66,17 +66,17 @@ def get_S(data):
 	S = np.zeros(n_avalanches-1)
 
 	for i in range(n_avalanches-1):
-		S[i] = np.sum(data[id_cross_plus[i]:id_cross_plus[i+1]-1])
+		S[i] = np.sum(data[id_cross_plus[i]:id_cross_plus[i+1]])
 
 	return S
 
 def run_analysis(
-	filepath='',
-	threshold=3,
-	channels=64,
-	timesteps = 100000,
-	binsize = 4,
-	datatype = 'coarse'
+	filepath,
+	threshold,
+	channels,
+	timesteps,
+	binsize,
+	datatype
 	):
 
 	#Parameters

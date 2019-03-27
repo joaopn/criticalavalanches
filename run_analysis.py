@@ -1,38 +1,66 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-27 11:33:50
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-03-27 23:12:51
 
 from analysis import *
 import numpy as np
 import matplotlib.pyplot as plt
 import os, argparse
+import glob
 
+def parse_sim_data(datadir):
 
-def run_save_plot(filename,binsize, datatype):
+	#Lists all files
+	homedir = os.getcwd()
+	os.chdir(datadir)	
+	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
+	os.chdir(homedir)
+
+	#Removes last part ('_r%i')
+	data_removed = [datafiles[i][:-3] for i in range(len(datafiles))]
+	data_unique = list(set(data_removed))
+
+	return data_unique
+
+def run_save_plot(data_dir,filename,binsize,datatype, reps):
 
 	#Parameters
-	filepath = 'dat/'
-	fig_dir = 'dat/plot/'
+	fig_dir = data_dir + '/plot/'
 
 	#Plots results
 	plt.figure()
 	plt.title(filename)
 	plt.xlabel('S')
 	plt.ylabel('p(S)')
+	plt.yscale('log')
+	plt.xscale('log')
+	plt.xlim(1,1e3)
 
 	#Runs analysis for all binsizes
 	for bs in binsize:
-		print('Running for b = {}'.format(bs))
-		data_binned = avalanche.run_analysis(
-			filepath=filepath+filename+'.hdf5',
-			binsize=bs,
-			threshold=threshold
-			)
+		print(filename + ' ,running for b = {}'.format(bs))
 
-		S = avalanche.get_S(data_binned)
-		plot.pS(S,label='bs = {}'.format(bs))
+		S_list = []
+		for rep in range(reps):
+			
+			#Creates filepath
+			filepath = data_dir + filename + '_r{:d}.hdf5'.format(rep)
+
+			#Analyzes rep
+			data_binned = avalanche.run_analysis(
+				filepath=filepath,
+				binsize=bs,
+				threshold=threshold,
+				datatype=datatype,
+				timesteps=int(1e6),
+				channels=64					
+				)
+
+			S_list.append(avalanche.get_S(data_binned))
+
+		plot.pS_mean(S_list,label='bs = {}'.format(bs))
 
 	#Creates save dir
 	if not os.path.exists(fig_dir):
@@ -45,10 +73,11 @@ def run_save_plot(filename,binsize, datatype):
 def parametersDefault():
 
 	#default Parameters
-	binsizeDefault="1,4"
+	binsizeDefault="1,2"
 	thresholdDefault = 3
 	repsDefault = 3
 	datatypeDefault = 'coarse'	
+	datafolderDefault = 'dat/coalcomp/'
 
 	#Parse input
 	parser = argparse.ArgumentParser()
@@ -57,8 +86,9 @@ def parametersDefault():
 	parser.add_argument("-t","--threshold",type=float,nargs='?',const=1,default=thresholdDefault)
 	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
 	parser.add_argument("--datatype",type=str,nargs='?',const=1,default=datatypeDefault)
+	parser.add_argument("--datafolder",type=str,nargs='?',const=1,default=datafolderDefault)
 
-	#Adds list
+	#Adds string of binsizes
 	parser.add_argument("-b","--binsize",type=str,nargs='?',const=1,default=binsizeDefault)
 	args = parser.parse_args()
 	args.binsize = [int(item) for item in args.binsize.split(',')]
@@ -73,25 +103,11 @@ if __name__ == "__main__":
 	threshold = args.threshold
 	reps = args.reps
 	datatype = args.datatype
+	datafolder = args.datafolder
 
-
-	#Test data
-	state_dict = {
-		'subcrit' : {'m' : 0.92,'h' : 1.8e-4},
-		'rev' : {'m' : 1.006,'h' : 3e-5},
-		'crit' : {'m' : 1.03,'h' : 2.2e-6},
-	}
-
+	#Selects all datasets (without the reps) in a folder to analyze
+	dataset_list = parse_sim_data(datafolder)
 
 	#Analyzes and saves plot for all datasets
-	for state in state_dict:
-		for rep in range(reps):
-
-			#Defines variables
-			m = state_dict[state]['m']
-			h = state_dict[state]['h']
-			filename = 'm{:0.5f}_h{:0.3e}_r{:d}'.format(m,h,rep)
-		
-			run_save_plot(filename,binsize,datatype)
-	
-	
+	for dataset in dataset_list:
+			run_save_plot(datafolder,dataset,binsize,datatype,reps)
