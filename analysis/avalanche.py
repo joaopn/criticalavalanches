@@ -5,8 +5,8 @@ Module for the avalanche analysis of MEA datasets.
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-26 19:49:11
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-03-27 11:21:36
 
 import numpy as np
 import h5py
@@ -51,7 +51,7 @@ def bin_data(data,binsize):
 	data_binned = np.zeros(bin_array.size)
 
 	for i in range(data_binned.size-1):
-		data_binned[i] = np.sum(data[bin_array[i]:bin_array[i+1]-1])
+		data_binned[i] = np.sum(data[bin_array[i]:bin_array[i+1]])
 
 	return data_binned
 

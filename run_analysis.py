@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-26 19:54:32
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-03-27 11:33:50
 
 from analysis import *
 import numpy as np
 import matplotlib.pyplot as plt
-import os
+import os, argparse
 
 
 def run_save_plot(filename,binsize, datatype):
@@ -30,6 +30,7 @@ def run_save_plot(filename,binsize, datatype):
 			binsize=bs,
 			threshold=threshold
 			)
+
 		S = avalanche.get_S(data_binned)
 		plot.pS(S,label='bs = {}'.format(bs))
 
@@ -41,13 +42,38 @@ def run_save_plot(filename,binsize, datatype):
 	str_fig = fig_dir + datatype + '_pS_' + filename + '_th{}'.format(threshold) + '.png'
 	plt.savefig(str_fig)
 
+def parametersDefault():
+
+	#default Parameters
+	binsizeDefault="1,4"
+	thresholdDefault = 3
+	repsDefault = 3
+	datatypeDefault = 'coarse'	
+
+	#Parse input
+	parser = argparse.ArgumentParser()
+
+	#Add single parameters
+	parser.add_argument("-t","--threshold",type=float,nargs='?',const=1,default=thresholdDefault)
+	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
+	parser.add_argument("--datatype",type=str,nargs='?',const=1,default=datatypeDefault)
+
+	#Adds list
+	parser.add_argument("-b","--binsize",type=str,nargs='?',const=1,default=binsizeDefault)
+	args = parser.parse_args()
+	args.binsize = [int(item) for item in args.binsize.split(',')]
+
+	return args
+
 if __name__ == "__main__":
 
-	#Parameters
-	binsize=[4]
-	threshold = 3.5
-	reps = 3
-	datatype = 'coarse'
+	#Parse input
+	args = parametersDefault()
+	binsize = args.binsize
+	threshold = args.threshold
+	reps = args.reps
+	datatype = args.datatype
+
 
 	#Test data
 	state_dict = {
