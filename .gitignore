@@ -1,6 +1,7 @@
 *.zip
 output
-analysis
 .DS_Store
 dat
-exe/*
+exe
+parameters.tsv
+
