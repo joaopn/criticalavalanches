@@ -2,7 +2,6 @@
 
 # submit from project directory !!!
 
-
 #$ -S /bin/bash
 #$ -N findpar
 #$ -q hel.q
@@ -18,9 +17,9 @@ export OMP_NUM_THREADS=1
 
 date
 
-vargs=$(awk "NR==$(($SGE_TASK_ID + 1))" ./run/find_par.tsv)
-echo "./exe/gh_test_src ${vargs[$id]}"
+vargs=$(awk "NR==$(($SGE_TASK_ID + 1))" ./run/parameters.tsv)
+echo "./exe/findpar ${vargs[$id]}"
 
-./exe/gh_test_src ${vargs[$id]}
+./exe/findpar ${vargs[$id]}
 
 date

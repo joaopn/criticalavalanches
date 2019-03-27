@@ -132,10 +132,11 @@ class asystem {
     // analytic solution for average inter neuron distance delta_l
     delta_l = pow(sys_size, 3.)/6. * ( sqrt(2.) + log(1. + sqrt(2.)) );
 
-    #ifndef COALCOMP
-    printf("creating system\n");
+    printf("creating system\n\tcoalesence compensation: ");
+    #ifdef NOCC
+    printf("No\n");
     #else
-    printf("creating system with coalesence compensation\n");
+    printf("Yes\n");
     #endif
     printf("\tnumber of neurons: %lu\n", num_neur);
     printf("\tnearest neuron distance: %.3e\n", neur_dist);
@@ -428,8 +429,8 @@ class asystem {
       neuron *src = active_neurons[i];
       size_t num_recurrent = 0;
       for (size_t j = 0; j < src->outgoing.size(); j++) {
-        #ifndef COALCOMP
-        // default recurrent activations. if target already active, skip.
+        #ifdef NOCC
+        // simple recurrent activations. if target already active, skip.
         if (!src->outgoing[j]->active
             && udis(rng) < src->outgoing_probability[j]) {
           activate_neuron(src->outgoing[j]);
@@ -455,7 +456,7 @@ class asystem {
             }
           } else {
             printf("\n\n num recurrenct reached limit! src id: %lu\n\n",
-              src->id);
+                   src->id);
           }
         }
         #endif
@@ -601,6 +602,9 @@ class exporter {
   }
 };
 
+
+// helper routine to iteratively find the desired activity by tuning drive
+#ifdef FINDPAR
 void find_parameters(size_t num_neur, double neur_dist,
                      size_t num_elec, double elec_dist,
                      size_t num_outgoing,
@@ -662,22 +666,22 @@ void find_parameters(size_t num_neur, double neur_dist,
            mlr, tau);
 
     found = true;
-    if (fabs(tau - tau_target) > tau_prec) {
+    if (fabs(tau - tau_target) > tau_prec && dm != 0) {
       if      (tau < tau_target) m_now += dm;
       else if (tau > tau_target) m_now -= dm;
       found = false;
     }
-    if (fabs(act_hz - act_target) > act_prec) {
+    if (fabs(act_hz - act_target) > act_prec && dh != 0) {
       if      (act_hz < act_target) h_now += dh;
       else if (act_hz > act_target) h_now -= dh;
       found = false;
     }
-
     delete sys;
 
   }
-
 }
+#endif
+
 
 // ------------------------------------------------------------------ //
 // main
@@ -699,8 +703,13 @@ int main(int argc, char *argv[]) {
   double cache_size   = 1e5;        // [num time steps] before hist is written
   std::string path    = "";         // output path for results
 
-  double dh = 1e-5;
-  double dm = 1e-5;
+  #ifdef FINDPAR
+  double dh = 1e-5;                 // additive change to h
+  double dm = 0e-5;                 // additive change to m
+  double A  = 1.;                   // target activity in Hz
+  double ta = .1;                   // activity tolerance in Hz
+  #endif
+
 
   for (size_t i=0; i < argc; i++) {
     if (i+1 != argc) {
@@ -718,14 +727,13 @@ int main(int argc, char *argv[]) {
       if(std::string(argv[i])=="-c" ) cache_size     = atof(argv[i+1]);
       if(std::string(argv[i])=="-o" ) path           =      argv[i+1] ;
 
+      #ifdef FINDPAR
       if(std::string(argv[i])=="-dh") dh             = atof(argv[i+1]);
       if(std::string(argv[i])=="-dm") dm             = atof(argv[i+1]);
+      if(std::string(argv[i])=="-A")  A              = atof(argv[i+1]);
+      if(std::string(argv[i])=="-ta") ta             = atof(argv[i+1]);
+      #endif
     }
-  }
-
-  if (path == "") {
-    printf("specify output path with '-o'\n");
-    return -1;
   }
 
   setbuf(stdout, NULL); // print direct without calling flush, also on cluster
@@ -738,10 +746,15 @@ int main(int argc, char *argv[]) {
                   m_micro, sigma, h,
                   delta_t,
                   400., 25.,
-                  1., 0.1,
+                  A, ta,
                   thrm_steps, time_steps,
                   dh, dm);
   return 0;
+  #else
+  if (path == "") {
+    printf("specify output path with '-o'\n");
+    return -1;
+  }
   #endif
 
 
@@ -791,40 +804,4 @@ int main(int argc, char *argv[]) {
   out->finalize();
 
   return 0;
-
-
-  // ------------------------------------------------------------------ //
-  // topology test
-  // ------------------------------------------------------------------ //
-  out->write_config("/Users/paul/Desktop/neurons_2.dat", sys->neurons);
-  out->write_config("/Users/paul/Desktop/electrodes_2.dat", sys->electrodes);
-
-  std::vector< neuron * > test(100, nullptr);
-  for (size_t i = 0; i < sys->electrodes.size(); i++) {
-    electrode *e = sys->electrodes[i];
-    printf("%lu %e %e\n", e->id, e->x, e->y);
-    neuron *n = e->closest_neuron;
-    printf("\t%lu %e %e\n", n->id, n->x, n->y);
-    test[i] = n;
-  }
-  out->write_config("/Users/paul/Desktop/closest_2.dat", test);
-
-  neuron *t = sys->neurons[size_t(udis(rng)*num_neur)];
-  std::vector< neuron * > foo = {t};
-
-  double d = 0.;
-  for (size_t i = 0; i < t->outgoing.size(); i++) {
-    d += t->outgoing_probability[i];
-    printf("prob: %e %e\n", t->outgoing_probability[i], d);
-  }
-
-  for (size_t i = 0; i < t->electrode_contributions.size(); i++) {
-    printf("contrib: %e\n", t->electrode_contributions[i]);
-  }
-
-  out->write_config("/Users/paul/Desktop/conn_2.dat", foo);
-  out->write_config("/Users/paul/Desktop/conns_2.dat", t->outgoing);
-
-  delete sys;
-
 }

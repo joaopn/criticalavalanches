@@ -1,23 +1,24 @@
 CC=g++
-CFLAGS = -std=c++11 -O3 -Wno-unused-result -DNDEBUG #-fdiagnostics-color=always
+CFLAGS = -std=c++11 -O3 -Wno-unused-result -DNDEBUG -DFINDPAR
+# adjust to path where hdf5 is installed
+IFLAGS = -L /usr/local/lib -I /usr/local/include
 LFLAGS = -lstdc++ -lz -lhdf5
-DEBUGFLAGS = -std=c++11 -g
+DEBUGFLAGS = -std=c++11 -g -DFINDPAR
 
-all: ./src/gh_test_src.cpp
-	@mkdir -p ./exe
-	$(CC) $(CFLAGS) ./src/gh_test_src.cpp -o ./exe/gh_test_src $(LFLAGS)
+all: findpar
 
-coalcomp: ./src/gh_test_src.cpp
-	@mkdir -p ./exe
-	$(CC) $(CFLAGS) -DCOALCOMP ./src/gh_test_src.cpp -o ./exe/gh_test_src $(LFLAGS)
 
-findpar: ./src/gh_test_src.cpp
+findpar: ./src/main.cpp
 	@mkdir -p ./exe
-	$(CC) $(CFLAGS) -DFINDPAR ./src/gh_test_src.cpp -o ./exe/findpar $(LFLAGS)
+	$(CC) $(CFLAGS) $(IFLAGS) ./src/main.cpp -o ./exe/findpar $(LFLAGS)
 
-debug: ./src/gh_test_src.cpp
+nocc: ./src/main.cpp
 	@mkdir -p ./exe
-	$(CC) $(DEBUGFLAGS) ./src/gh_test_src.cpp -o ./exe/gh_test_src $(LFLAGS)
+	$(CC) $(CFLAGS) -DNOCC $(IFLAGS) ./src/main.cpp -o ./exe/nocc $(LFLAGS)
+
+debug: ./src/main.cpp
+	@mkdir -p ./exe
+	$(CC) $(DEBUGFLAGS) $(IFLAGS) ./src/main.cpp -o ./exe/debug $(LFLAGS)
 
 clean:
 	@rm -rf ./exe/*
