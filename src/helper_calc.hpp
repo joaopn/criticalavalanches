@@ -13,7 +13,7 @@ inline void update_act_hist(std::vector<T> &act_hist, size_t a_old, size_t a_new
 
 template<typename T>
 void reset_act_hist(std::vector<T> &act_hist) {
-  for (size_t i = 1; i < act_hist.size(); i++) {
+  for (size_t i = 0; i < act_hist.size(); i++) {
     for (size_t j = 0; j < act_hist[i].size(); j++) {
       act_hist[i][j] = 0;
     }
@@ -21,12 +21,13 @@ void reset_act_hist(std::vector<T> &act_hist) {
 }
 
 // takes a 2d vector of the form H[act_old][act_new]
+// set i_start = 1 if NO inpust is assumed!
 template<typename T>
-double m_from_lin_regr(std::vector<T> &act_hist) {
+double m_from_lin_regr(std::vector<T> &act_hist, size_t i_start = 0) {
   double a_new_av = 0;
   double a_old_av = 0;
   double count = 0;
-  for (size_t i = 1; i < act_hist.size(); i++) {
+  for (size_t i = i_start; i < act_hist.size(); i++) {
     for (size_t j = 0; j < act_hist[i].size(); j++) {
       a_old_av += i*act_hist[i][j];
       a_new_av += j*act_hist[i][j];
@@ -40,7 +41,7 @@ double m_from_lin_regr(std::vector<T> &act_hist) {
   double var = 0;
   double a_new;
   double a_old;
-  for (size_t i = 1; i < act_hist.size(); i++) {
+  for (size_t i = i_start; i < act_hist.size(); i++) {
     for (size_t j = 0; j < act_hist[i].size(); j++) {
       double x = act_hist[i][j];
       a_old = double(i);
