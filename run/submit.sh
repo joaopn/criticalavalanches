@@ -3,7 +3,7 @@
 # submit from project directory !!!
 
 #$ -S /bin/bash
-#$ -N findpar
+#$ -N cc
 #$ -q hel.q
 #$ -l h_vmem=6G # job is killed if exceeding this
 #$ -cwd
@@ -18,8 +18,8 @@ export OMP_NUM_THREADS=1
 date
 
 vargs=$(awk "NR==$(($SGE_TASK_ID + 1))" ./run/parameters.tsv)
-echo "./exe/findpar ${vargs[$id]}"
+echo "./exe/cc ${vargs[$id]}"
 
-./exe/findpar ${vargs[$id]}
+./exe/cc ${vargs[$id]}
 
 date
