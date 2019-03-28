@@ -14,7 +14,7 @@ def parse_sim_data(datadir):
 
 	#Lists all files
 	homedir = os.getcwd()
-	os.chdir(datadir)	
+	os.chdir(datadir)
 	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
 	os.chdir(homedir)
 
@@ -44,7 +44,7 @@ def run_save_plot(data_dir,filename,binsize,threshold,datatype,reps):
 
 		S_list = []
 		for rep in range(reps):
-			
+
 			#Creates filepath
 			filepath = data_dir + filename + '_r{:d}.hdf5'.format(rep)
 
@@ -54,8 +54,8 @@ def run_save_plot(data_dir,filename,binsize,threshold,datatype,reps):
 				binsize=bs,
 				threshold=threshold,
 				datatype=datatype,
-				channels=64					
-				)			
+				channels=64
+				)
 
 			S_list.append(avalanche.get_S(data_binned))
 
@@ -74,9 +74,9 @@ def parametersDefault():
 	#default Parameters
 	binsizeDefault="1,2,4,8"
 	thresholdDefault = 3
-	repsDefault = 3
-	datatypeDefault = 'coarse'	
-	datafolderDefault = 'dat/data_0/'
+	repsDefault = 5
+	datatypeDefault = 'coarse'
+	datafolderDefault = 'dat/'
 
 	#Parse input
 	parser = argparse.ArgumentParser()
