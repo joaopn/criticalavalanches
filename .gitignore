@@ -4,4 +4,6 @@ output
 dat
 exe
 parameters.tsv
-
+exe/*
+*.hdf5
+*.pyc
