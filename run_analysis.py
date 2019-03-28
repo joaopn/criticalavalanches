@@ -2,13 +2,14 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-28 15:14:02
+# @Last Modified time: 2019-03-28 20:48:52
 
 from analysis import *
 import numpy as np
 import matplotlib.pyplot as plt
 import os, argparse
 import glob
+import h5py
 
 def parse_sim_data(datadir):
 
@@ -24,7 +25,32 @@ def parse_sim_data(datadir):
 
 	return data_unique
 
-def run_save_plot(data_dir,filename,binsize,threshold,datatype,reps):
+def parametersDefault():
+
+	#default Parameters
+	binsizeDefault="1,2,4"
+	thresholdDefault = 3
+	repsDefault = 2
+	datatypeDefault = 'coarse'
+	datafolderDefault = 'dat/'
+
+	#Parse input
+	parser = argparse.ArgumentParser()
+
+	#Add single parameters
+	parser.add_argument("-t","--threshold",type=float,nargs='?',const=1,default=thresholdDefault)
+	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
+	parser.add_argument("--datatype",type=str,nargs='?',const=1,default=datatypeDefault)
+	parser.add_argument("--datafolder",type=str,nargs='?',const=1,default=datafolderDefault)
+
+	#Adds string of binsizes
+	parser.add_argument("-b","--binsize",type=str,nargs='?',const=1,default=binsizeDefault)
+	args = parser.parse_args()
+	args.binsize = [int(item) for item in args.binsize.split(',')]
+
+	return args
+
+def save_plot(data_dir,filename,binsize,threshold,datatype,reps):
 
 	#Parameters
 	fig_dir = data_dir + '/plot/'
@@ -47,16 +73,15 @@ def run_save_plot(data_dir,filename,binsize,threshold,datatype,reps):
 		for rep in range(reps):
 
 			#Creates filepath
-			filepath = data_dir + filename + '_r{:d}.hdf5'.format(rep)
+			filepath = data_dir + filename + '_r{:01d}.hdf5'.format(rep)
 
 			#Analyzes rep
-			data_binned = avalanche.run_analysis(
+			data_thresholded = avalanche.load_threshold_data(
 				filepath=filepath,
-				binsize=bs,
 				threshold=threshold,
 				datatype=datatype,
-				channels=64
 				)
+			data_binned = avalanche.bin_data(data=data_thresholded,binsize=bs)
 
 			S_list.append(avalanche.get_S(data_binned))
 
@@ -70,30 +95,47 @@ def run_save_plot(data_dir,filename,binsize,threshold,datatype,reps):
 	str_fig = fig_dir + datatype + '_pS_' + filename + '_th{}'.format(threshold) + '.png'
 	plt.savefig(str_fig)
 
-def parametersDefault():
+def save_thresholded(data_dir,filename,binsize,threshold,datatype,reps,timesteps=None):
 
-	#default Parameters
-	binsizeDefault="1,2,4"
-	thresholdDefault = 3
-	repsDefault = 1
-	datatypeDefault = 'coarse'
-	datafolderDefault = 'dat/'
+	#Parameters
+	data_save = data_dir + 'thresholded/'
+	filepath = data_dir + filename + '_r0.hdf5'	
+	str_savefile = data_save + filename + '_th{:0.1f}.hdf5'.format(threshold)
 
-	#Parse input
-	parser = argparse.ArgumentParser()
+	#Gets timesteps
+	if timesteps is None:
+		file_raw = h5py.File(filepath,'r')
+		timesteps = file_raw['data/activity'].shape[0]
+		file_raw.close()
 
-	#Add single parameters
-	parser.add_argument("-t","--threshold",type=float,nargs='?',const=1,default=thresholdDefault)
-	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
-	parser.add_argument("--datatype",type=str,nargs='?',const=1,default=datatypeDefault)
-	parser.add_argument("--datafolder",type=str,nargs='?',const=1,default=datafolderDefault)
+	#Creates path to .h5 save file
+	if not os.path.exists(data_save):
+		os.makedirs(data_save)
+	file = h5py.File(str_savefile,'a')
 
-	#Adds string of binsizes
-	parser.add_argument("-b","--binsize",type=str,nargs='?',const=1,default=binsizeDefault)
-	args = parser.parse_args()
-	args.binsize = [int(item) for item in args.binsize.split(',')]
+	#Deletes dataset if it exists
+	if datatype in file.keys():
+		del file[datatype]
+		file.flush()
 
-	return args
+	#Creates .h5 dataset ('coarse' or 'sub')
+	file.create_dataset(datatype,shape=(reps,timesteps),dtype=int,chunks=(1,timesteps),compression=1,maxshape=(None,timesteps))
+	file[datatype].attrs['threshold'] = threshold
+
+	for rep in range(reps):
+
+		#Creates filepath
+		filepath = data_dir + filename + '_r{:01d}.hdf5'.format(rep)
+
+		#Analyzes rep
+		data_thresholded = avalanche.load_threshold_data(
+			filepath=filepath,
+			threshold=threshold,
+			datatype=datatype,
+			)
+		file[datatype][rep,:] = np.int32(data_thresholded)
+
+	file.close()
 
 if __name__ == "__main__":
 
@@ -110,7 +152,14 @@ if __name__ == "__main__":
 
 	#Analyzes and saves plot for all datasets
 	for dataset in dataset_list:
-			run_save_plot(data_dir=datafolder,
+			# save_plot(data_dir=datafolder,
+			# 	filename=dataset,
+			# 	binsize=binsize,
+			# 	threshold=threshold,
+			# 	datatype=datatype,
+			# 	reps=reps)
+			print('Thresholding and saving: ' + dataset)
+			save_thresholded(data_dir=datafolder,
 				filename=dataset,
 				binsize=binsize,
 				threshold=threshold,

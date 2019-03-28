@@ -6,14 +6,12 @@ Module for the avalanche analysis of MEA datasets.
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-28 16:06:57
+# @Last Modified time: 2019-03-28 18:20:11
 
 import numpy as np
 import h5py
 
-def threshold_data(data, threshold):
-	import numpy as np
-
+def threshold_ch(data, threshold):
 
 	#Demeans data
 	data = data - np.mean(data)
@@ -72,38 +70,38 @@ def get_S(data):
 
 	return S
 
-def run_analysis(
+def load_threshold_data(
 	filepath,
 	threshold,
-	channels,
-	binsize,
-	datatype
+	datatype,
+	timesteps=None,
+	channels=None
 	):
 
 	#Parameters
 	data_dir = 'data/'
 
-	#Gets timesteps
+	#Gets timesteps and number of channels
 	file = h5py.File(filepath,'r')
-	timesteps = file[data_dir + 'activity'].shape[0]
+
+	if timesteps is None:
+		timesteps = file[data_dir + 'activity'].shape[0]
+	if channels is None:
+		channels = int(file['meta/num_elec'][:])
 
 	#Analyses channel by channel
-	data_sum = np.zeros(timesteps)
+	data_th = np.zeros(timesteps)
 	for ch in range(channels):
 		
 		#Loads data
 		data_ch = file[data_dir + datatype][ch,:]
-		print(np.sum(data_ch))
 
 		#Analyzes sub and coarse channel data accordingly
 		if datatype == 'coarse':		
-			data_th = threshold_data(data_ch,threshold)			
+			data_th_ch = threshold_ch(data_ch,threshold)			
 		elif datatype == 'sub':
-			data_th = convert_timestamps(data_ch,timesteps)
+			data_th_ch = convert_timestamps(data_ch,timesteps)
 
-		data_sum = data_sum + data_th
-	
-	data_binned = bin_data(data_sum,binsize)
-	print('Total events: {:d}'.format(int(np.sum(data_binned))))
+		data_th = data_th + data_th_ch
 
-	return data_binned
+	return data_th
