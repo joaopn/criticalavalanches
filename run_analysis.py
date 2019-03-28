@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-27 23:12:51
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-03-28 00:58:08
 
 from analysis import *
 import numpy as np
@@ -24,7 +24,7 @@ def parse_sim_data(datadir):
 
 	return data_unique
 
-def run_save_plot(data_dir,filename,binsize,datatype, reps):
+def run_save_plot(data_dir,filename,binsize,datatype,reps):
 
 	#Parameters
 	fig_dir = data_dir + '/plot/'
@@ -54,7 +54,6 @@ def run_save_plot(data_dir,filename,binsize,datatype, reps):
 				binsize=bs,
 				threshold=threshold,
 				datatype=datatype,
-				timesteps=int(1e6),
 				channels=64					
 				)
 
@@ -76,7 +75,7 @@ def parametersDefault():
 	binsizeDefault="1,2"
 	thresholdDefault = 3
 	repsDefault = 3
-	datatypeDefault = 'coarse'	
+	datatypeDefault = 'sub'	
 	datafolderDefault = 'dat/coalcomp/'
 
 	#Parse input

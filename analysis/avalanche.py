@@ -5,8 +5,8 @@ Module for the avalanche analysis of MEA datasets.
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-27 17:49:48
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-03-28 00:56:13
 
 import numpy as np
 import h5py
@@ -74,7 +74,6 @@ def run_analysis(
 	filepath,
 	threshold,
 	channels,
-	timesteps,
 	binsize,
 	datatype
 	):
@@ -82,12 +81,15 @@ def run_analysis(
 	#Parameters
 	data_dir = 'data/'
 
+	#Gets timesteps
+	file = h5py.File(filepath,'r')
+	timesteps = file[data_dir + 'activity'].shape[0]
+
 	#Analyses channel by channel
 	data_sum = np.zeros(timesteps)
 	for ch in range(channels):
 		
 		#Loads data
-		file = h5py.File(filepath,'r')
 		data_ch = file[data_dir + datatype][ch,:]
 
 		#Analyzes sub and coarse channel data accordingly
