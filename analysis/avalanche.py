@@ -6,7 +6,7 @@ Module for the avalanche analysis of MEA datasets.
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-28 00:56:13
+# @Last Modified time: 2019-03-28 12:48:27
 
 import numpy as np
 import h5py
@@ -61,8 +61,10 @@ def get_S(data):
 	id_cross=np.where(np.sign(data[:-1]) != np.sign(data[1:]))[0] + 1
 	id_cross_plus = id_cross[data[id_cross]>0]
 
+
 	#Calculates size S of avalanches
 	n_avalanches = id_cross_plus.size
+
 	S = np.zeros(n_avalanches-1)
 
 	for i in range(n_avalanches-1):
@@ -94,11 +96,13 @@ def run_analysis(
 
 		#Analyzes sub and coarse channel data accordingly
 		if datatype is 'coarse':		
-			data_sum = data_sum + threshold_data(data_ch,threshold)
+			data_th = threshold_data(data_ch,threshold)
+			data_sum = data_sum + data_th
 
 		elif datatype is 'sub':
 			data_sum = data_sum + convert_timestamps(data_ch,timesteps)
-
+	
 	data_binned = bin_data(data_sum,binsize)
+	print('Total events: {:d}'.format(int(np.sum(data_binned))))
 
 	return data_binned
