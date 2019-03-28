@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-28 13:12:51
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-03-28 15:14:02
 
 from analysis import *
 import numpy as np
@@ -37,6 +37,7 @@ def run_save_plot(data_dir,filename,binsize,threshold,datatype,reps):
 	plt.yscale('log')
 	plt.xscale('log')
 	plt.xlim(1,1e3)
+	plt.ylim(1e-5,1)
 
 	#Runs analysis for all binsizes
 	for bs in binsize:
@@ -72,9 +73,9 @@ def run_save_plot(data_dir,filename,binsize,threshold,datatype,reps):
 def parametersDefault():
 
 	#default Parameters
-	binsizeDefault="1,2,4,8"
+	binsizeDefault="1,2,4"
 	thresholdDefault = 3
-	repsDefault = 5
+	repsDefault = 1
 	datatypeDefault = 'coarse'
 	datafolderDefault = 'dat/'
 

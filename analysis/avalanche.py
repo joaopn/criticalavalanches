@@ -5,8 +5,8 @@ Module for the avalanche analysis of MEA datasets.
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-28 12:48:27
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-03-28 16:06:57
 
 import numpy as np
 import h5py
@@ -93,14 +93,15 @@ def run_analysis(
 		
 		#Loads data
 		data_ch = file[data_dir + datatype][ch,:]
+		print(np.sum(data_ch))
 
 		#Analyzes sub and coarse channel data accordingly
-		if datatype is 'coarse':		
-			data_th = threshold_data(data_ch,threshold)
-			data_sum = data_sum + data_th
+		if datatype == 'coarse':		
+			data_th = threshold_data(data_ch,threshold)			
+		elif datatype == 'sub':
+			data_th = convert_timestamps(data_ch,timesteps)
 
-		elif datatype is 'sub':
-			data_sum = data_sum + convert_timestamps(data_ch,timesteps)
+		data_sum = data_sum + data_th
 	
 	data_binned = bin_data(data_sum,binsize)
 	print('Total events: {:d}'.format(int(np.sum(data_binned))))
