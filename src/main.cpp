@@ -180,7 +180,7 @@ class asystem {
            size_t(sqrt(num_elec)), ne);
     printf("\telectrode distance: %.2e\n", de);
     printf("\telectrode dead zone (r_min): %.2e\n", r_min);
-    printf("\telectrode array size: %.2e\n", elec_dist*sqrt(num_elec));
+    printf("\telectrode array size: %.2e\n", de*sqrt(num_elec));
 
     // create neurons
     while (neurons.size() < num_neur) {
@@ -698,12 +698,12 @@ void find_parameters(size_t num_neur, double neur_dist,
 // ------------------------------------------------------------------ //
 int main(int argc, char *argv[]) {
 
-  double time_steps   = 1e3;        // number of time steps
+  double time_steps   = 1e5;        // number of time steps
   double thrm_steps   = 1e3;        // thermalization steps before measuring
-  size_t num_neur     = 256000;     // number of neurons
+  size_t num_neur     = 160000;     // number of neurons
   size_t num_outgoing = 1000;       // average outgoing connections per neuron
   size_t num_elec     = 64;         // total number of electrodes
-  double neur_dist    = 1.;         // inter-neuron (nearest-neigbour) distance
+  double neur_dist    = 50.;        // inter-neuron (nearest-neigbour) distance
   double elec_dist    = 8.;         // electrode dist. [unit=nearestneur-dist]
   size_t seed         = 314;        // seed for the random number generator
   double m_micro      = .98;        // branching parameter applied locally
