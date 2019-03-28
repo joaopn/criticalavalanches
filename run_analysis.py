@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-28 20:48:52
+# @Last Modified time: 2019-03-28 22:55:45
 
 from analysis import *
 import numpy as np
@@ -19,8 +19,8 @@ def parse_sim_data(datadir):
 	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
 	os.chdir(homedir)
 
-	#Removes last part ('_r%i')
-	data_removed = [datafiles[i][:-3] for i in range(len(datafiles))]
+	#Removes last part ('_r00')
+	data_removed = [datafiles[i][:-4] for i in range(len(datafiles))]
 	data_unique = list(set(data_removed))
 
 	return data_unique
@@ -50,7 +50,7 @@ def parametersDefault():
 
 	return args
 
-def save_plot(data_dir,filename,binsize,threshold,datatype,reps):
+def save_plot(data_dir,filename,threshold,datatype,reps,binsize):
 
 	#Parameters
 	fig_dir = data_dir + '/plot/'
@@ -73,10 +73,10 @@ def save_plot(data_dir,filename,binsize,threshold,datatype,reps):
 		for rep in range(reps):
 
 			#Creates filepath
-			filepath = data_dir + filename + '_r{:01d}.hdf5'.format(rep)
+			filepath = data_dir + filename + '_r{:02d}.hdf5'.format(rep)
 
 			#Analyzes rep
-			data_thresholded = avalanche.load_threshold_data(
+			data_thresholded = avalanche.analyze_sim_raw(
 				filepath=filepath,
 				threshold=threshold,
 				datatype=datatype,
@@ -95,46 +95,55 @@ def save_plot(data_dir,filename,binsize,threshold,datatype,reps):
 	str_fig = fig_dir + datatype + '_pS_' + filename + '_th{}'.format(threshold) + '.png'
 	plt.savefig(str_fig)
 
-def save_thresholded(data_dir,filename,binsize,threshold,datatype,reps,timesteps=None):
+def save_thresholded(data_dir,filename,threshold,reps,timesteps=None):
 
 	#Parameters
 	data_save = data_dir + 'thresholded/'
-	filepath = data_dir + filename + '_r0.hdf5'	
 	str_savefile = data_save + filename + '_th{:0.1f}.hdf5'.format(threshold)
+	datatypes = ['coarse', 'sub']
 
 	#Gets timesteps
 	if timesteps is None:
-		file_raw = h5py.File(filepath,'r')
+		filepath_0 = data_dir + filename + '_r00.hdf5'	
+		file_raw = h5py.File(filepath_0,'r')
 		timesteps = file_raw['data/activity'].shape[0]
 		file_raw.close()
 
 	#Creates path to .h5 save file
 	if not os.path.exists(data_save):
 		os.makedirs(data_save)
-	file = h5py.File(str_savefile,'a')
+	file = h5py.File(str_savefile,'w') #Overwrites old file
 
-	#Deletes dataset if it exists
-	if datatype in file.keys():
-		del file[datatype]
-		file.flush()
 
-	#Creates .h5 dataset ('coarse' or 'sub')
-	file.create_dataset(datatype,shape=(reps,timesteps),dtype=int,chunks=(1,timesteps),compression=1,maxshape=(None,timesteps))
-	file[datatype].attrs['threshold'] = threshold
+	#Saves thresholded data ('coarse' and 'sub')
+	for datatype in datatypes:
 
+		#Creates .h5 dataset 
+		file.create_dataset(datatype,shape=(reps,timesteps),dtype=int,chunks=(1,timesteps),compression=1,maxshape=(None,timesteps))
+		file[datatype].attrs['threshold'] = threshold
+
+		for rep in range(reps):
+
+			#Creates filepath
+			filepath = data_dir + filename + '_r{:02d}.hdf5'.format(rep)
+
+			#Analyzes rep
+			data_thresholded = avalanche.analyze_sim_raw(
+				filepath=filepath,
+				threshold=threshold,
+				datatype=datatype,
+				)
+			file[datatype][rep,:] = np.int32(data_thresholded)
+
+	#Copies population activity data
+	file.create_dataset('activity',shape=(reps,timesteps),dtype=float,chunks=(1,timesteps),compression=1,maxshape=(None,timesteps))
 	for rep in range(reps):
+		filepath = data_dir + filename + '_r{:02d}.hdf5'.format(rep)
+		file_raw = h5py.File(filepath,'r')
+		file['activity'][rep,:] = file_raw['data/activity'][:]
+		file_raw.close()
 
-		#Creates filepath
-		filepath = data_dir + filename + '_r{:01d}.hdf5'.format(rep)
-
-		#Analyzes rep
-		data_thresholded = avalanche.load_threshold_data(
-			filepath=filepath,
-			threshold=threshold,
-			datatype=datatype,
-			)
-		file[datatype][rep,:] = np.int32(data_thresholded)
-
+	#Flushes and closes file
 	file.close()
 
 if __name__ == "__main__":
@@ -161,7 +170,5 @@ if __name__ == "__main__":
 			print('Thresholding and saving: ' + dataset)
 			save_thresholded(data_dir=datafolder,
 				filename=dataset,
-				binsize=binsize,
 				threshold=threshold,
-				datatype=datatype,
 				reps=reps)

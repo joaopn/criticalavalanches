@@ -6,7 +6,7 @@ Module for the avalanche analysis of MEA datasets.
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-28 18:20:11
+# @Last Modified time: 2019-03-28 20:56:28
 
 import numpy as np
 import h5py
@@ -70,7 +70,7 @@ def get_S(data):
 
 	return S
 
-def load_threshold_data(
+def analyze_sim_raw(
 	filepath,
 	threshold,
 	datatype,
