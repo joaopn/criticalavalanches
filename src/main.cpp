@@ -14,6 +14,14 @@
 #include "helper_io.hpp"
 #include "helper_calc.hpp"
 
+// choose the precision for time series of electrode signal
+typedef float real_t;
+#define H5T_CUSTOM_REAL (H5T_NATIVE_FLOAT)
+// typedef double real_t;
+// #define H5T_CUSTOM_REAL (H5T_NATIVE_DOUBLE)
+
+
+
 // rng and distributions
 std::mt19937 rng(316);
 std::uniform_real_distribution<> udis(0, 1);
@@ -91,7 +99,7 @@ class asystem {
   // signal recording
   size_t cache_size;
   std::vector< size_t > at_history;                   // global activity trace
-  std::vector< std::vector< double > > cs_histories;  // coarse time trace
+  std::vector< std::vector< real_t > > cs_histories;  // coarse time trace
   std::vector< std::vector< size_t > > ss_histories;  // subs spike times
   std::vector< std::vector< size_t > > at_hist_2d;    // live estimation of m
 
@@ -157,7 +165,7 @@ class asystem {
         // init electrode histories
         ss_histories.push_back(std::vector< size_t >());
         ss_histories.back().reserve(cache_size);
-        cs_histories.push_back(std::vector< double >());
+        cs_histories.push_back(std::vector< real_t >());
         cs_histories.back().reserve(cache_size);
       }
     }
@@ -290,10 +298,9 @@ class asystem {
   // effective interaction radius is set in here via sigma
   void set_contributions_and_probabilities() {
     printf("calculating interaction radius and contributions to electrodes\n");
-    printf("\tsigma_eff: %.3e\n", sigma*d_max);
+    printf("\tsigma_eff: %.3e\n", sigma*neur_dist);
     // calculate contributions to electrodes and probabilities to activate
-    double sigma_squ   = 2.*pow(sigma*d_max, 2.);
-
+    double sigma_squ   = 2.*pow(sigma*neur_dist, 2.);
 
     for (size_t i = 0; i < neurons.size(); i++) {
       if(i==0 || is_percent(i, size_t(neurons.size()), 10.)) {
@@ -483,7 +490,10 @@ class asystem {
     for (size_t i = 0; i < electrodes.size(); i++) {
       electrode *e = electrodes[i];
       if (record) {
-        cs_histories[i].push_back(e->cs_signal);
+        // only convert to lower precision float here, when storing,
+        // not for individual neuron contributions to electrode signal
+        real_t r = real_t(e->cs_signal);
+        cs_histories[i].push_back(r);
         if (e->ss_signal) ss_histories[i].push_back(time);
       }
       e->cs_signal = 0.;
@@ -547,7 +557,7 @@ class exporter {
 
     // create data sets
     h5dset_cs = hdf5_create_appendable_nd(
-                    h5file, "/data/coarse", H5T_NATIVE_DOUBLE, sys->num_elec,
+                    h5file, "/data/coarse", H5T_CUSTOM_REAL, sys->num_elec,
                     sys->cache_size);
     h5dset_ss = hdf5_create_appendable_nd(
                     h5file, "/data/sub", H5T_NATIVE_HSIZE, sys->num_elec,
@@ -571,7 +581,7 @@ class exporter {
   // write cached electrode histories, ideally call this when they match chunks
   void write_histories() {
     for (size_t i = 0; i < sys->electrodes.size(); i++) {
-      hdf5_append_nd(h5dset_cs, sys->cs_histories[i], H5T_NATIVE_DOUBLE, i,
+      hdf5_append_nd(h5dset_cs, sys->cs_histories[i], H5T_CUSTOM_REAL, i,
                      cs_offset[i]);
       hdf5_append_nd(h5dset_ss, sys->ss_histories[i], H5T_NATIVE_HSIZE, i,
                      ss_offset[i]);
@@ -696,9 +706,9 @@ int main(int argc, char *argv[]) {
   double neur_dist    = 1.;         // inter-neuron (nearest-neigbour) distance
   double elec_dist    = 8.;         // electrode dist. [unit=nearestneur-dist]
   size_t seed         = 314;        // seed for the random number generator
-  double m_micro      = 1.0;        // branching parameter applied locally
-  double sigma        = .3;         // eff. conn-length [unit=d_max]
-  double h            = .01;        // probability for spontaneous activation
+  double m_micro      = .98;        // branching parameter applied locally
+  double sigma        = 12.;        // eff. conn-length [unit=nearestneur-dist]
+  double h            = 4e-5;       // probability for spontaneous activation
   double delta_t      = 2.;         // time step size [ms]
   double cache_size   = 1e5;        // [num time steps] before hist is written
   std::string path    = "";         // output path for results
