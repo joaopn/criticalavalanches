@@ -4,6 +4,10 @@
 # @Last Modified by:   joaopn
 # @Last Modified time: 2019-03-28 00:28:37
 
+import os
+import matplotlib
+if os.environ.get('DISPLAY', '') == '':
+    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import analysis.avalanche
@@ -29,7 +33,7 @@ def pS_mean(S_list,label='data'):
 	S_max = int(max([Si.max() for Si in S_list]) + 1)
 
 	#Obtains pS
-	pS = np.zeros((len(S_list),S_max))	
+	pS = np.zeros((len(S_list),S_max))
 
 	for i in range(len(S_list)):
 		for j in range(S_max):

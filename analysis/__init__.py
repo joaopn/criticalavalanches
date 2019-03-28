@@ -9,4 +9,8 @@ import analysis.plot as plot
 
 import powerlaw
 import numpy as np
+import os
+import matplotlib
+if os.environ.get('DISPLAY', '') == '':
+    matplotlib.use('Agg')
 import matplotlib.pyplot as plt

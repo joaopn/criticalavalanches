@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-28 00:58:08
+# @Last Modified time: 2019-03-28 13:12:51
 
 from analysis import *
 import numpy as np
@@ -14,7 +14,7 @@ def parse_sim_data(datadir):
 
 	#Lists all files
 	homedir = os.getcwd()
-	os.chdir(datadir)	
+	os.chdir(datadir)
 	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
 	os.chdir(homedir)
 
@@ -24,7 +24,7 @@ def parse_sim_data(datadir):
 
 	return data_unique
 
-def run_save_plot(data_dir,filename,binsize,datatype,reps):
+def run_save_plot(data_dir,filename,binsize,threshold,datatype,reps):
 
 	#Parameters
 	fig_dir = data_dir + '/plot/'
@@ -44,7 +44,7 @@ def run_save_plot(data_dir,filename,binsize,datatype,reps):
 
 		S_list = []
 		for rep in range(reps):
-			
+
 			#Creates filepath
 			filepath = data_dir + filename + '_r{:d}.hdf5'.format(rep)
 
@@ -54,7 +54,7 @@ def run_save_plot(data_dir,filename,binsize,datatype,reps):
 				binsize=bs,
 				threshold=threshold,
 				datatype=datatype,
-				channels=64					
+				channels=64
 				)
 
 			S_list.append(avalanche.get_S(data_binned))
@@ -72,11 +72,11 @@ def run_save_plot(data_dir,filename,binsize,datatype,reps):
 def parametersDefault():
 
 	#default Parameters
-	binsizeDefault="1,2"
+	binsizeDefault="1,2,4,8"
 	thresholdDefault = 3
-	repsDefault = 3
-	datatypeDefault = 'sub'	
-	datafolderDefault = 'dat/coalcomp/'
+	repsDefault = 5
+	datatypeDefault = 'coarse'
+	datafolderDefault = 'dat/'
 
 	#Parse input
 	parser = argparse.ArgumentParser()
@@ -109,4 +109,9 @@ if __name__ == "__main__":
 
 	#Analyzes and saves plot for all datasets
 	for dataset in dataset_list:
-			run_save_plot(datafolder,dataset,binsize,datatype,reps)
+			run_save_plot(data_dir=datafolder,
+				filename=dataset,
+				binsize=binsize,
+				threshold=threshold,
+				datatype=datatype,
+				reps=reps)
