@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-29 10:06:47
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-03-29 19:26:24
 
 from analysis import *
 import numpy as np
@@ -108,10 +108,14 @@ def save_plot(data_dir,filename,threshold,datatype,reps,binsize):
 	str_fig = fig_dir + datatype + '_pS_' + filename + '_th{}'.format(threshold) + '.png'
 	plt.savefig(str_fig)
 
-def save_thresholded(data_dir,filename,threshold,reps,timesteps=None):
+def save_thresholded(data_dir,filename,threshold,reps,timesteps=None,bw_filter=False):
 
 	#Parameters
-	data_save = data_dir + 'thresholded/'
+	if bw_filter:
+		dir_thresholded = 'thresholded_filtered/'
+	else:
+		dir_threshold = 'thresholded_unfiltered/'
+	data_save = data_dir + dir_threshold
 	str_savefile = data_save + filename + '_th{:0.1f}.hdf5'.format(threshold)
 	datatypes = ['coarse', 'sub']
 
@@ -189,7 +193,9 @@ if __name__ == "__main__":
 			save_thresholded(data_dir=datafolder,
 				filename=dataset,
 				threshold=threshold,
-				reps=reps)
+				reps=reps,
+				bw_filter=False)
 
 	elif mode == 'save_ps':
 		dataset_list = parse_sim_thresholded(datafolder)
+		
