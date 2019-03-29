@@ -184,11 +184,12 @@ if __name__ == "__main__":
 
 	elif mode == 'threshold':
 		dataset_list = parse_sim_data(datafolder)
-		print('Thresholding and saving: ' + dataset)
-		save_thresholded(data_dir=datafolder,
-			filename=dataset,
-			threshold=threshold,
-			reps=reps)
+		for dataset in dataset_list:
+			print('Thresholding and saving: ' + dataset)
+			save_thresholded(data_dir=datafolder,
+				filename=dataset,
+				threshold=threshold,
+				reps=reps)
 
 	elif mode == 'save_ps':
 		dataset_list = parse_sim_thresholded(datafolder)
