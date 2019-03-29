@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-28 22:55:45
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-03-29 10:06:47
 
 from analysis import *
 import numpy as np
@@ -25,6 +25,17 @@ def parse_sim_data(datadir):
 
 	return data_unique
 
+def parse_sim_thresholded(datadir):
+	thresholded_dir = 'thresholded/'
+
+	#Lists all files
+	homedir = os.getcwd()
+	os.chdir(datadir + thresholded_dir)
+	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
+	os.chdir(homedir)
+
+	return datafiles	
+
 def parametersDefault():
 
 	#default Parameters
@@ -33,11 +44,13 @@ def parametersDefault():
 	repsDefault = 2
 	datatypeDefault = 'coarse'
 	datafolderDefault = 'dat/'
+	modeDefault = 'save_plot'
 
 	#Parse input
 	parser = argparse.ArgumentParser()
 
 	#Add single parameters
+	parser.add_argument("--mode",type=str,nargs='?',const=1,default=modeDefault)
 	parser.add_argument("-t","--threshold",type=float,nargs='?',const=1,default=thresholdDefault)
 	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
 	parser.add_argument("--datatype",type=str,nargs='?',const=1,default=datatypeDefault)
@@ -150,25 +163,32 @@ if __name__ == "__main__":
 
 	#Parse input
 	args = parametersDefault()
+	mode = args.mode
 	binsize = args.binsize
 	threshold = args.threshold
 	reps = args.reps
 	datatype = args.datatype
 	datafolder = args.datafolder
 
-	#Selects all datasets (without the reps) in a folder to analyze
-	dataset_list = parse_sim_data(datafolder)
-
-	#Analyzes and saves plot for all datasets
-	for dataset in dataset_list:
-			# save_plot(data_dir=datafolder,
-			# 	filename=dataset,
-			# 	binsize=binsize,
-			# 	threshold=threshold,
-			# 	datatype=datatype,
-			# 	reps=reps)
-			print('Thresholding and saving: ' + dataset)
-			save_thresholded(data_dir=datafolder,
+	#Does the requested operation
+	if mode == 'save_plot':
+		dataset_list = parse_sim_data(datafolder)
+		print('Analyzing and plotting')
+		for dataset in dataset_list:
+			save_plot(data_dir=datafolder,
 				filename=dataset,
+				binsize=binsize,
 				threshold=threshold,
+				datatype=datatype,
 				reps=reps)
+
+	elif mode == 'threshold':
+		dataset_list = parse_sim_data(datafolder)
+		print('Thresholding and saving: ' + dataset)
+		save_thresholded(data_dir=datafolder,
+			filename=dataset,
+			threshold=threshold,
+			reps=reps)
+
+	elif mode == 'save_ps':
+		dataset_list = parse_sim_thresholded(datafolder)
