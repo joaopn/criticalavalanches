@@ -2,12 +2,10 @@
 # @Author: joaopn
 # @Date:   2019-03-24 19:03:08
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-26 13:51:08
+# @Last Modified time: 2019-03-31 18:55:56
 
-import analysis.avalanche as avalanche
-import analysis.plot as plot
+from analysis import avalanche, plot
 
-import powerlaw
 import numpy as np
 import os
 import matplotlib

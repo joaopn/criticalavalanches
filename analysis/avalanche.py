@@ -6,10 +6,11 @@ Module for the avalanche analysis of MEA datasets.
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-29 12:02:11
+# @Last Modified time: 2019-03-31 23:12:21
 
 import numpy as np
 import h5py
+import os
 
 def threshold_ch(data, threshold):
 
@@ -106,15 +107,20 @@ def analyze_sim_raw(
 
 	return data_th
 
-def analyze_sim_thresholded(data_dir,dataset,binsize,reps=None):
+def save_sim_pS(data_dir,dataset,binsize,reps=None, bw_filter=False):
 
 	#Definitions
-	thresholded_dir = 'thresholded/'
-	saveplot_dir = 'analyzed/'
+	if bw_filter:
+		dir_thresholded = 'thresholded_filtered/'
+		saveplot_dir = 'analyzed_filtered/'
+	else:
+		dir_threshold = 'thresholded_unfiltered/'
+		saveplot_dir = 'analyzed_unfiltered/'
+
 	datatypes = ['coarse', 'sub']
 
 	#Loads file
-	file_path = data_dir + thresholded_dir + dataset + '.hdf5'
+	file_path = data_dir + dir_threshold + dataset + '.hdf5'
 	file = h5py.File(file_path,'r')
 
 	#Gets reps from file
@@ -131,7 +137,7 @@ def analyze_sim_thresholded(data_dir,dataset,binsize,reps=None):
 			#Loads data and bins it
 			data_thresholded = file[datatype][rep,:]
 			data_binned = bin_data(data=data_thresholded,binsize=binsize)
-			S_list.append(avalanche.get_S(data_binned))
+			S_list.append(get_S(data_binned))
 
 		#Gets largest avalanche from the list (+1 for zero_index)
 		S_max = int(max([Si.max() for Si in S_list]) + 1)
@@ -140,7 +146,7 @@ def analyze_sim_thresholded(data_dir,dataset,binsize,reps=None):
 		pS = np.zeros((len(S_list),S_max))
 		for i in range(len(S_list)):
 			for j in range(S_max):
-				pS[i,j] = np.sum(S_list[i]==j)
+				pS[i,j] = np.sum(S_list[i]==j+1)
 			pS[i,:] = pS[i,:]/np.sum(pS[i,:])
 
 		#Obtains mean and STD
@@ -149,7 +155,9 @@ def analyze_sim_thresholded(data_dir,dataset,binsize,reps=None):
 		X = np.arange(S_max)+1
 
 		#Saves plot data
-		str_savefolder = data_dir + saveplot_dir + dataset + '_rep{:2.0d}/'.format(reps)
-		str_savefile = 'pS_' + datatype + '_b{:2.0d}.tsv'.format(binsize)
+		str_savefolder = data_dir + saveplot_dir + dataset + '_rep{:02d}/'.format(reps)
+		if not os.path.exists(str_savefolder):
+			os.makedirs(str_savefolder)
+		str_savefile = 'pS_' + datatype + '_b{:02d}.tsv'.format(binsize)
 		str_save = str_savefolder + str_savefile
 		np.savetxt(str_save,(X,pS_mean,pS_std),delimiter='\t',header='S\tpS_mean\tpS_std')

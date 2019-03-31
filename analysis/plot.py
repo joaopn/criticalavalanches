@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-28 00:28:37
+# @Last Modified time: 2019-03-31 23:09:15
 
 import os
 import matplotlib
@@ -51,7 +51,6 @@ def pS_mean(S_list,label='data'):
 	plt.plot(range(S_max),pS_mean,label=label)
 	plt.legend()
 
-
 def timeseries_threshold(data,th):
 	data_th = analysis.avalanche.threshold_data(data,th)
 
@@ -60,3 +59,39 @@ def timeseries_threshold(data,th):
 	plt.plot(data)
 	plt.plot(X,th*np.std(data)*np.ones(data.size))
 	plt.scatter(X[data_th==1],data[data_th==1])
+
+def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='dat/',threshold = 3):
+
+	#Definitions
+	if bw_filter:
+		saveplot_dir = 'analyzed_filtered/'
+	else:
+		saveplot_dir = 'analyzed_unfiltered/'
+
+
+	#Parse input
+	if type(d) != list:
+		d = [d]
+	if type(b) != list:
+		b = [b]
+
+	for i in range(len(d)):
+
+		#Sets up filepath and loads data
+		dataset = 'm{:0.5f}_h{:0.3e}_d{:02d}_th{:0.1f}_rep{:02d}/'.format(m,h,d[i],threshold,reps)
+		datafile = 'pS_' + datatype + '_b{:02d}.tsv'.format(b[i])
+		str_load = data_dir + saveplot_dir + dataset + datafile
+
+		S,pS_mean, pS_std = np.loadtxt(str_load,delimiter='\t')
+
+		#Plots data
+		if label_plot is None:
+			label_i = 'm = {:0.3f}, b = {:d}, d = {:d}'.format(m, b[i], d[i])
+		else:
+			label_i = label_plot[i]
+
+		pS_up = pS_mean + pS_std/2
+		pS_dw = pS_mean - pS_std/2
+		plt.fill_between(S,pS_up,pS_dw,alpha=0.75)
+		plt.loglog(S,pS_mean,label=label_i)
+		

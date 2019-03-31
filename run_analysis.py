@@ -2,9 +2,9 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-31 12:20:16
+# @Last Modified time: 2019-03-31 23:34:38
 
-from analysis import *
+from analysis import avalanche, plot
 import numpy as np
 import matplotlib.pyplot as plt
 import os, argparse
@@ -25,12 +25,16 @@ def parse_sim_data(datadir):
 
 	return data_unique
 
-def parse_sim_thresholded(datadir):
-	thresholded_dir = 'thresholded/'
+def parse_sim_thresholded(datadir, bw_filter=False):
+
+	if bw_filter:
+		dir_thresholded = 'thresholded_filtered/'
+	else:
+		dir_threshold = 'thresholded_unfiltered/'
 
 	#Lists all files
 	homedir = os.getcwd()
-	os.chdir(datadir + thresholded_dir)
+	os.chdir(datadir + dir_threshold)
 	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
 	os.chdir(homedir)
 
@@ -114,6 +118,7 @@ def save_plot(data_dir,filename,threshold,datatype,reps,binsize,bw_filter=False)
 	#Saves fig
 	str_fig = fig_dir + datatype + '_pS_' + filename + '_th{}'.format(threshold) + '.png'
 	plt.savefig(str_fig)
+	plt.close()
 
 def save_thresholded(data_dir,filename,threshold,reps,timesteps=None,bw_filter=False):
 
@@ -185,9 +190,9 @@ if __name__ == "__main__":
 	if mode == 'save_plot':
 		dataset_list = parse_sim_data(datafolder)
 		print('Analyzing and plotting')
-		for dataset in dataset_list:
+		for i in range(len(dataset_list)):
 			save_plot(data_dir=datafolder,
-				filename=dataset,
+				filename=dataset_list[i],
 				binsize=binsize,
 				threshold=threshold,
 				datatype=datatype,
@@ -195,14 +200,19 @@ if __name__ == "__main__":
 
 	elif mode == 'threshold':
 		dataset_list = parse_sim_data(datafolder)
-		for dataset in dataset_list:
-			print('Thresholding and saving: ' + dataset)
+		for i in range(len(dataset_list)):
+			print('Thresholding and saving: ' + dataset_list[i])
 			save_thresholded(data_dir=datafolder,
-				filename=dataset,
+				filename=dataset_list[i],
 				threshold=threshold,
 				reps=reps,
 				bw_filter=False)
 
 	elif mode == 'save_ps':
 		dataset_list = parse_sim_thresholded(datafolder)
-		
+		for i in range(len(dataset_list)):
+			print('Analysing thresholded data: ' + dataset_list[i])	
+			for j in range(len(binsize)):
+				avalanche.save_sim_pS(data_dir=datafolder,
+					dataset=dataset_list[i],
+					binsize=binsize[j])
