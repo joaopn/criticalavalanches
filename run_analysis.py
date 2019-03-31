@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-03-29 19:26:24
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-03-31 12:20:16
 
 from analysis import *
 import numpy as np
@@ -63,10 +63,13 @@ def parametersDefault():
 
 	return args
 
-def save_plot(data_dir,filename,threshold,datatype,reps,binsize):
+def save_plot(data_dir,filename,threshold,datatype,reps,binsize,bw_filter=False):
 
-	#Parameters
-	fig_dir = data_dir + '/plot/'
+	#Save location
+	if bw_filter:
+		fig_dir = data_dir + 'plot_filtered/'
+	else:
+		fig_dir = data_dir + 'plot_unfiltered/'
 
 	#Plots results
 	plt.figure()
@@ -77,6 +80,10 @@ def save_plot(data_dir,filename,threshold,datatype,reps,binsize):
 	plt.xscale('log')
 	plt.xlim(1,1e3)
 	plt.ylim(1e-5,1)
+	X = np.arange(5,64)
+	Y = np.power(X,-1.5)
+	Y = 5*Y/np.sum(Y)
+	plt.plot(X,Y,linestyle='--',color='black',label=r'$p(S)~S^{-1.5}$')
 
 	#Runs analysis for all binsizes
 	for bs in binsize:
