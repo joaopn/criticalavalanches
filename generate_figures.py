@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-01 05:37:34
+# @Last Modified time: 2019-04-01 05:45:53
 
 import analysis
 import matplotlib.pyplot as plt
@@ -102,15 +102,17 @@ def parametersDefault():
 	binsizeDefault=2
 	repsDefault = 2
 	dDefault = 4
+	datadirDefault = 'dat/'
 
 	#Parse input
 	parser = argparse.ArgumentParser()
 
 	#Add single parameters
+	parser.add_argument("--datadir",type=str,nargs='?',const=1,default=datadirDefault)
 	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
 	parser.add_argument("-b",type=int,nargs='?',const=1,default=binsizeDefault)
 	parser.add_argument("-d",type=int,nargs='?',const=1,default=dDefault)
-	
+
 	args = parser.parse_args()
 
 	return args
@@ -196,4 +198,4 @@ if __name__ == "__main__":
 	parameters = parametersDefault()
 
 	#Generates figure 1
-	figure_1(data_dir='dat/reduced/',b=parameters.b,d=parameters.d,bw_filter=bw_filter, reps=parameters.reps)
+	figure_1(data_dir=parameters.datadir,b=parameters.b,d=parameters.d,bw_filter=bw_filter, reps=parameters.reps)
