@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-01 19:50:41
+# @Last Modified time: 2019-04-01 21:26:24
 
 import os
 import matplotlib
@@ -48,7 +48,7 @@ def pS_mean(S_list,label='data'):
 	pS_dw = pS_mean - pS_std/2
 
 	#Plots confidence interval (1 std) and mean
-	plt.fill_between(range(S_max),pS_up,pS_dw,alpha=0.5)
+	plt.fill_between(range(S_max),pS_up,pS_dw,alpha=0.25)
 	plt.plot(range(S_max),pS_mean,label=label)
 	plt.legend()
 

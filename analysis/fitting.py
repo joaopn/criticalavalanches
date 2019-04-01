@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-04-01 01:44:18
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-01 04:59:45
+# @Last Modified time: 2019-04-02 01:19:14
 
 import numpy as np
 import h5py
@@ -22,7 +22,7 @@ def tau_sim_dataset(m,h,d,threshold,data_dir,bw_filter):
 	
 	#Sets up filepaths
 	if bw_filter:
-		dir_thresholded = 'thresholded_filtered/'
+		dir_threshold = 'thresholded_filtered/'
 	else:
 		dir_threshold = 'thresholded_unfiltered/'
 	filename = 'm{:0.5f}_h{:0.3e}_d{:02d}_th{:0.1f}.hdf5'.format(m,h,d,threshold)

@@ -6,11 +6,12 @@ Module for the avalanche analysis of MEA datasets.
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-01 01:52:47
+# @Last Modified time: 2019-04-02 00:43:53
 
 import numpy as np
 import h5py
 import os
+from scipy.signal import butter, lfilter
 
 def threshold_ch(data, threshold):
 
@@ -54,6 +55,17 @@ def bin_data(data,binsize):
 
 	return data_binned
 
+def filter_bw_ch(data,freqs=[0.1,200],fs=500):
+
+	#Parameters
+	order = 4
+
+	#Filters signal (simple butterworth)
+	b, a = butter(order, [2*freqs[0]/fs, 2*freqs[1]/fs], btype='band')
+	data_filt = lfilter(b, a, data)
+
+	return data_filt
+	
 def get_S(data):
 
 	#Finds crossings of the signal to positive
@@ -75,12 +87,15 @@ def analyze_sim_raw(
 	filepath,
 	threshold,
 	datatype,
+	bw_filter,
 	timesteps=None,
 	channels=None
 	):
 
 	#Parameters
 	data_dir = 'data/'
+	fs = 500
+	bw_freqs = [0.1, 200]
 
 	#Gets timesteps and number of channels
 	file = h5py.File(filepath,'r')
@@ -98,7 +113,9 @@ def analyze_sim_raw(
 		data_ch = file[data_dir + datatype][ch,:]
 
 		#Analyzes sub and coarse channel data accordingly
-		if datatype == 'coarse':		
+		if datatype == 'coarse':
+			if bw_filter:
+				data_ch = filter_bw_ch(data_ch,bw_freqs,fs)		
 			data_th_ch = threshold_ch(data_ch,threshold)			
 		elif datatype == 'sub':
 			data_th_ch = convert_timestamps(data_ch,timesteps)
@@ -111,7 +128,7 @@ def save_sim_pS(data_dir,dataset,binsize,reps=None, bw_filter=False):
 
 	#Definitions
 	if bw_filter:
-		dir_thresholded = 'thresholded_filtered/'
+		dir_threshold = 'thresholded_filtered/'
 		saveplot_dir = 'analyzed_filtered/'
 	else:
 		dir_threshold = 'thresholded_unfiltered/'

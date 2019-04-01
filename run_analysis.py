@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-31 23:34:38
+# @Last Modified time: 2019-04-02 00:27:40
 
 from analysis import avalanche, plot
 import numpy as np
@@ -49,6 +49,7 @@ def parametersDefault():
 	datatypeDefault = 'coarse'
 	datafolderDefault = 'dat/'
 	modeDefault = 'save_plot'
+	bw_filterDefault = False
 
 	#Parse input
 	parser = argparse.ArgumentParser()
@@ -59,6 +60,8 @@ def parametersDefault():
 	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
 	parser.add_argument("--datatype",type=str,nargs='?',const=1,default=datatypeDefault)
 	parser.add_argument("--datafolder",type=str,nargs='?',const=1,default=datafolderDefault)
+	parser.add_argument("--bw_filter",type=bool,nargs='?',const=1,default=bw_filterDefault)
+
 
 	#Adds string of binsizes
 	parser.add_argument("-b","--binsize",type=str,nargs='?',const=1,default=binsizeDefault)
@@ -67,7 +70,7 @@ def parametersDefault():
 
 	return args
 
-def save_plot(data_dir,filename,threshold,datatype,reps,binsize,bw_filter=False):
+def save_plot(data_dir,filename,threshold,datatype,reps,binsize,bw_filter):
 
 	#Save location
 	if bw_filter:
@@ -104,6 +107,7 @@ def save_plot(data_dir,filename,threshold,datatype,reps,binsize,bw_filter=False)
 				filepath=filepath,
 				threshold=threshold,
 				datatype=datatype,
+				bw_filter=bw_filter
 				)
 			data_binned = avalanche.bin_data(data=data_thresholded,binsize=bs)
 
@@ -120,11 +124,11 @@ def save_plot(data_dir,filename,threshold,datatype,reps,binsize,bw_filter=False)
 	plt.savefig(str_fig)
 	plt.close()
 
-def save_thresholded(data_dir,filename,threshold,reps,timesteps=None,bw_filter=False):
+def save_thresholded(data_dir,filename,threshold,reps,bw_filter,timesteps=None):
 
 	#Parameters
 	if bw_filter:
-		dir_thresholded = 'thresholded_filtered/'
+		dir_threshold = 'thresholded_filtered/'
 	else:
 		dir_threshold = 'thresholded_unfiltered/'
 	data_save = data_dir + dir_threshold
@@ -161,6 +165,7 @@ def save_thresholded(data_dir,filename,threshold,reps,timesteps=None,bw_filter=F
 				filepath=filepath,
 				threshold=threshold,
 				datatype=datatype,
+				bw_filter=bw_filter
 				)
 			file[datatype][rep,:] = np.int32(data_thresholded)
 
@@ -185,6 +190,7 @@ if __name__ == "__main__":
 	reps = args.reps
 	datatype = args.datatype
 	datafolder = args.datafolder
+	bw_filter = args.bw_filter
 
 	#Does the requested operation
 	if mode == 'save_plot':
@@ -196,7 +202,8 @@ if __name__ == "__main__":
 				binsize=binsize,
 				threshold=threshold,
 				datatype=datatype,
-				reps=reps)
+				reps=reps,
+				bw_filter=bw_filter)
 
 	elif mode == 'threshold':
 		dataset_list = parse_sim_data(datafolder)
@@ -206,7 +213,7 @@ if __name__ == "__main__":
 				filename=dataset_list[i],
 				threshold=threshold,
 				reps=reps,
-				bw_filter=False)
+				bw_filter=bw_filter)
 
 	elif mode == 'save_ps':
 		dataset_list = parse_sim_thresholded(datafolder)
@@ -215,4 +222,6 @@ if __name__ == "__main__":
 			for j in range(len(binsize)):
 				avalanche.save_sim_pS(data_dir=datafolder,
 					dataset=dataset_list[i],
-					binsize=binsize[j])
+					binsize=binsize[j],
+					bw_filter=bw_filter
+					)

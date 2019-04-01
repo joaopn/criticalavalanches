@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-01 19:50:01
+# @Last Modified time: 2019-04-02 01:18:57
 
 import analysis
 import matplotlib.pyplot as plt
@@ -51,7 +51,7 @@ def thresholded_filepath(state,d,threshold,data_dir,bw_filter):
 	#Parameters
 	state_dict = states_parameters()
 	if bw_filter:
-		dir_thresholded = 'thresholded_filtered/'
+		dir_threshold = 'thresholded_filtered/'
 	else:
 		dir_threshold = 'thresholded_unfiltered/'
 
@@ -99,10 +99,11 @@ def plot_compare_states(datatype,b,d,reps,threshold,data_dir,bw_filter):
 def parametersDefault():
 
 	#default Parameters
-	binsizeDefault=2
-	repsDefault = 2
-	dDefault = 4
+	binsizeDefault=4
+	repsDefault = 50
+	dDefault = 8
 	datadirDefault = 'dat/'
+	bw_filterDefault = True
 
 	#Parse input
 	parser = argparse.ArgumentParser()
@@ -112,7 +113,7 @@ def parametersDefault():
 	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
 	parser.add_argument("-b",type=int,nargs='?',const=1,default=binsizeDefault)
 	parser.add_argument("-d",type=int,nargs='?',const=1,default=dDefault)
-
+	parser.add_argument("--bw_filter",type=bool,nargs='?',const=1,default=bw_filterDefault)
 	args = parser.parse_args()
 
 	return args
@@ -195,9 +196,7 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 
 if __name__ == "__main__":
 
-	#Parameters
-	bw_filter = False
 	parameters = parametersDefault()
 
 	#Generates figure 1
-	figure_1(data_dir=parameters.datadir,b=parameters.b,d=parameters.d,bw_filter=bw_filter, reps=parameters.reps)
+	figure_1(data_dir=parameters.datadir,b=parameters.b,d=parameters.d,bw_filter=parameters.bw_filter, reps=parameters.reps)
