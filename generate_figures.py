@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-01 05:45:53
+# @Last Modified time: 2019-04-01 19:50:01
 
 import analysis
 import matplotlib.pyplot as plt
@@ -135,6 +135,7 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 		os.makedirs(str_savepath)
 
 	"""Generates timeseries figures"""
+	print('Fig1: generating timeseries figures')
 	states = ['subcritical', 'reverberant', 'critical']
 	colors = ['blue', 'gray','red']
 
@@ -167,7 +168,7 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 
 
 		#Saves plot
-		str_save = str_savepath + 'activity_' + states[i] + '.svg'
+		str_save = str_savepath + 'activity_d{:02d}_rep{:02d}_'.format(d,rep_activity) + states[i] +'.pdf'
 		plt.savefig(str_save,bbox_inches="tight")
 		plt.close()
 
@@ -175,21 +176,22 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	"""Generates p(S) figures"""
 
 	#Generates subsampled figure, removes legend
+	print('Fig1: generating subsampled figure')
 	plt.figure(figsize=(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54))
 	plot_compare_states('sub',b,d,reps,threshold,data_dir,bw_filter)
-	str_save = str_savepath + 'sub_b{:02d}_d{:02d}.svg'.format(b,d)
+	str_save = str_savepath + 'sub_b{:02d}_d{:02d}.pdf'.format(b,d)
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
 
 
 	#Generates coarse sampled figure
+	print('Fig1: generating coarse sampled figure')
 	plt.figure(figsize=(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54))
 	plot_compare_states('coarse',b,d,reps,threshold,data_dir,bw_filter)
 	plt.legend(loc=3)
-	str_save = str_savepath + 'coarse_b{:02d}_d{:02d}.svg'.format(b,d)
+	str_save = str_savepath + 'coarse_b{:02d}_d{:02d}.pdf'.format(b,d)
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
-	
 
 if __name__ == "__main__":
 

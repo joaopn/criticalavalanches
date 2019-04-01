@@ -9,3 +9,5 @@ exe/*
 *.pyc
 
 *.svg
+
+*.pdf
