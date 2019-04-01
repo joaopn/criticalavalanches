@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-31 23:09:15
+# @Last Modified time: 2019-04-01 04:54:16
 
 import os
 import matplotlib
@@ -11,6 +11,7 @@ if os.environ.get('DISPLAY', '') == '':
 import matplotlib.pyplot as plt
 import numpy as np
 import analysis.avalanche
+import analysis.fitting
 
 def pS(S,label='data'):
 
@@ -60,7 +61,10 @@ def timeseries_threshold(data,th):
 	plt.plot(X,th*np.std(data)*np.ones(data.size))
 	plt.scatter(X[data_th==1],data[data_th==1])
 
-def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='dat/',threshold = 3):
+def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='dat/',threshold = 3, plt_color='black'):
+
+	#Parameters
+	S_lim = 1e-8 #Fixes vectorial plotting bug
 
 	#Definitions
 	if bw_filter:
@@ -84,14 +88,32 @@ def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='da
 
 		S,pS_mean, pS_std = np.loadtxt(str_load,delimiter='\t')
 
-		#Plots data
-		if label_plot is None:
-			label_i = 'm = {:0.3f}, b = {:d}, d = {:d}'.format(m, b[i], d[i])
-		else:
-			label_i = label_plot[i]
+		#Fixes vector bug
+		S_rem = np.argwhere(pS_mean < S_lim)
+		pS_mean = np.delete(pS_mean,S_rem)
+		pS_std = np.delete(pS_std,S_rem)
+		S = np.delete(S,S_rem)
 
+		#Plots data
 		pS_up = pS_mean + pS_std/2
 		pS_dw = pS_mean - pS_std/2
-		plt.fill_between(S,pS_up,pS_dw,alpha=0.75)
-		plt.loglog(S,pS_mean,label=label_i)
+		plt.fill_between(S,pS_up,pS_dw,alpha=0.5,color=plt_color)
+
+		if label_plot is None:
+			tau_rep = analysis.fitting.tau_sim_dataset(m,h,d[i],threshold,data_dir,bw_filter)
+			plt.loglog(
+				S,
+				pS_mean,
+				label= r'$\tau$ = {:0.1f} $\pm$ {:0.1f} ms'.format(np.mean(tau_rep), np.std(tau_rep)),
+				color=plt_color)
+		else:
+			label_i = label_plot[i]
+			plt.loglog(
+				S,
+				pS_mean,
+				label=label_plot[i],
+				color=plt_color)
+
+
+		
 		

@@ -6,7 +6,7 @@ Module for the avalanche analysis of MEA datasets.
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-03-31 23:12:21
+# @Last Modified time: 2019-04-01 01:52:47
 
 import numpy as np
 import h5py
