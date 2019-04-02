@@ -5,6 +5,9 @@ import multiprocessing as mp
 
 
 def run_cmd(m, h, de):
+
+    if (l_m.index(m) != l_h.index(h)): return
+
     mask = f"m{m:.5f}_h{h:.3e}_d{de:d}"
     cmd = f"python ./ana/run_analysis.py --mode threshold --bw_filter True --reps 50 --datamask {mask}"
     print(f"{cmd} done")
