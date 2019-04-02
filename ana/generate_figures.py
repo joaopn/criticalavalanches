@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-02 01:18:57
+# @Last Modified time: 2019-04-02 11:19:32
 
 import analysis
 import matplotlib.pyplot as plt
@@ -193,6 +193,18 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	str_save = str_savepath + 'coarse_b{:02d}_d{:02d}.pdf'.format(b,d)
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
+
+def figure_3(data_dir,b,d,reps,bw_filter):
+
+	#Sets path
+	if bw_filter:
+		str_savepath = 'figs/fig3_filtered/'
+	else:
+		str_savepath = 'figs/fig3_unfiltered/'
+	if not os.path.exists(str_savepath):
+		os.makedirs(str_savepath)
+
+	
 
 if __name__ == "__main__":
 
