@@ -7,10 +7,11 @@ DEBUGFLAGS = -std=c++11 -g
 
 all: findpar cc nocc
 
-# runs a loop to find drive that matches A=1Hz, see main.cpp for arguments
+# runs a loop to find drive that matches A=1Hz see main.cpp for arguments
+# WITHOUT coalescence compensation
 findpar: ./src/main.cpp
 	@mkdir -p ./exe
-	$(CC) $(CFLAGS) -DFINDPAR $(IFLAGS) ./src/main.cpp -o ./exe/findpar $(LFLAGS)
+	$(CC) $(CFLAGS) -DFINDPAR -DNOCC $(IFLAGS) ./src/main.cpp -o ./exe/findpar $(LFLAGS)
 
 # default (coalesence compensated) local branching network
 cc: ./src/main.cpp

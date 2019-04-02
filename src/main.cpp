@@ -630,35 +630,38 @@ void find_parameters(size_t num_neur, double neur_dist,
   double h_now = h_prob;
   bool found = false;
 
+  asystem *sys = new asystem(num_neur, neur_dist, num_elec, elec_dist,
+                             num_outgoing,
+                             m_now, sigma, h_now,
+                             time_steps);
+
 
   while (!found) {
-    printf("m = %e h = %e ", m_now, h_now);
+    printf("m = %e h = %e\n", m_now, h_now);
 
-    // silence stdout
-    int old_stdout = dup(STDOUT_FILENO);
-    FILE *nullout = fopen("/dev/null", "w");
-    dup2(fileno(nullout), STDOUT_FILENO);
+    // change system
+    sys->h_prob = h_now;
+    double m_old = sys->m_micro;
+    if (m_now != m_old) {
+      for (size_t i = 0; i < sys->neurons.size(); i++) {
+        neuron *n = sys->neurons[i];
+        for (size_t j = 0; j < n->outgoing_probability.size(); j++) {
+          n->outgoing_probability[j] = m_now/m_old*n->outgoing_probability[j];
+        }
+      }
+      sys->m_micro = m_now;
+    }
 
-    asystem *sys = new asystem(num_neur, neur_dist, num_elec, elec_dist,
-                               num_outgoing,
-                               m_now, sigma, h_now,
-                               time_steps);
-    // restore stdout
-    fclose(nullout);
-    dup2(old_stdout, STDOUT_FILENO);
-    close(old_stdout);
-    setbuf(stdout, NULL);
-    printf("created\n");
 
     for (size_t i = 0; i < thrm_steps; i++) {
       if(is_percent(i, thrm_steps, 1.))
-        printf("therm: %02.1f%%\r", is_percent(i, thrm_steps, 1.));
+        printf("therm: %03.1f%%\r", is_percent(i, thrm_steps, 1.));
       sys->update_step();
       sys->measure_step(i, false);
     }
     for (size_t i = 0; i < time_steps; i++) {
       if(is_percent(i, time_steps, 1.))
-        printf("simul: %02.1f%%\r", is_percent(i, time_steps, 1.));
+        printf("simul: %03.1f%%\r", is_percent(i, time_steps, 1.));
       sys->update_step();
       sys->measure_step(i, true);
     }
@@ -686,8 +689,6 @@ void find_parameters(size_t num_neur, double neur_dist,
       else if (act_hz > act_target) h_now -= dh;
       found = false;
     }
-    delete sys;
-
   }
 }
 #endif
@@ -707,7 +708,7 @@ int main(int argc, char *argv[]) {
   double elec_dist    = 8.;         // electrode dist. [unit=nearestneur-dist]
   size_t seed         = 314;        // seed for the random number generator
   double m_micro      = .98;        // branching parameter applied locally
-  double sigma        = 12.;        // eff. conn-length [unit=nearestneur-dist]
+  double sigma        = 6.;         // eff. conn-length [unit=nearestneur-dist]
   double h            = 4e-5;       // probability for spontaneous activation
   double delta_t      = 2.;         // time step size [ms]
   double cache_size   = 1e5;        // [num time steps] before hist is written

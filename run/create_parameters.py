@@ -6,11 +6,11 @@ from itertools import product
 os.chdir(os.path.dirname(__file__))
 
 # for calls eg. with qsub -t 1-12500
-start_id = 1
+start_id = 2000
 
 l_neur = [160000]
-l_m = [0.0,    0.9,    0.98,   0.999]
-l_h = [2.0e-3, 2.0e-4, 4.0e-5, 2.0e-6]
+l_m = [0.996]
+l_h = [8.0e-6]
 l_T = [1e6]
 l_de = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 l_rep = range(0,50)
