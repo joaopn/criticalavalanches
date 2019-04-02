@@ -159,7 +159,7 @@ hid_t hdf5_create_appendable(hid_t h5file, std::string name, hid_t h5dtype,
   hid_t dspace = H5Screate_simple(1, dims, max_dims);
   hid_t dcpl   = H5Pcreate(H5P_DATASET_CREATE);
   // compress if available and enable chunking
-  if (H5Zfilter_avail(H5Z_FILTER_DEFLATE)) status = H5Pset_deflate(dcpl, 9);
+  if (H5Zfilter_avail(H5Z_FILTER_DEFLATE)) status = H5Pset_deflate(dcpl, 3);
   status = H5Pset_chunk(dcpl, 1, chunk_dims);
 
   hid_t dset = H5Dcreate(h5file, name.c_str(), h5dtype, dspace, H5P_DEFAULT,
@@ -210,7 +210,7 @@ hid_t hdf5_create_appendable_nd(hid_t h5file, std::string name, hid_t h5dtype,
   hid_t dspace = H5Screate_simple(RANK, dims, max_dims);
   hid_t dcpl   = H5Pcreate(H5P_DATASET_CREATE);
   // compress if available
-  if (H5Zfilter_avail(H5Z_FILTER_DEFLATE)) status = H5Pset_deflate(dcpl, 9);
+  if (H5Zfilter_avail(H5Z_FILTER_DEFLATE)) status = H5Pset_deflate(dcpl, 3);
   status = H5Pset_chunk(dcpl, RANK, chunk_dims);
   // status = H5Pset_fill_value(dcpl, h5dtype, &fill_val);
   hid_t dset = H5Dcreate(h5file, name.c_str(), h5dtype, dspace, H5P_DEFAULT,
