@@ -714,35 +714,40 @@ int main(int argc, char *argv[]) {
   double cache_size   = 1e5;        // [num time steps] before hist is written
   std::string path    = "";         // output path for results
 
+  // only needed for non coal-comp parameter search
   #ifdef FINDPAR
-  double dh = 1e-5;                 // additive change to h
-  double dm = 0e-5;                 // additive change to m
-  double A  = 1.;                   // target activity in Hz
-  double ta = .1;                   // activity tolerance in Hz
+  double dh  = 1e-5;                // additive change to h
+  double dm  = 0e-5;                // additive change to m
+  double A   = 1.;                  // target activity in Hz
+  double tA  = .1;                  // activity tolerance in Hz
+  double Tau = 500;                 // target tau in ms
+  double tT  = 20;                  // tau tolerance in ms
   #endif
 
 
   for (size_t i=0; i < argc; i++) {
     if (i+1 != argc) {
-      if(std::string(argv[i])=="-T" ) time_steps     = atof(argv[i+1]);
-      if(std::string(argv[i])=="-t" ) thrm_steps     = atof(argv[i+1]);
-      if(std::string(argv[i])=="-N" ) num_neur       = atof(argv[i+1]);
-      if(std::string(argv[i])=="-k" ) num_outgoing   = atof(argv[i+1]);
-      if(std::string(argv[i])=="-e" ) num_elec       = atof(argv[i+1]);
-      if(std::string(argv[i])=="-dn") neur_dist      = atof(argv[i+1]);
-      if(std::string(argv[i])=="-de") elec_dist      = atof(argv[i+1]);
-      if(std::string(argv[i])=="-s" ) seed           = atof(argv[i+1]);
-      if(std::string(argv[i])=="-m" ) m_micro        = atof(argv[i+1]);
-      if(std::string(argv[i])=="-g" ) sigma          = atof(argv[i+1]);
-      if(std::string(argv[i])=="-h" ) h              = atof(argv[i+1]);
-      if(std::string(argv[i])=="-c" ) cache_size     = atof(argv[i+1]);
-      if(std::string(argv[i])=="-o" ) path           =      argv[i+1] ;
+      if(std::string(argv[i])=="-T" )  time_steps    = atof(argv[i+1]);
+      if(std::string(argv[i])=="-t" )  thrm_steps    = atof(argv[i+1]);
+      if(std::string(argv[i])=="-N" )  num_neur      = atof(argv[i+1]);
+      if(std::string(argv[i])=="-k" )  num_outgoing  = atof(argv[i+1]);
+      if(std::string(argv[i])=="-e" )  num_elec      = atof(argv[i+1]);
+      if(std::string(argv[i])=="-dn")  neur_dist     = atof(argv[i+1]);
+      if(std::string(argv[i])=="-de")  elec_dist     = atof(argv[i+1]);
+      if(std::string(argv[i])=="-s" )  seed          = atof(argv[i+1]);
+      if(std::string(argv[i])=="-m" )  m_micro       = atof(argv[i+1]);
+      if(std::string(argv[i])=="-g" )  sigma         = atof(argv[i+1]);
+      if(std::string(argv[i])=="-h" )  h             = atof(argv[i+1]);
+      if(std::string(argv[i])=="-c" )  cache_size    = atof(argv[i+1]);
+      if(std::string(argv[i])=="-o" )  path          =      argv[i+1] ;
 
       #ifdef FINDPAR
-      if(std::string(argv[i])=="-dh") dh             = atof(argv[i+1]);
-      if(std::string(argv[i])=="-dm") dm             = atof(argv[i+1]);
-      if(std::string(argv[i])=="-A")  A              = atof(argv[i+1]);
-      if(std::string(argv[i])=="-ta") ta             = atof(argv[i+1]);
+      if(std::string(argv[i])=="-dh")  dh            = atof(argv[i+1]);
+      if(std::string(argv[i])=="-dm")  dm            = atof(argv[i+1]);
+      if(std::string(argv[i])=="-A")   A             = atof(argv[i+1]);
+      if(std::string(argv[i])=="-tA")  tA            = atof(argv[i+1]);
+      if(std::string(argv[i])=="-Tau") Tau           = atof(argv[i+1]);
+      if(std::string(argv[i])=="-tT")  tT            = atof(argv[i+1]);
       #endif
     }
   }
@@ -756,8 +761,8 @@ int main(int argc, char *argv[]) {
                   num_outgoing,
                   m_micro, sigma, h,
                   delta_t,
-                  400., 25.,
-                  A, ta,
+                  Tau, tT,
+                  A, tA,
                   thrm_steps, time_steps,
                   dh, dm);
   return 0;
