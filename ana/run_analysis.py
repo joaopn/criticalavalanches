@@ -22,8 +22,7 @@ def parse_sim_data(datadir, datamask = None):
 	# only keep files for which path contains the mask
 	if datamask is not None:
 		datafiles = [item for item in datafiles if datamask in item]
-
-	print(datafiles)
+		# print(datafiles)
 
 	#Removes last part ('_r00')
 	data_removed = [datafiles[i][:-4] for i in range(len(datafiles))]
