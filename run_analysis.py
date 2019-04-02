@@ -11,13 +11,19 @@ import os, argparse
 import glob
 import h5py
 
-def parse_sim_data(datadir):
+def parse_sim_data(datadir, datamask = None):
 
 	#Lists all files
 	homedir = os.getcwd()
 	os.chdir(datadir)
 	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
 	os.chdir(homedir)
+
+	# only keep files for which path contains the mask
+	if datamask is not None:
+		datafiles = [item for item in datafiles if datamask in item]
+
+	print(datafiles)
 
 	#Removes last part ('_r00')
 	data_removed = [datafiles[i][:-4] for i in range(len(datafiles))]
@@ -38,7 +44,7 @@ def parse_sim_thresholded(datadir, bw_filter=False):
 	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
 	os.chdir(homedir)
 
-	return datafiles	
+	return datafiles
 
 def parametersDefault():
 
@@ -55,12 +61,20 @@ def parametersDefault():
 	parser = argparse.ArgumentParser()
 
 	#Add single parameters
-	parser.add_argument("--mode",type=str,nargs='?',const=1,default=modeDefault)
-	parser.add_argument("-t","--threshold",type=float,nargs='?',const=1,default=thresholdDefault)
-	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
-	parser.add_argument("--datatype",type=str,nargs='?',const=1,default=datatypeDefault)
-	parser.add_argument("--datafolder",type=str,nargs='?',const=1,default=datafolderDefault)
-	parser.add_argument("--bw_filter",type=bool,nargs='?',const=1,default=bw_filterDefault)
+	parser.add_argument("--mode",
+		type=str,   nargs='?', const=1, default=modeDefault)
+	parser.add_argument("-t", "--threshold",
+		type=float, nargs='?', const=1, default=thresholdDefault)
+	parser.add_argument("--reps",
+		type=int,   nargs='?', const=1, default=repsDefault)
+	parser.add_argument("--datatype",
+		type=str,   nargs='?', const=1, default=datatypeDefault)
+	parser.add_argument("--datafolder",
+		type=str,   nargs='?', const=1, default=datafolderDefault)
+	parser.add_argument("--datamask",
+		type=str,   nargs='?', const=1, default=None)
+	parser.add_argument("--bw_filter",
+		type=bool,  nargs='?', const=1, default=bw_filterDefault)
 
 
 	#Adds string of binsizes
@@ -137,7 +151,7 @@ def save_thresholded(data_dir,filename,threshold,reps,bw_filter,timesteps=None):
 
 	#Gets timesteps
 	if timesteps is None:
-		filepath_0 = data_dir + filename + '_r00.hdf5'	
+		filepath_0 = data_dir + filename + '_r00.hdf5'
 		file_raw = h5py.File(filepath_0,'r')
 		timesteps = file_raw['data/activity'].shape[0]
 		file_raw.close()
@@ -151,7 +165,7 @@ def save_thresholded(data_dir,filename,threshold,reps,bw_filter,timesteps=None):
 	#Saves thresholded data ('coarse' and 'sub')
 	for datatype in datatypes:
 
-		#Creates .h5 dataset 
+		#Creates .h5 dataset
 		file.create_dataset(datatype,shape=(reps,timesteps),dtype=int,chunks=(1,timesteps),compression=1,maxshape=(None,timesteps))
 		file[datatype].attrs['threshold'] = threshold
 
@@ -183,18 +197,19 @@ def save_thresholded(data_dir,filename,threshold,reps,bw_filter,timesteps=None):
 if __name__ == "__main__":
 
 	#Parse input
-	args = parametersDefault()
-	mode = args.mode
-	binsize = args.binsize
-	threshold = args.threshold
-	reps = args.reps
-	datatype = args.datatype
+	args       = parametersDefault()
+	mode       = args.mode
+	binsize    = args.binsize
+	threshold  = args.threshold
+	reps       = args.reps
+	datatype   = args.datatype
 	datafolder = args.datafolder
-	bw_filter = args.bw_filter
+	datamask   = args.datamask
+	bw_filter  = args.bw_filter
 
 	#Does the requested operation
 	if mode == 'save_plot':
-		dataset_list = parse_sim_data(datafolder)
+		dataset_list = parse_sim_data(datafolder, datamask)
 		print('Analyzing and plotting')
 		for i in range(len(dataset_list)):
 			save_plot(data_dir=datafolder,
@@ -206,7 +221,7 @@ if __name__ == "__main__":
 				bw_filter=bw_filter)
 
 	elif mode == 'threshold':
-		dataset_list = parse_sim_data(datafolder)
+		dataset_list = parse_sim_data(datafolder, datamask)
 		for i in range(len(dataset_list)):
 			print('Thresholding and saving: ' + dataset_list[i])
 			save_thresholded(data_dir=datafolder,
@@ -216,9 +231,9 @@ if __name__ == "__main__":
 				bw_filter=bw_filter)
 
 	elif mode == 'save_ps':
-		dataset_list = parse_sim_thresholded(datafolder)
+		dataset_list = parse_sim_thresholded(datafolder, datamask)
 		for i in range(len(dataset_list)):
-			print('Analysing thresholded data: ' + dataset_list[i])	
+			print('Analysing thresholded data: ' + dataset_list[i])
 			for j in range(len(binsize)):
 				avalanche.save_sim_pS(data_dir=datafolder,
 					dataset=dataset_list[i],
