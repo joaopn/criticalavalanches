@@ -5,12 +5,12 @@ from itertools import product
 # set directory to the location of this script file to use relative paths
 os.chdir(os.path.dirname(__file__))
 
-# for calls eg. with qsub -t 1-12500
-start_id = 2000
+start_id = 2500
 
+# settings for reverberating regime without cc
 l_neur = [160000]
-l_m = [0.996]
-l_h = [8.0e-6]
+l_m = [0.994]
+l_h = [3.0e-5]
 l_T = [1e6]
 l_de = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 l_rep = range(0,50)
