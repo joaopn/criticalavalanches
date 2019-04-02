@@ -8,7 +8,7 @@
 #$ -l h_vmem=6G # job is killed if exceeding this
 #$ -cwd
 #$ -o ./log/$JOB_NAME.$TASK_ID.$JOB_ID
-#$ -j y
+#$ -e ./log/$JOB_NAME.$TASK_ID.$JOB_ID
 
 export OPENBLAS_NUM_THREADS=1 # avoid multithreading in numpy
 export MKL_NUM_THREADS=1
