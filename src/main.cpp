@@ -530,6 +530,13 @@ class exporter {
     H5Gcreate(h5file, "/data", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
     // write system details
+    #ifdef NOCC
+    size_t cc = 0;
+    #else
+    size_t cc = 1;
+    #endif
+    hdf5_write_scalar(h5file, "/meta/coalesence_compensation_bool",
+                      cc, H5T_NATIVE_HSIZE);
     hdf5_write_scalar(h5file, "/meta/seed",
                       seed, H5T_NATIVE_HSIZE);
     hdf5_write_scalar(h5file, "/meta/num_neur",
