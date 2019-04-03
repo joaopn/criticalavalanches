@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-02 00:27:40
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-04-03 15:08:13
 
 from analysis import avalanche, plot
 import numpy as np
