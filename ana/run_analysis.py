@@ -43,10 +43,10 @@ def parse_sim_thresholded(datadir, bw_filter=False, datamask = None):
 	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
 	os.chdir(homedir)
 
-    # only keep files for which path contains the mask
-    if datamask is not None:
-        datafiles = [item for item in datafiles if datamask in item]
-        # print(datafiles)
+	# only keep files for which path contains the mask
+	if datamask is not None:
+		datafiles = [item for item in datafiles if datamask in item]
+		# print(datafiles)
 
 	return datafiles
 
