@@ -25,6 +25,7 @@ l_h = [3.0e-5]
 l_de = [2, 4, 6, 8, 10]
 
 arg_list = product(l_m, l_h, l_de)
+print(arg_list)
 
 num_proc = 4
 if mp.cpu_count() is not None:
