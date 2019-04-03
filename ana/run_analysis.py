@@ -30,18 +30,23 @@ def parse_sim_data(datadir, datamask = None):
 
 	return data_unique
 
-def parse_sim_thresholded(datadir, bw_filter=False):
+def parse_sim_thresholded(datadir, bw_filter=False, datamask = None):
 
 	if bw_filter:
 		dir_thresholded = 'thresholded_filtered/'
 	else:
-		dir_threshold = 'thresholded_unfiltered/'
+		dir_thresholded = 'thresholded_unfiltered/'
 
 	#Lists all files
 	homedir = os.getcwd()
-	os.chdir(datadir + dir_threshold)
+	os.chdir(datadir + dir_thresholded)
 	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
 	os.chdir(homedir)
+
+    # only keep files for which path contains the mask
+    if datamask is not None:
+        datafiles = [item for item in datafiles if datamask in item]
+        # print(datafiles)
 
 	return datafiles
 
@@ -230,7 +235,7 @@ if __name__ == "__main__":
 				bw_filter=bw_filter)
 
 	elif mode == 'save_ps':
-		dataset_list = parse_sim_thresholded(datafolder, datamask)
+		dataset_list = parse_sim_thresholded(datafolder, bw_filter, datamask)
 		for i in range(len(dataset_list)):
 			print('Analysing thresholded data: ' + dataset_list[i])
 			for j in range(len(binsize)):
