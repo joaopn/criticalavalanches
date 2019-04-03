@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-04-01 01:44:18
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-02 11:12:55
+# @Last Modified time: 2019-04-03 03:24:04
 
 import numpy as np
 import h5py
@@ -39,7 +39,7 @@ def tau_sim_dataset(m,h,d,threshold,data_dir,bw_filter):
 
 	return tau_rep
 
-def m_avalanche(data)
+def m_avalanche(data):
 
 	#Finds crossings of the signal to positive
 	id_cross=np.where(np.sign(data[:-1]) != np.sign(data[1:]))[0] + 1
