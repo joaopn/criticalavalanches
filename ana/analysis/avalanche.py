@@ -6,7 +6,7 @@ Module for the avalanche analysis of MEA datasets.
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-02 00:43:53
+# @Last Modified time: 2019-04-05 01:34:09
 
 import numpy as np
 import h5py
@@ -21,9 +21,6 @@ def threshold_ch(data, threshold):
 	#Defines threshold
 	th = threshold*np.std(data)
 
-	#Thresholds signal
-	data[data<th] = 0
-
 	#Finds crossings of the signal to positive
 	id_cross=np.where(np.sign(data[:-1]) != np.sign(data[1:]))[0] + 1
 	id_cross_plus = id_cross[data[id_cross]>0]
@@ -31,10 +28,11 @@ def threshold_ch(data, threshold):
 	#Defines output array
 	data_thresholded = np.zeros(data.shape)
 	
-	#For every positive excursion, finds max
+	#For every positive excursion, finds max and add and event if larger than th
 	for id in range(len(id_cross_plus)-1):
 		id_max = id_cross_plus[id]+np.argmax(data[id_cross_plus[id]:id_cross_plus[id+1]])
-		data_thresholded[id_max] = 1
+		if data[id_max] > th:
+			data_thresholded[id_max] = 1
 
 	return data_thresholded
 

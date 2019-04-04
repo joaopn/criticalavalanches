@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-03 17:43:49
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-04-05 01:54:27
 
 import os
 import matplotlib
@@ -126,6 +126,9 @@ def analyze_pS(data, b, threshold=3):
 	:type threshold: number, optional
 	"""
 
+	#Parses input
+	b = np.array(b)
+
 	#Parameters
 	n_e, timesteps = data.shape
 	
@@ -136,14 +139,14 @@ def analyze_pS(data, b, threshold=3):
 		data_th_ch = analysis.avalanche.threshold_ch(data[ch,:], threshold)
 		data_th = data_th + data_th_ch
 
-	#Bins data
-	data_binned = analysis.avalanche.bin_data(data_th,b)
+	#Bins and plots data
+	for i in range(len(b)):
 
-	#Calculates S
-	S = analysis.avalanche.get_S(data_binned)
+		#Bins data
+		data_binned = analysis.avalanche.bin_data(data_th,b[i])
 
-	#Plots pS
-	analysis.plot.pS(S,label="b = {:d}".format(b))
+		#Calculates S
+		S = analysis.avalanche.get_S(data_binned)
 
-
-	return data_th, data_binned,S
+		#Plots pS
+		analysis.plot.pS(S,label="b = {:d}".format(b[i]))
