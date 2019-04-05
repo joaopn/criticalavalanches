@@ -20,8 +20,8 @@ def run_cmd(m, h, de):
 # set directory to the location of this script file to use relative paths
 os.chdir(os.path.dirname(__file__))
 
-l_m = [   0.0,    0.9,   0.98,  0.994,  0.999]
-l_h = [2.0e-3, 2.0e-4, 4.0e-5, 3.0e-5, 2.0e-6]
+l_m = [   0.0,    0.9,   0.98,  0.996,  0.999]
+l_h = [2.0e-3, 2.0e-4, 4.0e-5, 8.0e-6, 2.0e-6]
 l_de = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 arg_list = product(l_m, l_h, l_de)
