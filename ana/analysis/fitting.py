@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-04-01 01:44:18
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-03 03:24:04
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-04-05 17:59:02
 
 import numpy as np
 import h5py
@@ -40,9 +40,19 @@ def tau_sim_dataset(m,h,d,threshold,data_dir,bw_filter):
 	return tau_rep
 
 def m_avalanche(data):
-
-	#Finds crossings of the signal to positive
-	id_cross=np.where(np.sign(data[:-1]) != np.sign(data[1:]))[0] + 1
-	id_cross_plus = id_cross[data[id_cross]>0]
-
+	"""Estimates m_{av}
 	
+	Calculates the branching parameter m_{av} estimated from avalanches of a thresholded and binned timeseries.
+	:param data: thresholded 1xtimesteps timeseries
+	:type data: float
+	"""
+
+	#Finds timesteps with activity
+	data_nonzero = data[np.nonzero(data)]
+
+	#Calculates A(t+1)/A(t) for every point of activity and averages it
+	R = data_nonzero[1:]/data_nonzero[:-1]
+	m_av = np.mean(R)
+
+
+	return m_av

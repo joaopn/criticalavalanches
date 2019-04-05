@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-03 15:08:13
+# @Last Modified time: 2019-04-05 19:19:28
 
 from analysis import avalanche, plot
 import numpy as np
@@ -55,7 +55,7 @@ def parametersDefault():
 	#default Parameters
 	binsizeDefault="1,2,4"
 	thresholdDefault = 3
-	repsDefault = 2
+	repsDefault = 1
 	datatypeDefault = 'coarse'
 	datafolderDefault = 'dat/'
 	modeDefault = 'save_plot'
@@ -142,7 +142,7 @@ def save_plot(data_dir,filename,threshold,datatype,reps,binsize,bw_filter):
 	plt.savefig(str_fig)
 	plt.close()
 
-def save_thresholded(data_dir,filename,threshold,reps,bw_filter,timesteps=None):
+def save_threshold(data_dir,filename,threshold,reps,bw_filter,timesteps=None):
 
 	#Parameters
 	if bw_filter:
@@ -198,6 +198,20 @@ def save_thresholded(data_dir,filename,threshold,reps,bw_filter,timesteps=None):
 	#Flushes and closes file
 	file.close()
 
+def save_ps(data_dir, filename, binsize, bw_filter):
+
+	for j in range(len(binsize)):
+		avalanche.save_sim_pS(data_dir=data_dir,
+			dataset=filename,
+			binsize=binsize[j],
+			bw_filter=bw_filter
+			)
+
+def save_mav():
+	#Parses data dataset list to detect [files]_d00_
+
+	pass
+
 if __name__ == "__main__":
 
 	#Parse input
@@ -228,7 +242,7 @@ if __name__ == "__main__":
 		dataset_list = parse_sim_data(datafolder, datamask)
 		for i in range(len(dataset_list)):
 			print('Thresholding and saving: ' + dataset_list[i])
-			save_thresholded(data_dir=datafolder,
+			save_threshold(data_dir=datafolder,
 				filename=dataset_list[i],
 				threshold=threshold,
 				reps=reps,
@@ -238,9 +252,10 @@ if __name__ == "__main__":
 		dataset_list = parse_sim_thresholded(datafolder, bw_filter, datamask)
 		for i in range(len(dataset_list)):
 			print('Analysing thresholded data: ' + dataset_list[i])
-			for j in range(len(binsize)):
-				avalanche.save_sim_pS(data_dir=datafolder,
-					dataset=dataset_list[i],
-					binsize=binsize[j],
-					bw_filter=bw_filter
-					)
+			save_ps(datafolder,
+				filename=dataset_list[i],
+				binsize=binsize,
+				bw_filter=bw_filter)
+
+	elif mode == 'save_mav':
+		pass

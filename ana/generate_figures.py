@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-02 11:19:32
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-04-05 19:19:28
 
 import analysis
 import matplotlib.pyplot as plt
@@ -24,6 +24,7 @@ def states_parameters():
 		'subcritical': {'m': 0.900, 'h': 2e-4},
 		'reverberant': {'m': 0.980, 'h': 4e-5},
 		'critical': {'m': 0.999, 'h': 2e-6},
+		'critical500': {'m': 0.996, 'h': 8e-6},
 	}
 
 	return state_dict
@@ -70,8 +71,8 @@ def plot_compare_states(datatype,b,d,reps,threshold,data_dir,bw_filter):
 	plt.ylabel('p(S)')
 	plt.yscale('log')
 	plt.xscale('log')
-	plt.xlim(1,2e2)
-	plt.ylim(1e-5,1)
+	plt.xlim(1,1e2)
+	plt.ylim(1e-7,1)
 
 	#Plots guiding line
 	X = np.arange(5,64)
@@ -204,11 +205,14 @@ def figure_3(data_dir,b,d,reps,bw_filter):
 	if not os.path.exists(str_savepath):
 		os.makedirs(str_savepath)
 
-	
 
+	
+	
 if __name__ == "__main__":
 
 	parameters = parametersDefault()
 
 	#Generates figure 1
 	figure_1(data_dir=parameters.datadir,b=parameters.b,d=parameters.d,bw_filter=parameters.bw_filter, reps=parameters.reps)
+
+	#Generates figure 3
