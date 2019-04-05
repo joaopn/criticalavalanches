@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-04-01 01:44:18
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-05 17:59:02
+# @Last Modified time: 2019-04-05 19:36:51
 
 import numpy as np
 import h5py
@@ -56,3 +56,6 @@ def m_avalanche(data):
 
 
 	return m_av
+
+def fit_pS():
+	pass

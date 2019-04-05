@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-05 19:19:28
+# @Last Modified time: 2019-04-05 20:00:02
 
 from analysis import avalanche, plot
 import numpy as np
@@ -49,6 +49,28 @@ def parse_sim_thresholded(datadir, bw_filter=False, datamask = None):
 		# print(datafiles)
 
 	return datafiles
+
+def parse_sim_thresholded_no_d(datadir, bw_filter=False, datamask = None):
+	#Returns the unique filenames with no e.g. "_d00_th3.0.hdf5"
+
+	d_check_max = 20
+
+	#Gets datafiles
+	datafiles = parse_sim_thresholded(datadir,bw_filter,datamask)
+
+	d_check_list = ["d{:02d}".format(d_i) for d_i in range(d_check_max)+1]
+
+	for i in range(d_check_max)+1:
+		#if strings match, add d to d_list
+
+
+	
+	datafiles_no_d_i = [f.partition('d10')[0] for f in datafiles]
+	d_list = 
+
+	d_check_list = ["d{:02d}".format(d_i) for d_i in range(d_check_max)+1]
+
+	return datafiles,d_list
 
 def parametersDefault():
 
@@ -207,8 +229,7 @@ def save_ps(data_dir, filename, binsize, bw_filter):
 			bw_filter=bw_filter
 			)
 
-def save_mav():
-	#Parses data dataset list to detect [files]_d00_
+def save_mav(data_dir, filename, d_list, binsize, bw_filter):
 
 	pass
 
@@ -258,4 +279,11 @@ if __name__ == "__main__":
 				bw_filter=bw_filter)
 
 	elif mode == 'save_mav':
-		pass
+		dataset_list, d_list = parse_sim_thresholded_no_d(datafolder, bw_filter, datamask)
+		for i in range(len(dataset_list)):
+			print('Analysing thresholded data: ' + dataset_list[i])
+			save_mav(datafolder,
+				filename=dataset_list[i],
+				d_list=d_list,
+				binsize=binsize,
+				bw_filter=bw_filter)		
