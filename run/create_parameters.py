@@ -5,12 +5,13 @@ from itertools import product
 # set directory to the location of this script file to use relative paths
 os.chdir(os.path.dirname(__file__))
 
-start_id = 2500
+# seeds will  not match if you rerun this, data has been copied.
+start_id = 0
 
 # settings for reverberating regime without cc
 l_neur = [160000]
-l_m = [0.994]
-l_h = [3.0e-5]
+l_m = [   0.0,    0.9,   0.98,  0.994,  0.999]
+l_h = [2.0e-3, 2.0e-4, 4.0e-5, 3.0e-5, 2.0e-6]
 l_T = [1e6]
 l_de = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 l_rep = range(0,50)
