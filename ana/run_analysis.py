@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-05 20:00:02
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-04-06 16:57:59
 
 from analysis import avalanche, plot
 import numpy as np
@@ -51,24 +51,28 @@ def parse_sim_thresholded(datadir, bw_filter=False, datamask = None):
 	return datafiles
 
 def parse_sim_thresholded_no_d(datadir, bw_filter=False, datamask = None):
-	#Returns the unique filenames with no e.g. "_d00_th3.0.hdf5"
+	#Returns the unique filenames with no e.g. "_d00_th3.0.hdf5". 
+	#ALL datasets must have same values for "dxx"
 
-	d_check_max = 20
+	d_check_max = 30
 
 	#Gets datafiles
 	datafiles = parse_sim_thresholded(datadir,bw_filter,datamask)
 
-	d_check_list = ["d{:02d}".format(d_i) for d_i in range(d_check_max)+1]
+	#Checks all strings and adds present dxx to list
+	d_check_list = ["d{:02d}".format(d_i) for d_i in range(1,d_check_max+1)]
+	d_list = []
+	for d_i in d_check_list:
+		if any(d_i in data_i for data_i in datafiles):
+			d_list.append(int(d_i[1:]))
 
-	for i in range(d_check_max)+1:
-		#if strings match, add d to d_list
+	#Removes dxx_thyy from filename
+	print(datafiles)
+	for d in d_list:
+		datafiles = [f.partition("d{:02d}".format(d))[0] for f in datafiles]
 
-
-	
-	datafiles_no_d_i = [f.partition('d10')[0] for f in datafiles]
-	d_list = 
-
-	d_check_list = ["d{:02d}".format(d_i) for d_i in range(d_check_max)+1]
+	#Gets unique strings
+	datafiles = list(set(datafiles))
 
 	return datafiles,d_list
 
