@@ -2,9 +2,9 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-06 16:57:59
+# @Last Modified time: 2019-04-08 15:20:21
 
-from analysis import avalanche, plot
+from analysis import avalanche, plot, fitting
 import numpy as np
 import matplotlib.pyplot as plt
 import os, argparse
@@ -224,18 +224,74 @@ def save_threshold(data_dir,filename,threshold,reps,bw_filter,timesteps=None):
 	#Flushes and closes file
 	file.close()
 
-def save_ps(data_dir, filename, binsize, bw_filter):
+def save_ps(data_dir, filename, binsize, bw_filter, reps=None):
 
-	for j in range(len(binsize)):
-		avalanche.save_sim_pS(data_dir=data_dir,
-			dataset=filename,
-			binsize=binsize[j],
-			bw_filter=bw_filter
-			)
+	#Definitions
+	if bw_filter:
+		dir_threshold = 'thresholded_filtered/'
+		saveplot_dir = 'analyzed_filtered/'
+	else:
+		dir_threshold = 'thresholded_unfiltered/'
+		saveplot_dir = 'analyzed_unfiltered/'
 
-def save_mav(data_dir, filename, d_list, binsize, bw_filter):
+	datatypes = ['coarse', 'sub']
 
-	pass
+	#Loads file
+	file_path = data_dir + dir_threshold + filename + '.hdf5'
+	file = h5py.File(file_path,'r')
+
+	#Gets reps from file
+	if reps is None:
+		reps = file['coarse'].shape[0]
+
+	#Runs the analysis for each b
+	for k in range(len(binsize)):
+
+		#Analyzes both 'coarse' and 'sub'
+		for datatype in datatypes:
+
+			#Obtains S for each repetition
+			S_list = []
+			for rep in range(reps):
+
+				#Loads data and bins it
+				data_thresholded = file[datatype][rep,:]
+				data_binned = avalanche.bin_data(data=data_thresholded,binsize=binsize[k])
+				S_list.append(avalanche.get_S(data_binned))
+
+			#Gets largest avalanche from the list (+1 for zero_index)
+			S_max = int(max([Si.max() for Si in S_list]) + 1)
+
+			#Obtains pS
+			pS = np.zeros((len(S_list),S_max))
+			for i in range(len(S_list)):
+				for j in range(S_max):
+					pS[i,j] = np.sum(S_list[i]==j+1)
+				pS[i,:] = pS[i,:]/np.sum(pS[i,:])
+
+			#Obtains mean and STD
+			pS_mean = np.mean(pS,axis=0)
+			pS_std = np.std(pS,axis=0)
+			X = np.arange(S_max)+1
+
+			#Saves plot data
+			str_savefolder = data_dir + saveplot_dir + filename + '_rep{:02d}/'.format(reps)
+			if not os.path.exists(str_savefolder):
+				os.makedirs(str_savefolder)
+			str_savefile = 'pS_' + datatype + '_b{:02d}.tsv'.format(binsize[k])
+			str_save = str_savefolder + str_savefile
+			np.savetxt(str_save,(X,pS_mean,pS_std),delimiter='\t',header='S\tpS_mean\tpS_std')
+
+def save_mav(data_dir, filename, d_list, binsize, threshold, bw_filter):
+
+	#Runs analysis for each d
+
+	for d_i in d_list:
+		#rebuilds strings 
+		data_th = data_dir + filename + "d{:02d}_th{:0.1f}.hdf5".format(d_i,threshold)
+
+
+
 
 if __name__ == "__main__":
 
@@ -290,4 +346,5 @@ if __name__ == "__main__":
 				filename=dataset_list[i],
 				d_list=d_list,
 				binsize=binsize,
+				threshold=threshold,
 				bw_filter=bw_filter)		

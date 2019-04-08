@@ -6,7 +6,7 @@ Module for the avalanche analysis of MEA datasets.
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-05 01:34:09
+# @Last Modified time: 2019-04-08 15:18:06
 
 import numpy as np
 import h5py
@@ -121,58 +121,3 @@ def analyze_sim_raw(
 		data_th = data_th + data_th_ch
 
 	return data_th
-
-def save_sim_pS(data_dir,dataset,binsize,reps=None, bw_filter=False):
-
-	#Definitions
-	if bw_filter:
-		dir_threshold = 'thresholded_filtered/'
-		saveplot_dir = 'analyzed_filtered/'
-	else:
-		dir_threshold = 'thresholded_unfiltered/'
-		saveplot_dir = 'analyzed_unfiltered/'
-
-	datatypes = ['coarse', 'sub']
-
-	#Loads file
-	file_path = data_dir + dir_threshold + dataset + '.hdf5'
-	file = h5py.File(file_path,'r')
-
-	#Gets reps from file
-	if reps is None:
-		reps = file['coarse'].shape[0]
-
-	#Analyzes both 'coarse' and 'sub'
-	for datatype in datatypes:
-
-		#Obtains S for each repetition
-		S_list = []
-		for rep in range(reps):
-
-			#Loads data and bins it
-			data_thresholded = file[datatype][rep,:]
-			data_binned = bin_data(data=data_thresholded,binsize=binsize)
-			S_list.append(get_S(data_binned))
-
-		#Gets largest avalanche from the list (+1 for zero_index)
-		S_max = int(max([Si.max() for Si in S_list]) + 1)
-
-		#Obtains pS
-		pS = np.zeros((len(S_list),S_max))
-		for i in range(len(S_list)):
-			for j in range(S_max):
-				pS[i,j] = np.sum(S_list[i]==j+1)
-			pS[i,:] = pS[i,:]/np.sum(pS[i,:])
-
-		#Obtains mean and STD
-		pS_mean = np.mean(pS,axis=0)
-		pS_std = np.std(pS,axis=0)
-		X = np.arange(S_max)+1
-
-		#Saves plot data
-		str_savefolder = data_dir + saveplot_dir + dataset + '_rep{:02d}/'.format(reps)
-		if not os.path.exists(str_savefolder):
-			os.makedirs(str_savefolder)
-		str_savefile = 'pS_' + datatype + '_b{:02d}.tsv'.format(binsize)
-		str_save = str_savefolder + str_savefile
-		np.savetxt(str_save,(X,pS_mean,pS_std),delimiter='\t',header='S\tpS_mean\tpS_std')
