@@ -8,10 +8,16 @@ def run_cmd(m, h, de):
     if (l_m.index(m) != l_h.index(h)): return
 
     mask = f"'m{m:.5f}_h{h:.3e}_d{de:02d}'"
-    cmd = f"python ./run_analysis.py --mode threshold --bw_filter True --reps 50 --datafolder ../dat/ --datamask {mask}"
-    os.system(cmd)
-    print(f"{cmd} done")
-    cmd = f"python ./run_analysis.py --mode save_ps -b '1,2,4,8,16,32' --bw_filter True --datafolder ../dat/ --datamask {mask}"
+
+    # cmd = f"python ./run_analysis.py --mode threshold --bw_filter True --reps 50 --datafolder ../dat/ --datamask {mask}"
+    # os.system(cmd)
+    # print(f"{cmd} done")
+
+    # cmd = f"python ./run_analysis.py --mode save_ps -b '1,2,4,8,16,32' --bw_filter True --datafolder ../dat/ --datamask {mask}"
+    # os.system(cmd)
+    # print(f"{cmd} done")
+
+    cmd = f"python ./run_analysis.py --mode save_mav -b '1,2,4,8,16,32' --bw_filter True --datafolder ../dat/ --datamask {mask}"
     os.system(cmd)
     print(f"{cmd} done")
 

@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-08 15:20:21
+# @Last Modified time: 2019-04-08 18:58:25
 
 from analysis import avalanche, plot, fitting
 import numpy as np
@@ -67,7 +67,6 @@ def parse_sim_thresholded_no_d(datadir, bw_filter=False, datamask = None):
 			d_list.append(int(d_i[1:]))
 
 	#Removes dxx_thyy from filename
-	print(datafiles)
 	for d in d_list:
 		datafiles = [f.partition("d{:02d}".format(d))[0] for f in datafiles]
 
@@ -254,7 +253,7 @@ def save_ps(data_dir, filename, binsize, bw_filter, reps=None):
 			S_list = []
 			for rep in range(reps):
 
-				#Loads data and bins it
+				#Loads data, analyzes and bins it
 				data_thresholded = file[datatype][rep,:]
 				data_binned = avalanche.bin_data(data=data_thresholded,binsize=binsize[k])
 				S_list.append(avalanche.get_S(data_binned))
@@ -282,15 +281,57 @@ def save_ps(data_dir, filename, binsize, bw_filter, reps=None):
 			str_save = str_savefolder + str_savefile
 			np.savetxt(str_save,(X,pS_mean,pS_std),delimiter='\t',header='S\tpS_mean\tpS_std')
 
-def save_mav(data_dir, filename, d_list, binsize, threshold, bw_filter):
+def save_mav(data_dir, filename, d_list, binsize, threshold, bw_filter, reps=None):
 
-	#Runs analysis for each d
+	#Definitions
+	if bw_filter:
+		dir_threshold = 'thresholded_filtered/'
+		save_dir = 'analyzed_filtered/branching_mav/'
+	else:
+		dir_threshold = 'thresholded_unfiltered/'
+		save_dir = 'analyzed_unfiltered/branching_mav/'
 
-	for d_i in d_list:
-		#rebuilds strings 
-		data_th = data_dir + filename + "d{:02d}_th{:0.1f}.hdf5".format(d_i,threshold)
+	#Runs it for each binsize
+	for k in range(len(binsize)):
+
+		#Defines save variables
+		mav_mean = np.zeros(len(d_list))
+		mav_std = np.zeros(len(d_list))
+		IED = np.array(d_list)
+
+		#Runs analysis for each d
+		for d_id in range(len(d_list)):
+
+			#Loads file
+			file_path = data_dir + dir_threshold + filename + "d{:02d}_th{:0.1f}.hdf5".format(d_list[d_id],threshold)
+			file = h5py.File(file_path,'r')
+
+			#Gets reps from file
+			if reps is None:
+				reps = int(file['coarse'].shape[0])
+
+			#Obtains m_av for each repetition
+			mav_reps = np.zeros(reps)
+			for rep in range(reps):
+
+				#Loads data, analyzes and bins it
+				data_thresholded = file['coarse'][rep,:]
+				data_binned = avalanche.bin_data(data=data_thresholded,binsize=binsize[k])
+				mav_reps[rep] = fitting.m_avalanche(data_binned)
 
 
+			#Obtains mean and STD
+			mav_mean[d_id] = np.mean(mav_reps)
+			mav_std[d_id] = np.std(mav_reps)
+
+			print('b = {:d}, d = {:d}: m_av = {:0.3f} +- {:0.3f}'.format(binsize[k], d_list[d_id], mav_mean[d_id],mav_std[d_id]))
+
+		#Saves data
+		if not os.path.exists(data_dir + save_dir):
+			os.makedirs(data_dir + save_dir)
+		str_savefile = filename + 'b{:02d}_th{:0.1f}.tsv'.format(binsize[k], threshold)
+		str_save = data_dir + save_dir + str_savefile
+		np.savetxt(str_save,(IED,mav_mean,mav_std),delimiter='\t',header='d\tmav_mean\tmav_std')
 
 
 if __name__ == "__main__":
