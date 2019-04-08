@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-05 19:19:28
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-04-09 00:49:34
 
 import analysis
 import matplotlib.pyplot as plt
@@ -91,31 +91,35 @@ def plot_compare_states(datatype,b,d,reps,threshold,data_dir,bw_filter):
 		m = state_dict[states[i]]['m']
 		h = state_dict[states[i]]['h']
 
-		#Get tau
-
-
 		#Plots distributions
 		analysis.plot.sim_pS(m,h,d,b,datatype,reps,None,bw_filter,data_dir,threshold,colors[i])
 
 def parametersDefault():
 
 	#default Parameters
+	figsDefault = '1'
 	binsizeDefault=4
 	repsDefault = 50
 	dDefault = 8
-	datadirDefault = 'dat/'
+	datafolderDefault = 'dat/'
 	bw_filterDefault = True
 
 	#Parse input
 	parser = argparse.ArgumentParser()
 
 	#Add single parameters
-	parser.add_argument("--datadir",type=str,nargs='?',const=1,default=datadirDefault)
+	parser.add_argument("--datafolder",type=str,nargs='?',const=1,default=datafolderDefault)
 	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
 	parser.add_argument("-b",type=int,nargs='?',const=1,default=binsizeDefault)
 	parser.add_argument("-d",type=int,nargs='?',const=1,default=dDefault)
 	parser.add_argument("--bw_filter",type=bool,nargs='?',const=1,default=bw_filterDefault)
+	
+
+	#Adds string of figs to plot
+	parser.add_argument("--figs",type=str,nargs='?',const=1,default=figsDefault)
+
 	args = parser.parse_args()
+	args.figs = [int(item) for item in args.figs.split(',')]
 
 	return args
 
@@ -195,7 +199,10 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
 
-def figure_3(data_dir,b,d,reps,bw_filter):
+def figure_mav(data_dir,b,bw_filter):
+
+	#Parameters
+	fig_size = [7,7.5]
 
 	#Sets path
 	if bw_filter:
@@ -205,14 +212,52 @@ def figure_3(data_dir,b,d,reps,bw_filter):
 	if not os.path.exists(str_savepath):
 		os.makedirs(str_savepath)
 
+	#Sets up figure
+	plt.figure(figsize=(fig_size[0]/2.54,fig_size[1]/2.54))
+	plt.xlabel('d')
+	plt.ylabel(r'$m_{av}$')
+	plt.xlim(1,10)
+	plt.ylim(0.5,1.75)
+	plt.yticks([0,0.5,1.,1.5])
+	plt.grid(True)
 
-	
+	#Plots comparison line
+
+	#Plots states
+	states = ['subcritical','critical']
+	colors = ['blue', 'red']
+
+	for i in range(len(states)):
+
+		print('Plotting Fig 3 for the ' + states[i] + ' state.')
+		#Get parameters
+		state_dict = states_parameters()
+		m = state_dict[states[i]]['m']
+		h = state_dict[states[i]]['h']
+
+		analysis.plot.sim_mav(m,h,b,data_dir,bw_filter=bw_filter, plt_color=colors[i])
+
+	plt.legend()
+	#Saves figure
+	str_save = str_savepath + 'mav_b{:02d}.pdf'.format(b)
+	plt.savefig(str_save,bbox_inches="tight")
+	plt.close()
 	
 if __name__ == "__main__":
 
 	parameters = parametersDefault()
 
-	#Generates figure 1
-	figure_1(data_dir=parameters.datadir,b=parameters.b,d=parameters.d,bw_filter=parameters.bw_filter, reps=parameters.reps)
+	#Plots selected figures
+	if 1 in parameters.figs:
+		figure_1(
+			data_dir=parameters.datafolder,
+			b=parameters.b,
+			d=parameters.d,
+			bw_filter=parameters.bw_filter, 
+			reps=parameters.reps)
 
-	#Generates figure 3
+	if 3 in parameters.figs:
+		figure_mav(
+			data_dir=parameters.datafolder,
+			b=parameters.b,
+			bw_filter = parameters.bw_filter)

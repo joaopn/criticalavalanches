@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-05 01:54:27
+# @Last Modified time: 2019-04-08 23:33:58
 
 import os
 import matplotlib
@@ -79,6 +79,8 @@ def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='da
 	if type(b) != list:
 		b = [b]
 
+	assert len(d) == len(b)
+
 	for i in range(len(d)):
 
 		#Sets up filepath and loads data
@@ -107,12 +109,51 @@ def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='da
 				label= r'$\tau$ = {:0.1f} $\pm$ {:0.1f} ms'.format(np.mean(tau_rep), np.std(tau_rep)),
 				color=plt_color)
 		else:
-			label_i = label_plot[i]
-			plt.loglog(
-				S,
-				pS_mean,
-				label=label_plot[i],
+			plt.loglog(S,pS_mean,label=label_plot[i],
 				color=plt_color)
+
+def sim_mav(m,h,b,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_color='black'):
+
+	#Definitions
+	if bw_filter:
+		saveplot_dir = 'analyzed_filtered/branching_mav/'
+	else:
+		saveplot_dir = 'analyzed_unfiltered/branching_mav/'
+
+
+	#Sets filepath
+	dataset = 'm{:0.5f}_h{:0.3e}_b{:02d}_th{:0.1f}.tsv'.format(m,h,b,threshold)
+	str_load = data_dir + saveplot_dir + dataset
+
+	#Loads data
+	IED,mav_mean,mav_std = np.loadtxt(str_load,delimiter='\t')
+
+	#Plots data
+	mav_up = mav_mean + mav_std/2
+	mav_dw = mav_mean - mav_std/2
+	plt.fill_between(IED,mav_up,mav_dw,alpha=0.5,color=plt_color)
+
+	if label_plot is None:
+
+		print('Calculating tau for b = {:02d}'.format(b))
+
+		tau_all = np.zeros(0)
+		for d in IED:
+			tau_d = analysis.fitting.tau_sim_dataset(m,h,int(d),threshold,data_dir,bw_filter)
+			tau_all = np.concatenate((tau_all,tau_d))
+
+		tau_mean = np.mean(tau_all)
+		tau_std = np.std(tau_all)
+
+		print('tau = {:0.1f} +- {:0.1f}'.format(tau_mean, tau_std))
+		plt.plot(
+			IED,
+			mav_mean,
+			label= r'$\tau$ = {:0.1f} $\pm$ {:0.1f} ms'.format(tau_mean, tau_std),
+			color=plt_color)
+	else:
+		plt.plot(IED,mav_mean,label=label_plot,color=plt_color)
+
 
 def analyze_pS(data, b, threshold=3):
 	"""Does the avalanche analysis of a raw data matrix and plots p(S)
