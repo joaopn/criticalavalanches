@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-09 03:09:48
+# @Last Modified time: 2019-04-09 22:45:28
 
 import analysis
 import matplotlib.pyplot as plt
@@ -98,7 +98,7 @@ def plot_compare_states(datatype,b,d,reps,threshold,data_dir,bw_filter):
 def parametersDefault():
 
 	#default Parameters
-	figsDefault = '1'
+	figDefault = '1'
 	binsizeDefault=4
 	repsDefault = 50
 	dDefault = 8
@@ -114,13 +114,9 @@ def parametersDefault():
 	parser.add_argument("-b",type=int,nargs='?',const=1,default=binsizeDefault)
 	parser.add_argument("-d",type=int,nargs='?',const=1,default=dDefault)
 	parser.add_argument("--bw_filter",type=bool,nargs='?',const=1,default=bw_filterDefault)
+	parser.add_argument("--fig",type=int,nargs='?',const=1,default=figDefault)
 	
-
-	#Adds string of figs to plot
-	parser.add_argument("--figs",type=str,nargs='?',const=1,default=figsDefault)
-
 	args = parser.parse_args()
-	args.figs = [int(item) for item in args.figs.split(',')]
 
 	return args
 
@@ -281,11 +277,11 @@ def figure_2(data_dir,d,reps,bw_filter):
 
 		for i in range(len(b)):
 			#Sets up legend
-			bs_leg = r'$\Deltat$ = {:d} ms'.format(2*b[i])
+			bs_leg = r"$\Delta$t = {:d} ms".format(2*b[i])
+			#bs_leg = "Deltat = {:d} ms".format(2*b[i])
 
 			#Sets up color
 			c_id = float((i+1)/(len(b)))		
-			print(c_id)	
 			if state is 'critical':
 				plt_color = plt.cm.Reds(256,alpha=c_id)
 			elif state is 'reverberant':
@@ -315,7 +311,7 @@ if __name__ == "__main__":
 	parameters = parametersDefault()
 
 	#Plots selected figures
-	if 1 in parameters.figs:
+	if parameters.fig == 1:
 		figure_1(
 			data_dir=parameters.datafolder,
 			b=parameters.b,
@@ -323,14 +319,14 @@ if __name__ == "__main__":
 			bw_filter=parameters.bw_filter, 
 			reps=parameters.reps)
 
-	if 2 in parameters.figs:
+	if parameters.fig == 2:
 		figure_2(
 			data_dir=parameters.datafolder,
 			d=parameters.d,
 			bw_filter=parameters.bw_filter, 
 			reps=parameters.reps)
 
-	if 3 in parameters.figs:
+	if parameters.fig == 3:
 		figure_mav(
 			data_dir=parameters.datafolder,
 			b=parameters.b,

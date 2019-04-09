@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-09 03:00:22
+# @Last Modified time: 2019-04-09 22:13:41
 
 import os
 import matplotlib
@@ -78,6 +78,8 @@ def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='da
 		d = [d]
 	if type(b) != list:
 		b = [b]
+	if type(label_plot) == str:
+		label_plot = [label_plot]
 
 	assert len(d) == len(b)
 
@@ -106,7 +108,7 @@ def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='da
 			tau_rep = analysis.fitting.tau_sim_dataset(m,h,d[i],threshold,data_dir,bw_filter)
 			str_label = r'$\tau$ = {:0.1f} $\pm$ {:0.1f} ms'.format(np.mean(tau_rep), np.std(tau_rep))
 			plt.loglog(S,pS_mean,label= str_label,color=plt_color)
-		else:
+		else:			
 			plt.loglog(S,pS_mean,label=label_plot[i],
 				color=plt_color)
 
