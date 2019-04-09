@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-09 00:49:34
+# @Last Modified time: 2019-04-09 03:09:48
 
 import analysis
 import matplotlib.pyplot as plt
@@ -71,7 +71,7 @@ def plot_compare_states(datatype,b,d,reps,threshold,data_dir,bw_filter):
 	plt.ylabel('p(S)')
 	plt.yscale('log')
 	plt.xscale('log')
-	plt.xlim(1,1e2)
+	plt.xlim(1,100)
 	plt.ylim(1e-7,1)
 
 	#Plots guiding line
@@ -82,12 +82,13 @@ def plot_compare_states(datatype,b,d,reps,threshold,data_dir,bw_filter):
 
 	#Plots states
 	states = ['subcritical','reverberant', 'critical']
-	colors = ['blue', 'gray', 'red']
+	colors = ['blue', 'green', 'red']
+	state_dict = states_parameters()
 
 	for i in range(len(states)):
 
 		#Get parameters
-		state_dict = states_parameters()
+		
 		m = state_dict[states[i]]['m']
 		h = state_dict[states[i]]['h']
 
@@ -143,7 +144,7 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	"""Generates timeseries figures"""
 	print('Fig1: generating timeseries figures')
 	states = ['subcritical', 'reverberant', 'critical']
-	colors = ['blue', 'gray','red']
+	colors = ['blue', 'green','red']
 
 	for i in range(len(states)):
 
@@ -242,7 +243,73 @@ def figure_mav(data_dir,b,bw_filter):
 	str_save = str_savepath + 'mav_b{:02d}.pdf'.format(b)
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
+
+def figure_2(data_dir,d,reps,bw_filter):
+
+	#Parameters
+	b = [1,2,4,8,16]
+	threshold = 3
+	datatype = 'coarse'
+	fig_pS_size = [6,6]
+	states = ['poisson', 'subcritical', 'reverberant', 'critical']
+
+	#Sets path
+	if bw_filter:
+		str_savepath = 'figs/fig2_filtered/'
+	else:
+		str_savepath = 'figs/fig2_unfiltered/'
+	if not os.path.exists(str_savepath):
+		os.makedirs(str_savepath)
+
+	#Gets state variables
+	state_dict = state_dict = states_parameters()
 	
+	#Plots every state
+	for state in states:
+		m = state_dict[state]['m']
+		h = state_dict[state]['h']
+
+		#Sets up figure
+		print('Fig2: generating  plot for state:' + state)
+		plt.figure(figsize=(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54))
+		plt.xlabel('Avalanche size S')
+		plt.ylabel('p(S)')
+		plt.yscale('log')
+		plt.xscale('log')
+		plt.xlim(1,100)
+		plt.ylim(1e-7,1)
+
+		for i in range(len(b)):
+			#Sets up legend
+			bs_leg = r'$\Deltat$ = {:d} ms'.format(2*b[i])
+
+			#Sets up color
+			c_id = float((i+1)/(len(b)))		
+			print(c_id)	
+			if state is 'critical':
+				plt_color = plt.cm.Reds(256,alpha=c_id)
+			elif state is 'reverberant':
+				plt_color = plt.cm.Greens(256,alpha=c_id)
+			elif state is 'subcritical':
+				plt_color = plt.cm.Blues(256,alpha=c_id)
+			elif state is 'poisson':
+				plt_color = plt.cm.Greys(256,alpha=c_id)
+
+			#Plots it
+			analysis.plot.sim_pS(m,h,d,b[i],datatype,reps,
+				label_plot=bs_leg,
+				bw_filter=bw_filter,
+				data_dir=data_dir,
+				plt_color=plt_color,
+				plt_std=False)		
+
+		plt.legend()
+
+		#Saves plot
+		str_save = str_savepath + 'coarse_' + state + '_d{:02d}.pdf'.format(d)
+		plt.savefig(str_save,bbox_inches="tight")
+		plt.close()
+
 if __name__ == "__main__":
 
 	parameters = parametersDefault()
@@ -252,6 +319,13 @@ if __name__ == "__main__":
 		figure_1(
 			data_dir=parameters.datafolder,
 			b=parameters.b,
+			d=parameters.d,
+			bw_filter=parameters.bw_filter, 
+			reps=parameters.reps)
+
+	if 2 in parameters.figs:
+		figure_2(
+			data_dir=parameters.datafolder,
 			d=parameters.d,
 			bw_filter=parameters.bw_filter, 
 			reps=parameters.reps)

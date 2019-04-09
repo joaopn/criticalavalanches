@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-08 23:33:58
+# @Last Modified time: 2019-04-09 03:00:22
 
 import os
 import matplotlib
@@ -61,7 +61,7 @@ def timeseries_threshold(data,th):
 	plt.plot(X,th*np.std(data)*np.ones(data.size))
 	plt.scatter(X[data_th==1],data[data_th==1])
 
-def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='dat/',threshold = 3, plt_color='black'):
+def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='dat/',threshold = 3, plt_color='black', plt_std=True):
 
 	#Parameters
 	S_lim = 1e-8 #Fixes vectorial plotting bug
@@ -97,17 +97,15 @@ def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='da
 		S = np.delete(S,S_rem)
 
 		#Plots data
-		pS_up = pS_mean + pS_std/2
-		pS_dw = pS_mean - pS_std/2
-		plt.fill_between(S,pS_up,pS_dw,alpha=0.5,color=plt_color)
+		if plt_std:
+			pS_up = pS_mean + pS_std/2
+			pS_dw = pS_mean - pS_std/2
+			plt.fill_between(S,pS_up,pS_dw,alpha=0.5,color=plt_color)
 
 		if label_plot is None:
 			tau_rep = analysis.fitting.tau_sim_dataset(m,h,d[i],threshold,data_dir,bw_filter)
-			plt.loglog(
-				S,
-				pS_mean,
-				label= r'$\tau$ = {:0.1f} $\pm$ {:0.1f} ms'.format(np.mean(tau_rep), np.std(tau_rep)),
-				color=plt_color)
+			str_label = r'$\tau$ = {:0.1f} $\pm$ {:0.1f} ms'.format(np.mean(tau_rep), np.std(tau_rep))
+			plt.loglog(S,pS_mean,label= str_label,color=plt_color)
 		else:
 			plt.loglog(S,pS_mean,label=label_plot[i],
 				color=plt_color)
