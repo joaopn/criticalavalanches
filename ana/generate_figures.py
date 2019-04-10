@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-10 04:49:40
+# @Last Modified time: 2019-04-10 05:18:02
 
 import analysis
 import matplotlib.pyplot as plt
@@ -293,6 +293,11 @@ def figure_2(data_dir,d,reps,bw_filter):
 		plt.xlim(1,100)
 		plt.ylim(1e-7,1)
 
+		#Calculates tau
+		tau_rep = analysis.fitting.tau_sim_dataset(m,h,int(d),threshold,data_dir,bw_filter)
+		str_title = r'$\tau$ = {:0.1f}$\pm${:0.1f} ms'.format(np.mean(tau_rep),np.std(tau_rep))
+		plt.title(str_title)
+
 		for i in range(len(b)):
 			#Sets up legend
 			bs_leg = r"$\Delta$t = {:d} ms".format(2*b[i])
@@ -373,7 +378,6 @@ def figure_3(data_dir,reps,bw_filter):
 	str_save = str_savepath + 'ps_comparison.pdf'
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
-
 
 if __name__ == "__main__":
 

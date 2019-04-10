@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-04-01 01:44:18
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-09 00:16:30
+# @Last Modified time: 2019-04-10 05:17:55
 
 import numpy as np
 import h5py
@@ -14,7 +14,10 @@ def tau_linear(data,deltaT = 2):
 	Y = data[1:] #A(t+1)
 
 	fit = np.polyfit(X,Y,1)
-	tau = -deltaT/np.log(fit[0])
+	if fit[0] > 0:
+		tau = -deltaT/np.log(fit[0])
+	else:
+		tau = 0
 
 	return tau
 
