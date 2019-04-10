@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-09 22:13:41
+# @Last Modified time: 2019-04-10 04:50:45
 
 import os
 import matplotlib
@@ -61,7 +61,7 @@ def timeseries_threshold(data,th):
 	plt.plot(X,th*np.std(data)*np.ones(data.size))
 	plt.scatter(X[data_th==1],data[data_th==1])
 
-def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='dat/',threshold = 3, plt_color='black', plt_std=True):
+def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='dat/',threshold = 3, plt_color='black', plt_std=True, offset=1):
 
 	#Parameters
 	S_lim = 1e-8 #Fixes vectorial plotting bug
@@ -102,17 +102,17 @@ def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='da
 		if plt_std:
 			pS_up = pS_mean + pS_std/2
 			pS_dw = pS_mean - pS_std/2
-			plt.fill_between(S,pS_up,pS_dw,alpha=0.5,color=plt_color)
+			plt.fill_between(S,offset*pS_up,offset*pS_dw,alpha=0.5,color=plt_color)
 
 		if label_plot is None:
 			tau_rep = analysis.fitting.tau_sim_dataset(m,h,d[i],threshold,data_dir,bw_filter)
 			str_label = r'$\tau$ = {:0.1f} $\pm$ {:0.1f} ms'.format(np.mean(tau_rep), np.std(tau_rep))
-			plt.loglog(S,pS_mean,label= str_label,color=plt_color)
+			plt.loglog(S,offset*pS_mean,label= str_label,color=plt_color)
 		else:			
-			plt.loglog(S,pS_mean,label=label_plot[i],
+			plt.loglog(S,offset*pS_mean,label=label_plot[i],
 				color=plt_color)
 
-def sim_mav(m,h,b,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_color='black'):
+def sim_mav(m,h,b_list,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_color='black', linestyle='-'):
 
 	#Definitions
 	if bw_filter:
@@ -120,40 +120,42 @@ def sim_mav(m,h,b,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_color
 	else:
 		saveplot_dir = 'analyzed_unfiltered/branching_mav/'
 
+	#Parse input
+	if type(b_list) is not list:
+		b_list = [b_list]
 
-	#Sets filepath
-	dataset = 'm{:0.5f}_h{:0.3e}_b{:02d}_th{:0.1f}.tsv'.format(m,h,b,threshold)
-	str_load = data_dir + saveplot_dir + dataset
+	#Plots for every b
+	for b in b_list:
+		#Sets filepath
+		dataset = 'm{:0.5f}_h{:0.3e}_b{:02d}_th{:0.1f}.tsv'.format(m,h,b,threshold)
+		str_load = data_dir + saveplot_dir + dataset
 
-	#Loads data
-	IED,mav_mean,mav_std = np.loadtxt(str_load,delimiter='\t')
+		#Loads data
+		IED,mav_mean,mav_std = np.loadtxt(str_load,delimiter='\t')
 
-	#Plots data
-	mav_up = mav_mean + mav_std/2
-	mav_dw = mav_mean - mav_std/2
-	plt.fill_between(IED,mav_up,mav_dw,alpha=0.5,color=plt_color)
+		#Plots data
+		mav_up = mav_mean + mav_std/2
+		mav_dw = mav_mean - mav_std/2
+		plt.fill_between(IED,mav_up,mav_dw,alpha=0.5,color=plt_color)
 
-	if label_plot is None:
+		if label_plot is None:
 
-		print('Calculating tau for b = {:02d}'.format(b))
+			print('Calculating tau for b = {:02d}'.format(b))
 
-		tau_all = np.zeros(0)
-		for d in IED:
-			tau_d = analysis.fitting.tau_sim_dataset(m,h,int(d),threshold,data_dir,bw_filter)
-			tau_all = np.concatenate((tau_all,tau_d))
+			tau_all = np.zeros(0)
+			for d in IED:
+				tau_d = analysis.fitting.tau_sim_dataset(m,h,int(d),threshold,data_dir,bw_filter)
+				tau_all = np.concatenate((tau_all,tau_d))
 
-		tau_mean = np.mean(tau_all)
-		tau_std = np.std(tau_all)
+			tau_mean = np.mean(tau_all)
+			tau_std = np.std(tau_all)
 
-		print('tau = {:0.1f} +- {:0.1f}'.format(tau_mean, tau_std))
-		plt.plot(
-			IED,
-			mav_mean,
-			label= r'$\tau$ = {:0.1f} $\pm$ {:0.1f} ms'.format(tau_mean, tau_std),
-			color=plt_color)
-	else:
-		plt.plot(IED,mav_mean,label=label_plot,color=plt_color)
+			print('tau = {:0.1f} +- {:0.1f}'.format(tau_mean, tau_std))
+			str_label = r'$\Delta$t = {:d} ms, $\tau$ = {:0.1f}$\pm${:0.1f} ms'.format(2*b,tau_mean, tau_std)
 
+			plt.plot(IED,mav_mean,label= str_label,color=plt_color,linestyle=linestyle)
+		else:
+			plt.plot(IED,mav_mean,label=label_plot,color=plt_color,linestyle=linestyle)
 
 def analyze_pS(data, b, threshold=3):
 	"""Does the avalanche analysis of a raw data matrix and plots p(S)

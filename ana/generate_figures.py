@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-09 22:45:28
+# @Last Modified time: 2019-04-10 04:49:40
 
 import analysis
 import matplotlib.pyplot as plt
@@ -120,6 +120,68 @@ def parametersDefault():
 
 	return args
 
+def figure_mav(data_dir,b,bw_filter):
+
+	#Parameters
+	fig_size = [7,7.5]
+	Xticks = [2, 4, 6, 8, 10]
+	Xticklabels = np.array(Xticks)*50
+	linestyles = ['-','--', ':', '-.'] #Handles up to len(b) = 4
+
+	#Parse input
+	if type(b) is not list:
+		b = [b]
+
+	#Sets path
+	if bw_filter:
+		str_savepath = 'figs/fig3_filtered/'
+	else:
+		str_savepath = 'figs/fig3_unfiltered/'
+	if not os.path.exists(str_savepath):
+		os.makedirs(str_savepath)
+
+	#Sets up figure
+	plt.figure(figsize=(fig_size[0]/2.54,fig_size[1]/2.54))
+	plt.xlabel(r'IED d ($\mu$m)')
+	plt.ylabel(r'$m_{av}$')
+	plt.xlim(1,10)
+	plt.ylim(0.5,1.75)
+	plt.yticks([0,0.5,1.,1.5])
+	plt.xticks(Xticks)	
+	plt.grid(True)
+	ax = plt.gca()
+	ax.set_axisbelow(True)
+	ax.set_xticklabels(Xticklabels)
+
+	#Plots states
+	states = ['subcritical','critical']
+	colors = ['blue', 'red']
+
+
+	for j in range(len(b)):
+		for i in range(len(states)):
+
+			print('Plotting Fig 3 for the ' + states[i] + ' state.')
+			#Get parameters
+			state_dict = states_parameters()
+			m = state_dict[states[i]]['m']
+			h = state_dict[states[i]]['h']
+
+			analysis.plot.sim_mav(m,h,b[j],data_dir,
+				bw_filter=bw_filter, plt_color=colors[i],
+				linestyle=linestyles[j])
+
+		if j ==1:
+			plt.legend()
+
+	#Saves figure
+	if len(b) == 1:
+		str_save = str_savepath + 'mav_b{:02d}.pdf'.format(b)
+	else:
+		str_save = str_savepath + 'mav_combined.pdf'
+	plt.savefig(str_save,bbox_inches="tight")
+	plt.close()
+
 def figure_1(data_dir,b,d,reps,bw_filter):
 
 	#Parameters
@@ -196,50 +258,6 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
 
-def figure_mav(data_dir,b,bw_filter):
-
-	#Parameters
-	fig_size = [7,7.5]
-
-	#Sets path
-	if bw_filter:
-		str_savepath = 'figs/fig3_filtered/'
-	else:
-		str_savepath = 'figs/fig3_unfiltered/'
-	if not os.path.exists(str_savepath):
-		os.makedirs(str_savepath)
-
-	#Sets up figure
-	plt.figure(figsize=(fig_size[0]/2.54,fig_size[1]/2.54))
-	plt.xlabel('d')
-	plt.ylabel(r'$m_{av}$')
-	plt.xlim(1,10)
-	plt.ylim(0.5,1.75)
-	plt.yticks([0,0.5,1.,1.5])
-	plt.grid(True)
-
-	#Plots comparison line
-
-	#Plots states
-	states = ['subcritical','critical']
-	colors = ['blue', 'red']
-
-	for i in range(len(states)):
-
-		print('Plotting Fig 3 for the ' + states[i] + ' state.')
-		#Get parameters
-		state_dict = states_parameters()
-		m = state_dict[states[i]]['m']
-		h = state_dict[states[i]]['h']
-
-		analysis.plot.sim_mav(m,h,b,data_dir,bw_filter=bw_filter, plt_color=colors[i])
-
-	plt.legend()
-	#Saves figure
-	str_save = str_savepath + 'mav_b{:02d}.pdf'.format(b)
-	plt.savefig(str_save,bbox_inches="tight")
-	plt.close()
-
 def figure_2(data_dir,d,reps,bw_filter):
 
 	#Parameters
@@ -306,6 +324,57 @@ def figure_2(data_dir,d,reps,bw_filter):
 		plt.savefig(str_save,bbox_inches="tight")
 		plt.close()
 
+def figure_3(data_dir,reps,bw_filter):
+
+	#Sets path
+	if bw_filter:
+		str_savepath = 'figs/fig3_filtered/'
+	else:
+		str_savepath = 'figs/fig3_unfiltered/'
+	if not os.path.exists(str_savepath):
+		os.makedirs(str_savepath)
+
+	#Parameters
+	fig_size = [7,7.5]
+	b_mav = [2,4]
+	b_ps = [2,2,2]
+	d_ps = [1,4,10]
+	threshold = 3
+	
+	#Saves (m_av vs d) figure
+	figure_mav(data_dir,b_mav,bw_filter)
+
+	#Plots comparison of different (b,d) configurations
+	#Sets up figure
+	plt.figure(figsize=(fig_size[0]/2.54,fig_size[1]/2.54))
+	plt.xlabel('Avalanche size S')
+	plt.ylabel('p(S)')
+	plt.yscale('log')
+	plt.xscale('log')
+	plt.xlim(1,100)
+	plt.ylim(1e-10,1)
+
+	#Plots states
+	states = ['subcritical', 'critical']
+	colors = ['blue', 'red']
+	offset_list = [1,1e-2,1e-4]
+	state_dict = states_parameters()
+
+	for j in range(len(b_ps)):
+		for i in range(len(states)):
+
+			#Get parameters		
+			m = state_dict[states[i]]['m']
+			h = state_dict[states[i]]['h']
+
+			#Plots distributions
+			analysis.plot.sim_pS(m,h,d_ps[j],b_ps[j],'coarse',reps,None,bw_filter,data_dir,threshold,colors[i],True,offset_list[j])	
+
+	str_save = str_savepath + 'ps_comparison.pdf'
+	plt.savefig(str_save,bbox_inches="tight")
+	plt.close()
+
+
 if __name__ == "__main__":
 
 	parameters = parametersDefault()
@@ -327,7 +396,7 @@ if __name__ == "__main__":
 			reps=parameters.reps)
 
 	if parameters.fig == 3:
-		figure_mav(
+		figure_3(
 			data_dir=parameters.datafolder,
-			b=parameters.b,
+			reps=parameters.reps,
 			bw_filter = parameters.bw_filter)
