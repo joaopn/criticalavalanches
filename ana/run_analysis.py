@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-08 18:58:25
+# @Last Modified time: 2019-04-11 03:49:13
 
 from analysis import avalanche, plot, fitting
 import numpy as np
@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import os, argparse
 import glob
 import h5py
+import powerlaw
 
 def parse_sim_data(datadir, datamask = None):
 
@@ -333,6 +334,62 @@ def save_mav(data_dir, filename, d_list, binsize, threshold, bw_filter, reps=Non
 		str_save = data_dir + save_dir + str_savefile
 		np.savetxt(str_save,(IED,mav_mean,mav_std),delimiter='\t',header='d\tmav_mean\tmav_std')
 
+def save_ps_alpha(data_dir, filename, binsize, bw_filter, reps=None, xmax=50):
+
+	#Parameters
+	deltaT = 2
+
+	#Definitions
+	if bw_filter:
+		dir_threshold = 'thresholded_filtered/'
+		savedata_dir = 'analyzed_filtered/'
+	else:
+		dir_threshold = 'thresholded_unfiltered/'
+		savedata_dir = 'analyzed_unfiltered/'
+
+	datatypes = ['coarse', 'sub']
+	
+
+	#Loads file
+	file_path = data_dir + dir_threshold + filename + '.hdf5'
+	file = h5py.File(file_path,'r')
+
+	#Gets reps from file
+	if reps is None:
+		reps = file['coarse'].shape[0]
+
+	
+
+	#Analyzes both 'coarse' and 'sub'
+	for datatype in datatypes:
+
+		#Defines alpha matrix
+		alpha_fit = np.zeros((len(binsize), reps))
+
+		#Runs the analysis for each b
+		for k in range(len(binsize)):
+			#Obtains S for each repetition
+			for rep in range(reps):
+
+				#Loads data, bins it and fits the avalanches
+				data_thresholded = file[datatype][rep,:]
+				data_binned = avalanche.bin_data(data=data_thresholded,binsize=binsize[k])
+				S = avalanche.get_S(data_binned)
+				fit = powerlaw.Fit(S, discrete=True, estimate_discrete=False, xmin=1, xmax=xmax)
+				alpha_fit[k,rep] = fit.alpha				
+
+		#Obtains mean and STD
+		alpha_mean = np.mean(alpha_fit,axis=1)
+		alpha_std = np.std(alpha_fit,axis=1)
+		X = deltaT*np.array(binsize)
+
+		#Saves plot data
+		str_savefolder = data_dir + savedata_dir + filename + '_rep{:02d}/'.format(reps)
+		if not os.path.exists(str_savefolder):
+			os.makedirs(str_savefolder)
+		str_savefile = 'alpha_' + datatype + '.tsv'
+		str_save = str_savefolder + str_savefile
+		np.savetxt(str_save,(X,alpha_mean,alpha_std),delimiter='\t',header='b\talpha_mean\talpha_std')	
 
 if __name__ == "__main__":
 
@@ -373,8 +430,17 @@ if __name__ == "__main__":
 	elif mode == 'save_ps':
 		dataset_list = parse_sim_thresholded(datafolder, bw_filter, datamask)
 		for i in range(len(dataset_list)):
-			print('Analysing thresholded data: ' + dataset_list[i])
+			print('Analysing thresholded data and saving pS: ' + dataset_list[i])
 			save_ps(datafolder,
+				filename=dataset_list[i],
+				binsize=binsize,
+				bw_filter=bw_filter)
+
+	elif mode == 'save_ps_alpha':
+		dataset_list = parse_sim_thresholded(datafolder, bw_filter, datamask)
+		for i in range(len(dataset_list)):
+			print('Analysing thresholded data and fitting pS: ' + dataset_list[i])
+			save_ps_alpha(datafolder,
 				filename=dataset_list[i],
 				binsize=binsize,
 				bw_filter=bw_filter)

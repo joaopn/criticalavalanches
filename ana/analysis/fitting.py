@@ -2,10 +2,11 @@
 # @Author: joaopn
 # @Date:   2019-04-01 01:44:18
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-10 05:17:55
+# @Last Modified time: 2019-04-11 03:16:02
 
 import numpy as np
 import h5py
+import powerlaw
 
 def tau_linear(data,deltaT = 2):
 
@@ -62,6 +63,3 @@ def m_avalanche(data):
 	m_av = np.mean(R)
 
 	return m_av
-
-def fit_pS():
-	pass
