@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-10 04:50:45
+# @Last Modified time: 2019-04-11 22:06:51
 
 import os
 import matplotlib
@@ -156,6 +156,33 @@ def sim_mav(m,h,b_list,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_
 			plt.plot(IED,mav_mean,label= str_label,color=plt_color,linestyle=linestyle)
 		else:
 			plt.plot(IED,mav_mean,label=label_plot,color=plt_color,linestyle=linestyle)
+
+def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',threshold = 3):
+
+	#Definitions
+	if bw_filter:
+		saveplot_dir = 'analyzed_filtered/'
+	else:
+		saveplot_dir = 'analyzed_unfiltered/'
+
+	#Sets up filepath and loads data
+	dataset = 'm{:0.5f}_h{:0.3e}_d{:02d}_th{:0.1f}_rep{:02d}/'.format(m,h,d,threshold,reps)
+	datafile = 'alpha_' + datatype + '.tsv'
+	str_load = data_dir + saveplot_dir + dataset + datafile	
+	b, alpha_mean, alpha_std = np.loadtxt(str_load,delimiter='\t')
+
+	#Plots data
+	plt.errorbar(x=b,y=alpha_mean, yerr=alpha_std/2,fmt='o')
+
+	#Fits data to alpha~b^-fit_exp
+	fit_exp, fit_err, lin_coef = analysis.fitting.powerlaw(b,alpha_mean,alpha_std)
+
+	#Plots fit
+	X = np.arange(1,100)
+	plt.plot(X,lin_coef*np.power(X,-fit_exp),linestyle='--', color='k')
+
+	return fit_exp, fit_err
+
 
 def analyze_pS(data, b, threshold=3):
 	"""Does the avalanche analysis of a raw data matrix and plots p(S)

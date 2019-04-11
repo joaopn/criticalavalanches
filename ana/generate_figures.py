@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-10 05:18:02
+# @Last Modified time: 2019-04-11 23:23:24
 
 import analysis
 import matplotlib.pyplot as plt
@@ -265,6 +265,7 @@ def figure_2(data_dir,d,reps,bw_filter):
 	threshold = 3
 	datatype = 'coarse'
 	fig_pS_size = [6,6]
+	fig_alpha_size = [3,3]
 	states = ['poisson', 'subcritical', 'reverberant', 'critical']
 
 	#Sets path
@@ -282,9 +283,38 @@ def figure_2(data_dir,d,reps,bw_filter):
 	for state in states:
 		m = state_dict[state]['m']
 		h = state_dict[state]['h']
+		print('Fig2: generating  plots for state:' + state)
+
+		if state is not 'poisson':
+
+			#Plots alpha vs b
+			plt.figure(figsize=(fig_alpha_size[0]/2.54,fig_alpha_size[1]/2.54))
+			plt.xlabel(r'$\Delta$t')
+			plt.ylabel(r'$\alpha$')
+			plt.xscale('log')
+			plt.yscale('log')
+			plt.minorticks_off() #solves tick bu... "intended change in pyplot"
+			plt.xlim(1,100)
+			plt.ylim(0.8,2)			
+			plt.xticks([1,10,100])
+			plt.yticks([1,1.5,2],['1', '1.5', '2'])
+			#ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+
+			fit_exp, fit_err = analysis.plot.plot_alpha_bs(m,h,d,datatype,reps,bw_filter,data_dir,threshold)
+
+
+			#Saves alpha vs b fit to file
+			str_save = str_savepath+'alpha_fitresults_d{:02d}.txt'.format(d)
+			with open(str_save,'a') as file:
+				str_fitdata = state + ': {:0.3f} +- {:0.3f}\n'.format(fit_exp,fit_err)
+				file.write(str_fitdata)
+
+			#Saves plot of alpha vs b
+			str_save = str_savepath + 'fit_' + state + '_d{:02d}.pdf'.format(d)
+			plt.savefig(str_save,bbox_inches="tight")
+			plt.close()
 
 		#Sets up figure
-		print('Fig2: generating  plot for state:' + state)
 		plt.figure(figsize=(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54))
 		plt.xlabel('Avalanche size S')
 		plt.ylabel('p(S)')
@@ -322,7 +352,8 @@ def figure_2(data_dir,d,reps,bw_filter):
 				plt_color=plt_color,
 				plt_std=False)		
 
-		plt.legend()
+		if state == 'poisson':
+			plt.legend()
 
 		#Saves plot
 		str_save = str_savepath + 'coarse_' + state + '_d{:02d}.pdf'.format(d)

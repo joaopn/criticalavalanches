@@ -11,3 +11,5 @@ exe/*
 *.svg
 
 *.pdf
+
+figs/
