@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-11 22:06:51
+# @Last Modified time: 2019-04-12 02:06:14
 
 import os
 import matplotlib
@@ -157,7 +157,7 @@ def sim_mav(m,h,b_list,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_
 		else:
 			plt.plot(IED,mav_mean,label=label_plot,color=plt_color,linestyle=linestyle)
 
-def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',threshold = 3):
+def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',threshold = 3, color_rgba=None):
 
 	#Definitions
 	if bw_filter:
@@ -171,15 +171,21 @@ def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',thresho
 	str_load = data_dir + saveplot_dir + dataset + datafile	
 	b, alpha_mean, alpha_std = np.loadtxt(str_load,delimiter='\t')
 
-	#Plots data
-	plt.errorbar(x=b,y=alpha_mean, yerr=alpha_std/2,fmt='o')
-
 	#Fits data to alpha~b^-fit_exp
 	fit_exp, fit_err, lin_coef = analysis.fitting.powerlaw(b,alpha_mean,alpha_std)
 
 	#Plots fit
 	X = np.arange(1,100)
 	plt.plot(X,lin_coef*np.power(X,-fit_exp),linestyle='--', color='k')
+
+	#Plots data
+	if color_rgba is not None:
+		plt.errorbar(b, alpha_mean, yerr=alpha_std/2, ecolor='k',fmt='none', elinewidth=1)
+		plt.scatter(b,alpha_mean,marker='s',color=color_rgba)
+		
+	else:
+		plt.errorbar(b, alpha_mean, yerr=alpha_std/2, ecolor='k', fmt='s')
+
 
 	return fit_exp, fit_err
 

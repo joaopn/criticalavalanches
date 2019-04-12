@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-11 23:23:24
+# @Last Modified time: 2019-04-12 02:14:20
 
 import analysis
 import matplotlib.pyplot as plt
@@ -119,6 +119,74 @@ def parametersDefault():
 	args = parser.parse_args()
 
 	return args
+
+def color_gradient(color,num_colors, brightness_lim=0.8):
+	"""Creates gradient color RGB matrices for the basic colors.
+
+	Supported colors: 'red', 'green', 'blue', 'grey'.
+	
+	Args:
+		color: color string, e.g. "red" or "r"
+		num_colors: number of colors to generate
+		brightness_lim: maximum brightness. Setting it to 1 means the last color is white (default: {0.8})
+	"""
+	color_rgb = np.zeros((num_colors,3))
+	v_num = np.linspace(brightness_lim,0,num=num_colors)
+
+	if color in ['r', 'red']:
+		color_rgb[:,0] = darkness
+		color_rgb[:,1] = v_num
+		color_rgb[:,2] = v_num
+
+	if color in ['g', 'green']:
+		color_rgb[:,0] = v_num
+		color_rgb[:,1] = 1
+		color_rgb[:,2] = v_num
+
+	if color in ['b', 'blue']:
+		color_rgb[:,0] = v_num
+		color_rgb[:,1] = v_num
+		color_rgb[:,2] = 1
+
+	if color in ['gray', 'grey']:
+		color_rgb[:,0] = 0.499 + v_num/2
+		color_rgb[:,1] = 0.499 + v_num/2
+		color_rgb[:,2] = 0.499 + v_num/2
+
+	return color_rgb
+
+def color_gradient_rgba(color,num_colors, brightness_lim=0.8, primary_index = 0.545):
+	"""Creates gradient colors RGBA matrices for basic colors
+	
+	Args:
+		color: color string, accepts both e.g. 'r' and 'red'
+		num_colors: number of colors to generate
+		brightness_lim: maximum brightness (default: {0.8})
+		primary_index: index of the base color. Setting it to 1 generates a pure tone (default: {0.545})
+	
+	Returns:
+		color RGBA matrix
+		float: [num_colors,4]
+	"""
+
+	color_rgba = np.zeros((num_colors,4))
+	color_rgba[:,3] = np.linspace((1-brightness_lim),1,num_colors)
+
+	if color in ['r', 'red']:
+		color_rgba[:,0] = primary_index
+
+	if color in ['g', 'green']:
+		color_rgba[:,1] = primary_index
+
+	if color in ['b', 'blue']:
+		color_rgba[:,2] = primary_index
+
+	if color in ['gray', 'grey']:
+		color_rgba[:,0] = 0.2
+		color_rgba[:,1] = 0.2
+		color_rgba[:,2] = 0.2 
+
+	return color_rgba
 
 def figure_mav(data_dir,b,bw_filter):
 
@@ -267,6 +335,11 @@ def figure_2(data_dir,d,reps,bw_filter):
 	fig_pS_size = [6,6]
 	fig_alpha_size = [3,3]
 	states = ['poisson', 'subcritical', 'reverberant', 'critical']
+	state_colors = {
+		'poisson':'green', 
+		'subcritical':'blue', 
+		'reverberant': 'gray', 
+		'critical':'red'}
 
 	#Sets path
 	if bw_filter:
@@ -285,23 +358,26 @@ def figure_2(data_dir,d,reps,bw_filter):
 		h = state_dict[state]['h']
 		print('Fig2: generating  plots for state:' + state)
 
+		#Gets line colors
+		plt_color = color_gradient_rgba(state_colors[state],len(b))
+
+		#Plots and fits alpha = alpha(b) for non-poisson dynamics
 		if state is not 'poisson':
 
-			#Plots alpha vs b
+			#Sets up figure
 			plt.figure(figsize=(fig_alpha_size[0]/2.54,fig_alpha_size[1]/2.54))
 			plt.xlabel(r'$\Delta$t')
 			plt.ylabel(r'$\alpha$')
 			plt.xscale('log')
 			plt.yscale('log')
-			plt.minorticks_off() #solves tick bu... "intended change in pyplot"
+			plt.minorticks_off() #solves tick bu... "intended changes" in pyplot
 			plt.xlim(1,100)
 			plt.ylim(0.8,2)			
 			plt.xticks([1,10,100])
 			plt.yticks([1,1.5,2],['1', '1.5', '2'])
-			#ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
 
-			fit_exp, fit_err = analysis.plot.plot_alpha_bs(m,h,d,datatype,reps,bw_filter,data_dir,threshold)
-
+			#Plots and fits alpha(b)
+			fit_exp, fit_err = analysis.plot.plot_alpha_bs(m,h,d,datatype,reps,bw_filter,data_dir,threshold, plt_color)
 
 			#Saves alpha vs b fit to file
 			str_save = str_savepath+'alpha_fitresults_d{:02d}.txt'.format(d)
@@ -314,7 +390,7 @@ def figure_2(data_dir,d,reps,bw_filter):
 			plt.savefig(str_save,bbox_inches="tight")
 			plt.close()
 
-		#Sets up figure
+		#Sets up pS figure
 		plt.figure(figsize=(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54))
 		plt.xlabel('Avalanche size S')
 		plt.ylabel('p(S)')
@@ -328,28 +404,16 @@ def figure_2(data_dir,d,reps,bw_filter):
 		str_title = r'$\tau$ = {:0.1f}$\pm${:0.1f} ms'.format(np.mean(tau_rep),np.std(tau_rep))
 		plt.title(str_title)
 
+		#Plots it
 		for i in range(len(b)):
-			#Sets up legend
+
 			bs_leg = r"$\Delta$t = {:d} ms".format(2*b[i])
-			#bs_leg = "Deltat = {:d} ms".format(2*b[i])
 
-			#Sets up color
-			c_id = float((i+1)/(len(b)))		
-			if state is 'critical':
-				plt_color = plt.cm.Reds(256,alpha=c_id)
-			elif state is 'reverberant':
-				plt_color = plt.cm.Greens(256,alpha=c_id)
-			elif state is 'subcritical':
-				plt_color = plt.cm.Blues(256,alpha=c_id)
-			elif state is 'poisson':
-				plt_color = plt.cm.Greys(256,alpha=c_id)
-
-			#Plots it
 			analysis.plot.sim_pS(m,h,d,b[i],datatype,reps,
 				label_plot=bs_leg,
 				bw_filter=bw_filter,
 				data_dir=data_dir,
-				plt_color=plt_color,
+				plt_color=plt_color[i,:],
 				plt_std=False)		
 
 		if state == 'poisson':
