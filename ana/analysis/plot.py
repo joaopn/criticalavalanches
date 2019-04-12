@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-12 03:03:39
+# @Last Modified time: 2019-04-12 03:25:44
 
 import os
 import matplotlib
@@ -102,7 +102,7 @@ def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='da
 		if plt_std:
 			pS_up = pS_mean + pS_std/2
 			pS_dw = pS_mean - pS_std/2
-			plt.fill_between(S,offset*pS_up,offset*pS_dw,alpha=0.5,color=plt_color)
+			plt.fill_between(S,offset*pS_up,offset*pS_dw,alpha=0.5,color=plt_color, lw=0)
 
 		if label_plot is None:
 			tau_rep = analysis.fitting.tau_sim_dataset(m,h,d[i],threshold,data_dir,bw_filter)

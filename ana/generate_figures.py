@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-12 02:14:20
+# @Last Modified time: 2019-04-12 03:45:51
 
 import analysis
 import matplotlib.pyplot as plt
@@ -216,7 +216,7 @@ def figure_mav(data_dir,b,bw_filter):
 	plt.ylim(0.5,1.75)
 	plt.yticks([0,0.5,1.,1.5])
 	plt.xticks(Xticks)	
-	plt.grid(True)
+	plt.grid(False)
 	ax = plt.gca()
 	ax.set_axisbelow(True)
 	ax.set_xticklabels(Xticklabels)
@@ -240,7 +240,7 @@ def figure_mav(data_dir,b,bw_filter):
 				linestyle=linestyles[j])
 
 		if j ==1:
-			plt.legend()
+			plt.legend(frameon=False)
 
 	#Saves figure
 	if len(b) == 1:
@@ -277,7 +277,7 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 		#Sets up figure
 		plt.figure(figsize=(fig_activity_size[0]/2.54,fig_activity_size[1]/2.54))
 		plt.xlim((0,10000))
-		plt.ylim((0,3))
+		plt.ylim((0,4))
 		plt.ylabel('Hz')
 
 		#Loads data
@@ -292,12 +292,12 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 		#Plots data
 		str_leg = r'$\tau = {:0.1f}$ ms'.format(tau_ms)
 		plt.plot(activity_data*1000/N/2,color=colors[i], linewidth=1,label=str_leg)
-		plt.legend(loc=1)
+		plt.legend(loc=1, frameon=False)
 
 		#Removes x labels
 		fig_gca = plt.gca()
 		fig_gca.axes.xaxis.set_ticklabels([])
-		fig_gca.set_yticks([0,1,2,3])
+		fig_gca.set_yticks([0,2,4])
 
 
 		#Saves plot
@@ -321,7 +321,7 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	print('Fig1: generating coarse sampled figure')
 	plt.figure(figsize=(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54))
 	plot_compare_states('coarse',b,d,reps,threshold,data_dir,bw_filter)
-	plt.legend(loc=3)
+	plt.legend(loc=3, frameon=False)
 	str_save = str_savepath + 'coarse_b{:02d}_d{:02d}.pdf'.format(b,d)
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
@@ -417,7 +417,7 @@ def figure_2(data_dir,d,reps,bw_filter):
 				plt_std=False)		
 
 		if state == 'poisson':
-			plt.legend()
+			plt.legend(frameon=False)
 
 		#Saves plot
 		str_save = str_savepath + 'coarse_' + state + '_d{:02d}.pdf'.format(d)
