@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-12 14:20:58
+# @Last Modified time: 2019-04-12 14:38:32
 
 import analysis
 import matplotlib.pyplot as plt
@@ -464,7 +464,7 @@ def figure_3(data_dir,reps,bw_filter):
 	#Plots states
 	states = ['subcritical', 'critical']
 	colors = ['blue', 'red']
-	offset_list = [1,5e-2,5e-4]
+	offset_list = [1,5e-3,2.5e-5]
 	state_dict = states_parameters()
 
 	for j in range(len(b_ps)):
