@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-12 02:06:14
+# @Last Modified time: 2019-04-12 03:03:39
 
 import os
 import matplotlib
@@ -185,7 +185,6 @@ def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',thresho
 		
 	else:
 		plt.errorbar(b, alpha_mean, yerr=alpha_std/2, ecolor='k', fmt='s')
-
 
 	return fit_exp, fit_err
 

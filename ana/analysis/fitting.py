@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-04-01 01:44:18
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-11 23:06:59
+# @Last Modified time: 2019-04-12 02:56:19
 
 import numpy as np
 import h5py
@@ -73,7 +73,7 @@ def powerlaw(X,Y,Yerr):
 		return a*np.power(x,-b)
 
 	#Fits courve with a LM algorithm
-	results, pcov = curve_fit(pl,X,Y,sigma=Yerr, method='lm', **kwargs)
+	results, pcov = curve_fit(pl,X,Y,sigma=Yerr, method='lm', p0=[2,0.1], **kwargs)
 
 	#Gets error
 	fit_err_all = np.sqrt(np.diag(pcov))
