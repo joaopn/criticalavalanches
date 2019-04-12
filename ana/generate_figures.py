@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-12 13:32:37
+# @Last Modified time: 2019-04-12 14:00:58
 
 import analysis
 import matplotlib.pyplot as plt
@@ -212,14 +212,18 @@ def figure_mav(data_dir,b,bw_filter):
 	plt.figure(figsize=(fig_size[0]/2.54,fig_size[1]/2.54))
 	plt.xlabel(r'IED d ($\mu$m)')
 	plt.ylabel(r'$m_{av}$')
-	plt.xlim(1,10)
-	plt.ylim(0.5,1.75)
-	plt.yticks([0,0.5,1.,1.5])
+	plt.xlim(2,10)
+	plt.ylim(0.25,1.75)
+	plt.yticks([0.5,1.,1.5])
 	plt.xticks(Xticks)	
 	plt.grid(False)
 	ax = plt.gca()
 	ax.set_axisbelow(True)
 	ax.set_xticklabels(Xticklabels)
+
+	#Plots guiding line
+	#plt.plot([1,10],[1,1],'--', color='k')
+	plt.grid(True)
 
 	#Plots states
 	states = ['subcritical','critical']
@@ -240,7 +244,7 @@ def figure_mav(data_dir,b,bw_filter):
 				linestyle=linestyles[j])
 
 		if j ==1:
-			plt.legend(frameon=False)
+			plt.legend(frameon=True)
 
 	#Saves figure
 	if len(b) == 1:

@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-12 03:25:44
+# @Last Modified time: 2019-04-12 13:58:32
 
 import os
 import matplotlib
@@ -151,7 +151,7 @@ def sim_mav(m,h,b_list,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_
 			tau_std = np.std(tau_all)
 
 			print('tau = {:0.1f} +- {:0.1f}'.format(tau_mean, tau_std))
-			str_label = r'$\Delta$t = {:d} ms, $\tau$ = {:0.1f}$\pm${:0.1f} ms'.format(2*b,tau_mean, tau_std)
+			str_label = r'$\Delta$t = {:d} ms, $\bar\tau$ = {:0.1f} ms'.format(2*b,tau_mean)
 
 			plt.plot(IED,mav_mean,label= str_label,color=plt_color,linestyle=linestyle)
 		else:
