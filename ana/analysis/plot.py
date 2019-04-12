@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-12 13:58:32
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-04-12 18:53:46
 
 import os
 import matplotlib
@@ -48,7 +48,7 @@ def pS_mean(S_list,label='data'):
 	pS_dw = pS_mean - pS_std/2
 
 	#Plots confidence interval (1 std) and mean
-	plt.fill_between(range(S_max),pS_up,pS_dw,alpha=0.25)
+	plt.fill_between(range(S_max),pS_up,pS_dw,alpha=0.25,lw=0)
 	plt.plot(range(S_max),pS_mean,label=label)
 	plt.legend()
 
@@ -136,7 +136,7 @@ def sim_mav(m,h,b_list,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_
 		#Plots data
 		mav_up = mav_mean + mav_std/2
 		mav_dw = mav_mean - mav_std/2
-		plt.fill_between(IED,mav_up,mav_dw,alpha=0.5,color=plt_color)
+		plt.fill_between(IED,mav_up,mav_dw,alpha=0.5,color=plt_color,lw=0)
 
 		if label_plot is None:
 
@@ -157,7 +157,7 @@ def sim_mav(m,h,b_list,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_
 		else:
 			plt.plot(IED,mav_mean,label=label_plot,color=plt_color,linestyle=linestyle)
 
-def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',threshold = 3, color_rgba=None):
+def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',threshold = 3, color_rgb=None):
 
 	#Definitions
 	if bw_filter:
@@ -179,9 +179,9 @@ def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',thresho
 	plt.plot(X,lin_coef*np.power(X,-fit_exp),linestyle='--', color='k')
 
 	#Plots data
-	if color_rgba is not None:
+	if color_rgb is not None:
 		plt.errorbar(b, alpha_mean, yerr=alpha_std/2, ecolor='k',fmt='none', elinewidth=1)
-		plt.scatter(b,alpha_mean,marker='s',color=color_rgba)
+		plt.scatter(b,alpha_mean,marker='s',color=color_rgb)
 		
 	else:
 		plt.errorbar(b, alpha_mean, yerr=alpha_std/2, ecolor='k', fmt='s')

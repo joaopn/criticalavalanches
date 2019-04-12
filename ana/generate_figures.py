@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-12 14:38:32
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-04-12 19:06:57
 
 import analysis
 import matplotlib.pyplot as plt
@@ -187,6 +187,22 @@ def color_gradient_rgba(color,num_colors, brightness_lim=0.8, primary_index = 0.
 		color_rgba[:,2] = 0.2 
 
 	return color_rgba
+
+def convert_rgba_rgb(colors):
+
+	rgb_background = np.array([1,1,1], dtype = float)
+
+	colors = np.array(colors)
+
+	n_colors = colors.shape[0]
+	colors_rgb = np.zeros((n_colors,3))
+
+	for i in range(n_colors):
+		alpha = colors[i,3]
+		colors_rgb[i,:] = (1-alpha)*rgb_background + alpha*colors[i,:3]
+
+	return colors_rgb
+
 
 def figure_mav(data_dir,b,bw_filter):
 
@@ -378,7 +394,7 @@ def figure_2(data_dir,d,reps,bw_filter):
 			plt.xlim(1,100)
 			plt.ylim(0.9,2)			
 			plt.xticks([1,10,100])
-			plt.yticks([1,1.5,2],['1', '1.5', '2'])
+			plt.yticks([1,1.5,2],['-1', '-1.5', '-2'])
 			ax1 = plt.gca()
 			ax1.spines['right'].set_visible(False)
 			ax1.spines['top'].set_visible(False)
