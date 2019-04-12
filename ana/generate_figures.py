@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-12 03:45:51
+# @Last Modified time: 2019-04-12 13:32:37
 
 import analysis
 import matplotlib.pyplot as plt
@@ -333,7 +333,7 @@ def figure_2(data_dir,d,reps,bw_filter):
 	threshold = 3
 	datatype = 'coarse'
 	fig_pS_size = [6,6]
-	fig_alpha_size = [3,3]
+	fig_alpha_size = [2.5,2]
 	states = ['poisson', 'subcritical', 'reverberant', 'critical']
 	state_colors = {
 		'poisson':'green', 
@@ -366,15 +366,18 @@ def figure_2(data_dir,d,reps,bw_filter):
 
 			#Sets up figure
 			plt.figure(figsize=(fig_alpha_size[0]/2.54,fig_alpha_size[1]/2.54))
-			plt.xlabel(r'$\Delta$t')
-			plt.ylabel(r'$\alpha$')
+			plt.xlabel(r'$\Delta$t (ms)')
+			plt.ylabel(r'$\alpha$', rotation='horizontal')
 			plt.xscale('log')
 			plt.yscale('log')
 			plt.minorticks_off() #solves tick bu... "intended changes" in pyplot
 			plt.xlim(1,100)
-			plt.ylim(0.8,2)			
+			plt.ylim(0.9,2)			
 			plt.xticks([1,10,100])
 			plt.yticks([1,1.5,2],['1', '1.5', '2'])
+			ax1 = plt.gca()
+			ax1.spines['right'].set_visible(False)
+			ax1.spines['top'].set_visible(False)
 
 			#Plots and fits alpha(b)
 			fit_exp, fit_err = analysis.plot.plot_alpha_bs(m,h,d,datatype,reps,bw_filter,data_dir,threshold, plt_color)
@@ -387,7 +390,7 @@ def figure_2(data_dir,d,reps,bw_filter):
 
 			#Saves plot of alpha vs b
 			str_save = str_savepath + 'fit_' + state + '_d{:02d}.pdf'.format(d)
-			plt.savefig(str_save,bbox_inches="tight")
+			plt.savefig(str_save,bbox_inches="tight", transparent=True)
 			plt.close()
 
 		#Sets up pS figure
@@ -401,7 +404,7 @@ def figure_2(data_dir,d,reps,bw_filter):
 
 		#Calculates tau
 		tau_rep = analysis.fitting.tau_sim_dataset(m,h,int(d),threshold,data_dir,bw_filter)
-		str_title = r'$\tau$ = {:0.1f}$\pm${:0.1f} ms'.format(np.mean(tau_rep),np.std(tau_rep))
+		str_title = r'$\bar\tau$ = {:0.1f} ms'.format(np.mean(tau_rep))
 		plt.title(str_title)
 
 		#Plots it
