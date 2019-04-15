@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-15 15:59:57
+# @Last Modified time: 2019-04-15 16:20:00
 
 import analysis
 import matplotlib.pyplot as plt
@@ -271,8 +271,10 @@ def figure_mav(data_dir,b,bw_filter):
 			m = state_dict[states[i]]['m']
 			h = state_dict[states[i]]['h']
 
+			color_state = color_picker(colors[i])
+
 			analysis.plot.sim_mav(m,h,b[j],data_dir,
-				bw_filter=bw_filter, plt_color=colors[i],
+				bw_filter=bw_filter, plt_color=color_state,
 				linestyle=linestyles[j])
 
 		if j ==1:
