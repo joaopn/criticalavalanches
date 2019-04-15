@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-15 05:15:14
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-04-15 15:43:46
 
 import os
 import matplotlib
@@ -196,7 +196,6 @@ def plot_alpha_bs(m,h,b,d,datatype,reps,bw_filter = False,data_dir ='dat/',thres
 		plt.errorbar(b, alpha_mean, yerr=alpha_std/2, ecolor='k', fmt='s', s=16)
 
 	return fit_exp, fit_err
-
 
 def analyze_pS(data, b, threshold=3):
 	"""Does the avalanche analysis of a raw data matrix and plots p(S)

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-15 05:37:53
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-04-15 15:59:57
 
 import analysis
 import matplotlib.pyplot as plt
@@ -28,6 +28,19 @@ def states_parameters():
 	}
 
 	return state_dict
+
+def color_picker(color_str):
+
+	if color_str in ['red', 'r']:
+		color_rgb = [255,51,51]
+	elif color_str in ['blue', 'b']:
+		color_rgb = [51,102,153]
+	elif color_str in ['green', 'g']:
+		color_rgb = [0,153,51]
+	elif color_str in ['gray', 'grey']:
+		color_rgb = [128,128,128]
+
+	return np.array(color_rgb)/255
 
 def pS_filepath(state,datatype,d,b,reps,threshold,data_dir, bw_filter):
 
@@ -93,7 +106,8 @@ def plot_compare_states(datatype,b,d,reps,threshold,data_dir,bw_filter):
 		h = state_dict[states[i]]['h']
 
 		#Plots distributions
-		analysis.plot.sim_pS(m,h,d,b,datatype,reps,None,bw_filter,data_dir,threshold,colors[i])
+		color_data = color_picker(colors[i])
+		analysis.plot.sim_pS(m,h,d,b,datatype,reps,None,bw_filter,data_dir,threshold,color_data)
 
 def parametersDefault():
 
@@ -312,8 +326,9 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 		tau_ms = analysis.fitting.tau_linear(activity_data)
 
 		#Plots data
+		color_data = color_picker(colors[i])
 		str_leg = r'$\tau = {:0.1f}$ ms'.format(tau_ms)
-		plt.plot(activity_data*1000/N/2,color=colors[i], linewidth=1,label=str_leg)
+		plt.plot(activity_data*1000/N/2,color=color_data, linewidth=1,label=str_leg)
 		plt.legend(loc=1, frameon=False)
 
 		#Removes x labels
@@ -494,7 +509,8 @@ def figure_3(data_dir,reps,bw_filter):
 			h = state_dict[states[i]]['h']
 
 			#Plots distributions
-			analysis.plot.sim_pS(m,h,d_ps[j],b_ps[j],'coarse',reps,None,bw_filter,data_dir,threshold,colors[i],True,offset_list[j])	
+			color_plot = color_picker(colors[i])
+			analysis.plot.sim_pS(m,h,d_ps[j],b_ps[j],'coarse',reps,None,bw_filter,data_dir,threshold,color_plot,True,offset_list[j])	
 
 	str_save = str_savepath + 'ps_comparison.pdf'
 	plt.savefig(str_save,bbox_inches="tight")
