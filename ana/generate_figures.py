@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-15 05:24:31
+# @Last Modified time: 2019-04-15 05:37:53
 
 import analysis
 import matplotlib.pyplot as plt
@@ -389,9 +389,10 @@ def figure_2(data_dir,d,reps,bw_filter):
 
 			#Sets up figure
 			plt.figure(figsize=(fig_alpha_size[0]/2.54,fig_alpha_size[1]/2.54))
-			#plt.xlabel(r'$\Delta$t (ms)')
+			plt.xlabel(r'$\Delta$t (ms)')
 			plt.ylabel(r'$\alpha$', rotation='horizontal')
 			plt.xscale('log')
+			plt.yscale('log')
 			plt.minorticks_off() #solves tick bu... "intended changes" in pyplot
 			plt.xlim(0.1,100)
 			plt.ylim(1.1,2.1)			
