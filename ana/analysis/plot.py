@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-12 18:53:46
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-04-15 04:14:43
 
 import os
 import matplotlib
@@ -176,15 +176,15 @@ def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',thresho
 
 	#Plots fit
 	X = np.arange(1,100)
-	plt.plot(X,lin_coef*np.power(X,-fit_exp),linestyle='--', color='k')
+	plt.plot(X,lin_coef*np.power(X,-fit_exp),linestyle='--', color='k', zorder=1)
 
 	#Plots data
 	if color_rgb is not None:
 		plt.errorbar(b, alpha_mean, yerr=alpha_std/2, ecolor='k',fmt='none', elinewidth=1)
-		plt.scatter(b,alpha_mean,marker='s',color=color_rgb)
+		plt.scatter(b,alpha_mean,marker='s',color=color_rgb, s=16, zorder=2)
 		
 	else:
-		plt.errorbar(b, alpha_mean, yerr=alpha_std/2, ecolor='k', fmt='s')
+		plt.errorbar(b, alpha_mean, yerr=alpha_std/2, ecolor='k', fmt='s', s=16)
 
 	return fit_exp, fit_err
 

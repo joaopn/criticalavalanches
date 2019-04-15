@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-12 19:06:57
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-04-15 04:17:32
 
 import analysis
 import matplotlib.pyplot as plt
@@ -190,9 +190,12 @@ def color_gradient_rgba(color,num_colors, brightness_lim=0.8, primary_index = 0.
 
 def convert_rgba_rgb(colors):
 
-	rgb_background = np.array([1,1,1], dtype = float)
-
+	#Deals with python dimentionality silliness
 	colors = np.array(colors)
+	if colors.ndim == 1:
+		colors = np.expand_dims(colors,0)
+
+	rgb_background = np.array([1,1,1], dtype = float)
 
 	n_colors = colors.shape[0]
 	colors_rgb = np.zeros((n_colors,3))
@@ -202,7 +205,6 @@ def convert_rgba_rgb(colors):
 		colors_rgb[i,:] = (1-alpha)*rgb_background + alpha*colors[i,:3]
 
 	return colors_rgb
-
 
 def figure_mav(data_dir,b,bw_filter):
 
@@ -356,9 +358,9 @@ def figure_2(data_dir,d,reps,bw_filter):
 	fig_alpha_size = [2.5,2]
 	states = ['poisson', 'subcritical', 'reverberant', 'critical']
 	state_colors = {
-		'poisson':'green', 
+		'poisson':'gray', 
 		'subcritical':'blue', 
-		'reverberant': 'gray', 
+		'reverberant': 'green', 
 		'critical':'red'}
 
 	#Sets path
@@ -380,13 +382,14 @@ def figure_2(data_dir,d,reps,bw_filter):
 
 		#Gets line colors
 		plt_color = color_gradient_rgba(state_colors[state],len(b))
+		plt_color = convert_rgba_rgb(plt_color)
 
 		#Plots and fits alpha = alpha(b) for non-poisson dynamics
 		if state is not 'poisson':
 
 			#Sets up figure
 			plt.figure(figsize=(fig_alpha_size[0]/2.54,fig_alpha_size[1]/2.54))
-			plt.xlabel(r'$\Delta$t (ms)')
+			#plt.xlabel(r'$\Delta$t (ms)')
 			plt.ylabel(r'$\alpha$', rotation='horizontal')
 			plt.xscale('log')
 			plt.yscale('log')
