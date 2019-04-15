@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-15 04:17:32
+# @Last Modified time: 2019-04-15 04:37:54
 
 import analysis
 import matplotlib.pyplot as plt
@@ -351,7 +351,7 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 def figure_2(data_dir,d,reps,bw_filter):
 
 	#Parameters
-	b = [1,2,4,8,16]
+	b = [1,2,4,8]
 	threshold = 3
 	datatype = 'coarse'
 	fig_pS_size = [6,6]
@@ -403,7 +403,7 @@ def figure_2(data_dir,d,reps,bw_filter):
 			ax1.spines['top'].set_visible(False)
 
 			#Plots and fits alpha(b)
-			fit_exp, fit_err = analysis.plot.plot_alpha_bs(m,h,d,datatype,reps,bw_filter,data_dir,threshold, plt_color)
+			fit_exp, fit_err = analysis.plot.plot_alpha_bs(m,h,b,d,datatype,reps,bw_filter,data_dir,threshold, plt_color)
 
 			#Saves alpha vs b fit to file
 			str_save = str_savepath+'alpha_fitresults_d{:02d}.txt'.format(d)

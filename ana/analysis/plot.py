@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-15 04:14:43
+# @Last Modified time: 2019-04-15 05:06:13
 
 import os
 import matplotlib
@@ -157,9 +157,10 @@ def sim_mav(m,h,b_list,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_
 		else:
 			plt.plot(IED,mav_mean,label=label_plot,color=plt_color,linestyle=linestyle)
 
-def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',threshold = 3, color_rgb=None):
+def plot_alpha_bs(m,h,b,d,datatype,reps,bw_filter = False,data_dir ='dat/',threshold = 3, color_rgb=None):
 
 	#Definitions
+	deltaT = 2
 	if bw_filter:
 		saveplot_dir = 'analyzed_filtered/'
 	else:
@@ -169,7 +170,15 @@ def plot_alpha_bs(m,h,d,datatype,reps,bw_filter = False,data_dir ='dat/',thresho
 	dataset = 'm{:0.5f}_h{:0.3e}_d{:02d}_th{:0.1f}_rep{:02d}/'.format(m,h,d,threshold,reps)
 	datafile = 'alpha_' + datatype + '.tsv'
 	str_load = data_dir + saveplot_dir + dataset + datafile	
-	b, alpha_mean, alpha_std = np.loadtxt(str_load,delimiter='\t')
+	b_data, alpha_mean_data, alpha_std_data = np.loadtxt(str_load,delimiter='\t')
+
+	#Censors data, only using data for the given b
+	b_deltat = deltaT*np.array(b,dtype=float)
+	b_sort = np.argsort(b_data)
+	b_index = b_sort[np.searchsorted(b_data, b_deltat, sorter=b_sort)]
+	b = b_data[b_index]
+	alpha_mean = alpha_mean_data[b_index]
+	alpha_std = alpha_std_data[b_index]
 
 	#Fits data to alpha~b^-fit_exp
 	fit_exp, fit_err, lin_coef = analysis.fitting.powerlaw(b,alpha_mean,alpha_std)
