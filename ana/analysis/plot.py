@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-15 05:06:13
+# @Last Modified time: 2019-04-15 05:15:14
 
 import os
 import matplotlib
@@ -184,7 +184,7 @@ def plot_alpha_bs(m,h,b,d,datatype,reps,bw_filter = False,data_dir ='dat/',thres
 	fit_exp, fit_err, lin_coef = analysis.fitting.powerlaw(b,alpha_mean,alpha_std)
 
 	#Plots fit
-	X = np.arange(1,100)
+	X = np.arange(0.1,100)
 	plt.plot(X,lin_coef*np.power(X,-fit_exp),linestyle='--', color='k', zorder=1)
 
 	#Plots data
