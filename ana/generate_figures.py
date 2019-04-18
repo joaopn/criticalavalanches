@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-18 17:29:30
+# @Last Modified time: 2019-04-18 18:06:01
 
 import analysis
 import matplotlib.pyplot as plt
@@ -19,12 +19,12 @@ rc('legend', fontsize=8)
 
 def states_tau():
 
-	#Gets tau for legends
+	#Gets tau for legends, from reps=50 datasets encompassing d \in [2,10]
 	state_tau = {
-		'poisson': {'tau': 0.000, 'std': 2e-3},
-		'subcritical': {'tau': 0.900, 'std': 2e-4},
-		'reverberant': {'tau': 0.900, 'std': 2e-4},
-		'critical': {'tau': 0.900, 'std': 2e-4}
+		'poisson': {'tau': 0.1342898650609103, 'std': 0.13768478203889073},
+		'subcritical': {'tau': 18.964152286594654, 'std': 0.08660762654290584},
+		'reverberant': {'tau': 98.26704463714672, 'std': 1.0030388400445385},
+		'critical': {'tau': 1581.1362196543237, 'std': 114.9900207541611}
 	}	
 
 	return state_tau
