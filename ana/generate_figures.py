@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-18 18:06:01
+# @Last Modified time: 2019-04-18 19:12:15
 
 import analysis
 import matplotlib.pyplot as plt
@@ -119,7 +119,7 @@ def plot_compare_states(datatype,b,d,reps,threshold,data_dir,bw_filter):
 	plt.yscale('log')
 	plt.xscale('log')
 	plt.xlim(1,300)
-	plt.ylim(1e-7,1)
+	plt.ylim(1e-6,1)
 	plt.yticks([1e-6,1e-4,1e-2,1])
 
 def parametersDefault():
@@ -310,8 +310,8 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	N = 160000
 	threshold = 3
 	rep_activity = 0 #timeseries to plot the activity from
-	fig_activity_size = [6,2] #in cm
-	fig_pS_size = [7,7.5]
+	fig_activity_size = [5,2] #in cm
+	fig_pS_size = [6.5,6]
 
 	#Sets path
 	if bw_filter:
