@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-11 03:49:13
+# @Last Modified time: 2019-04-18 20:45:35
 
 from analysis import avalanche, plot, fitting
 import numpy as np
@@ -76,6 +76,35 @@ def parse_sim_thresholded_no_d(datadir, bw_filter=False, datamask = None):
 
 	return datafiles,d_list
 
+def parse_sim_no_d(datadir):
+	#Returns the unique filenames with no e.g. "_d00_th3.0.hdf5". 
+	#ALL datasets must have same values for "dxx"
+
+	#Parameters
+	d_check_max = 30
+
+	#Lists all files
+	homedir = os.getcwd()
+	os.chdir(datadir)
+	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
+	os.chdir(homedir)	
+
+	#Checks all strings and adds present dxx to list
+	d_check_list = ["d{:02d}".format(d_i) for d_i in range(1,d_check_max+1)]
+	d_list = []
+	for d_i in d_check_list:
+		if any(d_i in data_i for data_i in datafiles):
+			d_list.append(int(d_i[1:]))
+
+	#Removes dxx_thyy from filename
+	for d in d_list:
+		datafiles = [f.partition("d{:02d}".format(d))[0] for f in datafiles]
+
+	#Gets unique strings
+	datafiles = list(set(datafiles))
+
+	return datafiles,d_list
+
 def parametersDefault():
 
 	#default Parameters
@@ -85,7 +114,7 @@ def parametersDefault():
 	datatypeDefault = 'coarse'
 	datafolderDefault = 'dat/'
 	modeDefault = 'save_plot'
-	bw_filterDefault = False
+	bw_filterDefault = True
 
 	#Parse input
 	parser = argparse.ArgumentParser()
@@ -391,6 +420,45 @@ def save_ps_alpha(data_dir, filename, binsize, bw_filter, reps=None, xmax=50):
 		str_save = str_savefolder + str_savefile
 		np.savetxt(str_save,(X,alpha_mean,alpha_std),delimiter='\t',header='b\talpha_mean\talpha_std')	
 
+def save_corr(data_dir, filename, d_list, reps=None):
+
+	#Parameters
+	elec_base = 0
+	str_coarse = 'data/coarse'
+	str_sub = 'data/sub'
+
+	#Definitions
+	save_dir = 'correlations/'
+
+	#Runs it for every d
+	for d in d_list:
+		corr_coarse = np.zeros(reps)
+		corr_sub = np.zeros(reps)
+
+		#Runs it for every rep
+		for i in range(reps):
+
+			#Loads coarse and sub data
+			filepath = data_dir + filename + 'd{:02d}_r{:02d}.hdf5'.format(d,i)
+			file = h5py.File(filepath,'r')
+			data_coarse = file[str_coarse][elec_base:elec_base+2,:]
+			data_sub = file[str_sub][elec_base:elec_base+2,:]
+
+			#Calculates correlations
+			corr_coarse[i] = np.corrcoef(data_coarse[0,:], y=data_coarse[1,:])[0,1]
+			corr_sub[i] = np.corrcoef(data_sub[0,:], data_sub[1,:])[0,1]
+			file.close()
+
+		print('d = {:02d}: coarse = {:0.2f}, sub = {:0.2f}'.format(d,np.mean(corr_coarse), np.mean(corr_sub)))
+
+		# #Saves results
+		# str_savefolder = data_dir + save_dir + '/'
+		# if not os.path.exists(str_savefolder):
+		# 	os.makedirs(str_savefolder)
+		# str_savefile = str_savefolder + filename + '_d{:02d}_rep{:02d}.tsv'.format(d,reps)
+		# with open(str_savefile, 'w') as f:
+		# 	np.savetxt(f,(corr_coarse,corr_sub),delimiter='\t',header='coarse\tsub')	
+
 if __name__ == "__main__":
 
 	#Parse input
@@ -455,3 +523,9 @@ if __name__ == "__main__":
 				binsize=binsize,
 				threshold=threshold,
 				bw_filter=bw_filter)		
+
+	elif mode == 'save_corr':
+		dataset_list,d_list = parse_sim_no_d(datafolder)
+		for i in range(len(dataset_list)):
+			print('Calculating timeseries correlations: ' + dataset_list[i])
+			save_corr(datafolder, dataset_list[i], d_list, reps)
