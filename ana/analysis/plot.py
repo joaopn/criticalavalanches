@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-15 15:43:46
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-04-18 16:50:39
 
 import os
 import matplotlib
@@ -107,9 +107,9 @@ def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='da
 		if label_plot is None:
 			tau_rep = analysis.fitting.tau_sim_dataset(m,h,d[i],threshold,data_dir,bw_filter)
 			str_label = r'$\tau$ = {:0.1f} $\pm$ {:0.1f} ms'.format(np.mean(tau_rep), np.std(tau_rep))
-			plt.loglog(S,offset*pS_mean,label= str_label,color=plt_color)
+			plt.plot(S,offset*pS_mean,label= str_label,color=plt_color)
 		else:			
-			plt.loglog(S,offset*pS_mean,label=label_plot[i],
+			plt.plot(S,offset*pS_mean,label=label_plot[i],
 				color=plt_color)
 
 def sim_mav(m,h,b_list,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_color='black', linestyle='-'):
@@ -141,14 +141,7 @@ def sim_mav(m,h,b_list,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_
 		if label_plot is None:
 
 			print('Calculating tau for b = {:02d}'.format(b))
-
-			tau_all = np.zeros(0)
-			for d in IED:
-				tau_d = analysis.fitting.tau_sim_dataset(m,h,int(d),threshold,data_dir,bw_filter)
-				tau_all = np.concatenate((tau_all,tau_d))
-
-			tau_mean = np.mean(tau_all)
-			tau_std = np.std(tau_all)
+			tau_mean, tau_std = analysis.fitting.tau_sim_dataset(m,h,IED,threshold,data_dir,bw_filter)
 
 			print('tau = {:0.1f} +- {:0.1f}'.format(tau_mean, tau_std))
 			str_label = r'$\Delta$t = {:d} ms, $\bar\tau$ = {:0.1f} ms'.format(2*b,tau_mean)

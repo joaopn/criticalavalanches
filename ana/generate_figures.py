@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-15 16:20:00
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-04-18 17:29:30
 
 import analysis
 import matplotlib.pyplot as plt
@@ -11,10 +11,23 @@ import h5py
 import os
 import argparse
 
-from matplotlib import rcParams
+from matplotlib import rcParams, rc
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Arial']
-rcParams['font.size'] = 8
+rcParams['font.size'] = 10
+rc('legend', fontsize=8)
+
+def states_tau():
+
+	#Gets tau for legends
+	state_tau = {
+		'poisson': {'tau': 0.000, 'std': 2e-3},
+		'subcritical': {'tau': 0.900, 'std': 2e-4},
+		'reverberant': {'tau': 0.900, 'std': 2e-4},
+		'critical': {'tau': 0.900, 'std': 2e-4}
+	}	
+
+	return state_tau
 
 def states_parameters():
 
@@ -24,7 +37,6 @@ def states_parameters():
 		'subcritical': {'m': 0.900, 'h': 2e-4},
 		'reverberant': {'m': 0.980, 'h': 4e-5},
 		'critical': {'m': 0.999, 'h': 2e-6},
-		'critical500': {'m': 0.996, 'h': 8e-6},
 	}
 
 	return state_dict
@@ -79,45 +91,47 @@ def thresholded_filepath(state,d,threshold,data_dir,bw_filter):
 
 def plot_compare_states(datatype,b,d,reps,threshold,data_dir,bw_filter):
 
-	#Sets up subfigure
-	plt.xlabel('Avalanche size S')
-	plt.ylabel('p(S)')
-	plt.yscale('log')
-	plt.xscale('log')
-	plt.xlim(1,100)
-	plt.ylim(1e-7,1)
-
 	#Plots guiding line
 	X = np.arange(5,64)
 	Y = np.power(X,-1.5)
 	Y = 5*Y/np.sum(Y)
-	plt.plot(X,Y,linestyle='--',color='black',label=r'$p(S) \sim S^{-1.5}$')
+	#plt.plot(X,Y,linestyle='--',color='black',label=r'$p(S) \sim S^{-1.5}$')
+	plt.plot(X,Y,linestyle='--',color='black',label=None)
 
 	#Plots states
-	states = ['subcritical','reverberant', 'critical']
-	colors = ['blue', 'green', 'red']
+	states = ['poisson','subcritical','reverberant', 'critical']
+	colors = ['gray','blue', 'green', 'red']
 	state_dict = states_parameters()
 
 	for i in range(len(states)):
 
-		#Get parameters
-		
+		#Get parameters		
 		m = state_dict[states[i]]['m']
 		h = state_dict[states[i]]['h']
 
 		#Plots distributions
 		color_data = color_picker(colors[i])
-		analysis.plot.sim_pS(m,h,d,b,datatype,reps,None,bw_filter,data_dir,threshold,color_data)
+		analysis.plot.sim_pS(m,h,d,b,datatype,reps,states[i],bw_filter,data_dir,threshold,color_data)
+
+	#Adjusts figure properties
+	plt.xlabel('Avalanche size S')
+	plt.ylabel('p(S)')
+	plt.yscale('log')
+	plt.xscale('log')
+	plt.xlim(1,300)
+	plt.ylim(1e-7,1)
+	plt.yticks([1e-6,1e-4,1e-2,1])
 
 def parametersDefault():
 
 	#default Parameters
 	figDefault = '1'
-	binsizeDefault=4
+	binsizeDefault= 4
 	repsDefault = 50
 	dDefault = 8
 	datafolderDefault = 'dat/'
 	bw_filterDefault = True
+	datatypeDefault = 'coarse'
 
 	#Parse input
 	parser = argparse.ArgumentParser()
@@ -129,6 +143,7 @@ def parametersDefault():
 	parser.add_argument("-d",type=int,nargs='?',const=1,default=dDefault)
 	parser.add_argument("--bw_filter",type=bool,nargs='?',const=1,default=bw_filterDefault)
 	parser.add_argument("--fig",type=int,nargs='?',const=1,default=figDefault)
+	parser.add_argument("--datatype",type=str,nargs='?',const=1,default=datatypeDefault)
 	
 	args = parser.parse_args()
 
@@ -234,9 +249,9 @@ def figure_mav(data_dir,b,bw_filter):
 
 	#Sets path
 	if bw_filter:
-		str_savepath = 'figs/fig3_filtered/'
+		str_savepath = 'figs/fig2_filtered/'
 	else:
-		str_savepath = 'figs/fig3_unfiltered/'
+		str_savepath = 'figs/fig2_unfiltered/'
 	if not os.path.exists(str_savepath):
 		os.makedirs(str_savepath)
 
@@ -273,9 +288,10 @@ def figure_mav(data_dir,b,bw_filter):
 
 			color_state = color_picker(colors[i])
 
+			str_label = r'$\Delta$t = {:d} ms, '.format(2*b[j]) + states[i]
 			analysis.plot.sim_mav(m,h,b[j],data_dir,
 				bw_filter=bw_filter, plt_color=color_state,
-				linestyle=linestyles[j])
+				linestyle=linestyles[j], label_plot=str_label)
 
 		if j ==1:
 			plt.legend(frameon=True)
@@ -294,7 +310,7 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	N = 160000
 	threshold = 3
 	rep_activity = 0 #timeseries to plot the activity from
-	fig_activity_size = [5,2] #in cm
+	fig_activity_size = [6,2] #in cm
 	fig_pS_size = [7,7.5]
 
 	#Sets path
@@ -307,8 +323,9 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 
 	"""Generates timeseries figures"""
 	print('Fig1: generating timeseries figures')
-	states = ['subcritical', 'reverberant', 'critical']
-	colors = ['blue', 'green','red']
+	states = ['poisson','subcritical', 'reverberant', 'critical']
+	colors = ['gray','blue', 'green','red']
+	states_tau_dict = states_tau()
 
 	for i in range(len(states)):
 
@@ -324,12 +341,9 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 		activity_data = file['activity'][rep_activity,:]
 		file.close()
 
-		#Gets tau
-		tau_ms = analysis.fitting.tau_linear(activity_data)
-
 		#Plots data
 		color_data = color_picker(colors[i])
-		str_leg = r'$\tau = {:0.1f}$ ms'.format(tau_ms)
+		str_leg = r'$\bar\tau$ = {:0.1f} ms'.format(states_tau_dict[states[i]]['tau'])
 		plt.plot(activity_data*1000/N/2,color=color_data, linewidth=1,label=str_leg)
 		plt.legend(loc=1, frameon=False)
 
@@ -337,7 +351,6 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 		fig_gca = plt.gca()
 		fig_gca.axes.xaxis.set_ticklabels([])
 		fig_gca.set_yticks([0,2,4])
-
 
 		#Saves plot
 		str_save = str_savepath + 'activity_d{:02d}_rep{:02d}_'.format(d,rep_activity) + states[i] +'.pdf'
@@ -351,6 +364,8 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	print('Fig1: generating subsampled figure')
 	plt.figure(figsize=(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54))
 	plot_compare_states('sub',b,d,reps,threshold,data_dir,bw_filter)
+	#ax = plt.gca()
+	#ax.get_legend().remove()
 	str_save = str_savepath + 'sub_b{:02d}_d{:02d}.pdf'.format(b,d)
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
@@ -360,17 +375,74 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	print('Fig1: generating coarse sampled figure')
 	plt.figure(figsize=(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54))
 	plot_compare_states('coarse',b,d,reps,threshold,data_dir,bw_filter)
-	plt.legend(loc=3, frameon=False)
+	#plt.legend(loc=3, frameon=False)
+	# ax = plt.gca()
+	# ax.get_legend().remove()
 	str_save = str_savepath + 'coarse_b{:02d}_d{:02d}.pdf'.format(b,d)
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
 
-def figure_2(data_dir,d,reps,bw_filter):
+def figure_2(data_dir,reps,bw_filter):
+
+	#Sets path
+	if bw_filter:
+		str_savepath = 'figs/fig2_filtered/'
+	else:
+		str_savepath = 'figs/fig2_unfiltered/'
+	if not os.path.exists(str_savepath):
+		os.makedirs(str_savepath)
+
+	#Parameters
+	fig_size = [7,7.5]
+	b_mav = [2,4]
+	b_ps = [2,2,2]
+	d_ps = [1,4,10]
+	threshold = 3
+	
+	#Saves (m_av vs d) figure
+	figure_mav(data_dir,b_mav,bw_filter)
+
+	#Plots comparison of different (b,d) configurations
+
+	#Sets up figure
+	plt.figure(figsize=(fig_size[0]/2.54,fig_size[1]/2.54))
+
+	#Plots states
+	states = ['subcritical', 'critical']
+	colors = ['blue', 'red']
+	offset_list = [1,5e-3,2.5e-5]
+	state_dict = states_parameters()
+
+	for j in range(len(b_ps)):
+		for i in range(len(states)):
+
+			#Get parameters		
+			m = state_dict[states[i]]['m']
+			h = state_dict[states[i]]['h']
+
+			#Plots distributions
+			color_plot = color_picker(colors[i])
+			str_leg = r'$Delta$t = {:02d}, '.format(2*b_ps[j]) + states[i]
+			analysis.plot.sim_pS(m,h,d_ps[j],b_ps[j],'coarse',reps,str_leg,bw_filter,data_dir,threshold,color_plot,True,offset_list[j])	
+
+	#Adjusts figure
+	plt.xlabel('Avalanche size S')
+	plt.ylabel('p(S)')
+	plt.yscale('log')
+	plt.xscale('log')
+	plt.xlim(1,100)
+	plt.ylim(1e-10,1)
+	plt.yticks([1e-9,1e-6,1e-3,1])
+
+	str_save = str_savepath + 'ps_comparison.pdf'
+	plt.savefig(str_save,bbox_inches="tight")
+	plt.close()
+
+def figure_3(data_dir,d,reps,bw_filter, datatype):
 
 	#Parameters
 	b = [1,2,4,8]
 	threshold = 3
-	datatype = 'coarse'
 	fig_pS_size = [6,6]
 	fig_alpha_size = [2.5,2]
 	states = ['poisson', 'subcritical', 'reverberant', 'critical']
@@ -382,14 +454,15 @@ def figure_2(data_dir,d,reps,bw_filter):
 
 	#Sets path
 	if bw_filter:
-		str_savepath = 'figs/fig2_filtered/'
+		str_savepath = 'figs/fig3_filtered/'
 	else:
-		str_savepath = 'figs/fig2_unfiltered/'
+		str_savepath = 'figs/fig3_unfiltered/'
 	if not os.path.exists(str_savepath):
 		os.makedirs(str_savepath)
 
 	#Gets state variables
-	state_dict = state_dict = states_parameters()
+	state_dict = states_parameters()
+	states_tau_dict = states_tau()
 	
 	#Plots every state
 	for state in states:
@@ -423,28 +496,25 @@ def figure_2(data_dir,d,reps,bw_filter):
 			fit_exp, fit_err = analysis.plot.plot_alpha_bs(m,h,b,d,datatype,reps,bw_filter,data_dir,threshold, plt_color)
 
 			#Saves alpha vs b fit to file
-			str_save = str_savepath+'alpha_fitresults_d{:02d}.txt'.format(d)
+			str_save = str_savepath+'alpha_fitresults_' + datatype + '_d{:02d}.txt'.format(d)
 			with open(str_save,'a') as file:
 				str_fitdata = state + ': {:0.3f} +- {:0.3f}\n'.format(fit_exp,fit_err)
 				file.write(str_fitdata)
 
 			#Saves plot of alpha vs b
-			str_save = str_savepath + 'fit_' + state + '_d{:02d}.pdf'.format(d)
+			str_save = str_savepath + 'fit_' + datatype + '_' + state + '_d{:02d}.pdf'.format(d)
 			plt.savefig(str_save,bbox_inches="tight", transparent=True)
 			plt.close()
 
 		#Sets up pS figure
 		plt.figure(figsize=(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54))
-		plt.xlabel('Avalanche size S')
-		plt.ylabel('p(S)')
-		plt.yscale('log')
-		plt.xscale('log')
-		plt.xlim(1,100)
-		plt.ylim(1e-7,1)
 
 		#Calculates tau
-		tau_rep = analysis.fitting.tau_sim_dataset(m,h,int(d),threshold,data_dir,bw_filter)
-		str_title = r'$\bar\tau$ = {:0.1f} ms'.format(np.mean(tau_rep))
+		#tau_rep = analysis.fitting.tau_sim_dataset(m,h,int(d),threshold,data_dir,bw_filter)
+		#str_title = r'$\bar\tau$ = {:0.1f} ms'.format(np.mean(tau_rep))
+		#plt.title(str_title)
+		#str_title = state + r' ($\bar\tau$ = {:0.1f} ms)'.format(states_tau_dict[state]['tau'])
+		str_title = state
 		plt.title(str_title)
 
 		#Plots it
@@ -462,61 +532,19 @@ def figure_2(data_dir,d,reps,bw_filter):
 		if state == 'poisson':
 			plt.legend(frameon=False)
 
+		#Sets up figure
+		plt.xlabel('Avalanche size S')
+		plt.ylabel('p(S)')
+		plt.yscale('log')
+		plt.xscale('log')
+		plt.xlim(1,100)
+		plt.ylim(1e-7,1)
+		plt.yticks([1e-6,  1e-4, 1e-2,1])
+
 		#Saves plot
-		str_save = str_savepath + 'coarse_' + state + '_d{:02d}.pdf'.format(d)
+		str_save = str_savepath + datatype + '_' + state + '_d{:02d}.pdf'.format(d)
 		plt.savefig(str_save,bbox_inches="tight")
 		plt.close()
-
-def figure_3(data_dir,reps,bw_filter):
-
-	#Sets path
-	if bw_filter:
-		str_savepath = 'figs/fig3_filtered/'
-	else:
-		str_savepath = 'figs/fig3_unfiltered/'
-	if not os.path.exists(str_savepath):
-		os.makedirs(str_savepath)
-
-	#Parameters
-	fig_size = [7,7.5]
-	b_mav = [2,4]
-	b_ps = [2,2,2]
-	d_ps = [1,4,10]
-	threshold = 3
-	
-	#Saves (m_av vs d) figure
-	figure_mav(data_dir,b_mav,bw_filter)
-
-	#Plots comparison of different (b,d) configurations
-	#Sets up figure
-	plt.figure(figsize=(fig_size[0]/2.54,fig_size[1]/2.54))
-	plt.xlabel('Avalanche size S')
-	plt.ylabel('p(S)')
-	plt.yscale('log')
-	plt.xscale('log')
-	plt.xlim(1,100)
-	plt.ylim(1e-10,1)
-
-	#Plots states
-	states = ['subcritical', 'critical']
-	colors = ['blue', 'red']
-	offset_list = [1,5e-3,2.5e-5]
-	state_dict = states_parameters()
-
-	for j in range(len(b_ps)):
-		for i in range(len(states)):
-
-			#Get parameters		
-			m = state_dict[states[i]]['m']
-			h = state_dict[states[i]]['h']
-
-			#Plots distributions
-			color_plot = color_picker(colors[i])
-			analysis.plot.sim_pS(m,h,d_ps[j],b_ps[j],'coarse',reps,None,bw_filter,data_dir,threshold,color_plot,True,offset_list[j])	
-
-	str_save = str_savepath + 'ps_comparison.pdf'
-	plt.savefig(str_save,bbox_inches="tight")
-	plt.close()
 
 if __name__ == "__main__":
 
@@ -531,15 +559,16 @@ if __name__ == "__main__":
 			bw_filter=parameters.bw_filter, 
 			reps=parameters.reps)
 
-	if parameters.fig == 2:
+	elif parameters.fig == 2:
 		figure_2(
-			data_dir=parameters.datafolder,
-			d=parameters.d,
-			bw_filter=parameters.bw_filter, 
-			reps=parameters.reps)
-
-	if parameters.fig == 3:
-		figure_3(
 			data_dir=parameters.datafolder,
 			reps=parameters.reps,
 			bw_filter = parameters.bw_filter)
+
+	elif parameters.fig == 3:
+		figure_3(
+			data_dir=parameters.datafolder,
+			d=parameters.d,
+			bw_filter=parameters.bw_filter, 
+			reps=parameters.reps,
+			datatype = parameters.datatype)
