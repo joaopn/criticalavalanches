@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-18 20:45:35
+# @Last Modified time: 2019-04-20 22:59:34
 
 from analysis import avalanche, plot, fitting
 import numpy as np
@@ -420,44 +420,68 @@ def save_ps_alpha(data_dir, filename, binsize, bw_filter, reps=None, xmax=50):
 		str_save = str_savefolder + str_savefile
 		np.savetxt(str_save,(X,alpha_mean,alpha_std),delimiter='\t',header='b\talpha_mean\talpha_std')	
 
-def save_corr(data_dir, filename, d_list, reps=None):
+def save_corr(data_dir, filename, d_list, binsize, threshold, reps=None):
 
 	#Parameters
 	elec_base = 0
 	str_coarse = 'data/coarse'
 	str_sub = 'data/sub'
+	str_activity = 'data/activity'
 
 	#Definitions
 	save_dir = 'correlations/'
 
-	#Runs it for every d
-	for d in d_list:
-		corr_coarse = np.zeros(reps)
-		corr_sub = np.zeros(reps)
+	#Parse input
+	if type(binsize) is not list:
+		binsize = [binsize]
 
-		#Runs it for every rep
-		for i in range(reps):
+	#Runs for every binsize
+	for bs in binsize:
 
-			#Loads coarse and sub data
-			filepath = data_dir + filename + 'd{:02d}_r{:02d}.hdf5'.format(d,i)
-			file = h5py.File(filepath,'r')
-			data_coarse = file[str_coarse][elec_base:elec_base+2,:]
-			data_sub = file[str_sub][elec_base:elec_base+2,:]
+		#Runs it for every d
+		for d in d_list:
+			corr_coarse = np.zeros(reps)
+			corr_sub = np.zeros(reps)
+			rate_coarse = np.zeros(reps)
+			rate_sub = np.zeros(reps)
 
-			#Calculates correlations
-			corr_coarse[i] = np.corrcoef(data_coarse[0,:], y=data_coarse[1,:])[0,1]
-			corr_sub[i] = np.corrcoef(data_sub[0,:], data_sub[1,:])[0,1]
-			file.close()
+			#Runs it for every rep
+			for i in range(reps):
 
-		print('d = {:02d}: coarse = {:0.2f}, sub = {:0.2f}'.format(d,np.mean(corr_coarse), np.mean(corr_sub)))
+				#Loads coarse and sub data
+				filepath = data_dir + filename + 'd{:02d}_r{:02d}.hdf5'.format(d,i)
+				file = h5py.File(filepath,'r')
+				timesteps = file[str_activity].shape[0]
 
-		# #Saves results
-		# str_savefolder = data_dir + save_dir + '/'
-		# if not os.path.exists(str_savefolder):
-		# 	os.makedirs(str_savefolder)
-		# str_savefile = str_savefolder + filename + '_d{:02d}_rep{:02d}.tsv'.format(d,reps)
-		# with open(str_savefile, 'w') as f:
-		# 	np.savetxt(f,(corr_coarse,corr_sub),delimiter='\t',header='coarse\tsub')	
+				data_coarse = file[str_coarse][elec_base:elec_base+2,:]
+				data_sub = file[str_sub][elec_base:elec_base+2,:]
+
+				#Thresholds coarse data and bins data
+				data_coarse_bin_0 = avalanche.bin_data(avalanche.threshold_ch(data_coarse[0,:], threshold), bs)
+				data_coarse_bin_1 = avalanche.bin_data(avalanche.threshold_ch(data_coarse[1,:], threshold), bs)
+				data_sub_bin_0 = avalanche.bin_data(avalanche.convert_timestamps(data_sub[0,:],timesteps), bs)
+				data_sub_bin_1 = avalanche.bin_data(avalanche.convert_timestamps(data_sub[1,:],timesteps), bs)
+														
+				#Calculates correlations
+				corr_coarse[i] = np.corrcoef(data_coarse_bin_0, data_coarse_bin_1)[0,1]
+				corr_sub[i] = np.corrcoef(data_sub_bin_0, data_sub_bin_1)[0,1]
+
+				#Calculates rates
+				timescale_s = 2*1e-3*bs*data_coarse_bin_0.size
+				rate_coarse[i] = (np.sum(data_coarse_bin_0) + np.sum(data_coarse_bin_1))/2/timescale_s
+				rate_sub[i] = (np.sum(data_sub_bin_0) + np.sum(data_sub_bin_1))/2/timescale_s
+
+				file.close()	
+
+			print('d = {:02d}: coarse = {:0.2f} ({:0.2f} Hz), sub = {:0.2f} ({:0.2f} Hz)'.format(d,np.mean(corr_coarse), np.mean(rate_coarse),np.mean(corr_sub), np.mean(rate_sub[i])))
+
+			#Saves results
+			str_savefolder = data_dir + save_dir + '/'
+			if not os.path.exists(str_savefolder):
+				os.makedirs(str_savefolder)
+			str_savefile = str_savefolder + filename + '_d{:02d}_b{:02d}_th{:0.1f}_rep{:02d}.tsv'.format(d,bs,threshold,reps)
+			with open(str_savefile, 'w') as f:
+				np.savetxt(f,(corr_coarse,corr_sub, rate_coarse, rate_sub),delimiter='\t',header='coarse\tsub\trate_coarse\trate_sub')	
 
 if __name__ == "__main__":
 
@@ -528,4 +552,10 @@ if __name__ == "__main__":
 		dataset_list,d_list = parse_sim_no_d(datafolder)
 		for i in range(len(dataset_list)):
 			print('Calculating timeseries correlations: ' + dataset_list[i])
-			save_corr(datafolder, dataset_list[i], d_list, reps)
+			save_corr(
+				data_dir=datafolder, 
+				filename=dataset_list[i], 
+				d_list=d_list, 
+				binsize=binsize,
+				threshold=threshold,
+				reps=reps)
