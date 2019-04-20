@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-20 22:59:34
+# @Last Modified time: 2019-04-20 23:19:40
 
 from analysis import avalanche, plot, fitting
 import numpy as np
@@ -420,10 +420,12 @@ def save_ps_alpha(data_dir, filename, binsize, bw_filter, reps=None, xmax=50):
 		str_save = str_savefolder + str_savefile
 		np.savetxt(str_save,(X,alpha_mean,alpha_std),delimiter='\t',header='b\talpha_mean\talpha_std')	
 
-def save_corr(data_dir, filename, d_list, binsize, threshold, reps=None):
+def save_corr(data_dir, filename, d_list, binsize, threshold, bw_filter,reps=None):
 
 	#Parameters
 	elec_base = 0
+	bw_freqs = [0.1,200]
+	fs = 500
 	str_coarse = 'data/coarse'
 	str_sub = 'data/sub'
 	str_activity = 'data/activity'
@@ -455,6 +457,11 @@ def save_corr(data_dir, filename, d_list, binsize, threshold, reps=None):
 
 				data_coarse = file[str_coarse][elec_base:elec_base+2,:]
 				data_sub = file[str_sub][elec_base:elec_base+2,:]
+
+				#Filters the signal
+				if bw_filter:
+					data_coarse[0,:] = avalanche.filter_bw_ch(data_coarse[0,:],bw_freqs,fs)
+					data_coarse[1,:] = avalanche.filter_bw_ch(data_coarse[1,:],bw_freqs,fs)
 
 				#Thresholds coarse data and bins data
 				data_coarse_bin_0 = avalanche.bin_data(avalanche.threshold_ch(data_coarse[0,:], threshold), bs)
@@ -558,4 +565,5 @@ if __name__ == "__main__":
 				d_list=d_list, 
 				binsize=binsize,
 				threshold=threshold,
+				bw_filter=bw_filter,
 				reps=reps)
