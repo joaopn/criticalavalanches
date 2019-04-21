@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-18 16:50:39
+# @Last Modified time: 2019-04-21 15:31:28
 
 import os
 import matplotlib
@@ -226,3 +226,36 @@ def analyze_pS(data, b, threshold=3):
 
 		#Plots pS
 		analysis.plot.pS(S,label="b = {:d}".format(b[i]))
+
+
+def sim_corr(m,h,b,d,threshold,reps,data_dir,type='corr', loc=1):
+
+	#Parameters
+	dir_corr = 'correlations/'
+	bar_width = 0.125
+	color_coarse = '#800080' #purple
+	color_sub = '#5F9EA0' #cadetblue
+
+	#Sets up filepath and loads data
+	datafile = 'm{:0.5f}_h{:0.3e}__d{:02d}_b{:02d}_th{:0.1f}_rep{:02d}.tsv'.format(m,h,b,d,threshold,reps)
+	str_load = data_dir + dir_corr + datafile
+	corr_coarse,corr_sub, rate_coarse, rate_sub = np.loadtxt(str_load,delimiter='\t')
+
+	#Calculates statistics
+	if type=='corr':
+		coarse_mean = np.mean(corr_coarse)
+		coarse_std = np.std(corr_coarse)
+		sub_mean = np.mean(corr_sub)
+		sub_std = np.std(corr_sub)
+
+	elif type == 'rate':		
+		coarse_mean = np.mean(rate_coarse)
+		coarse_std = np.std(rate_coarse)
+		sub_mean = np.mean(rate_sub)
+		sub_std = np.std(rate_sub)
+
+	#Plots barplot at loc
+	Y = [coarse_mean, sub_mean]
+	Y_err = [coarse_std, sub_std]
+	bar_loc = [loc-bar_width,loc+bar_width]
+	plt.bar(bar_loc,Y,yerr=Y_err, capsize=5, width=2*bar_width, color=[color_coarse, color_sub])

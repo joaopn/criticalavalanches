@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-18 19:12:15
+# @Last Modified time: 2019-04-21 15:32:35
 
 import analysis
 import matplotlib.pyplot as plt
@@ -142,7 +142,7 @@ def parametersDefault():
 	parser.add_argument("-b",type=int,nargs='?',const=1,default=binsizeDefault)
 	parser.add_argument("-d",type=int,nargs='?',const=1,default=dDefault)
 	parser.add_argument("--bw_filter",type=bool,nargs='?',const=1,default=bw_filterDefault)
-	parser.add_argument("--fig",type=int,nargs='?',const=1,default=figDefault)
+	parser.add_argument("--fig",type=str,nargs='?',const=1,default=figDefault)
 	parser.add_argument("--datatype",type=str,nargs='?',const=1,default=datatypeDefault)
 	
 	args = parser.parse_args()
@@ -546,12 +546,54 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 		plt.savefig(str_save,bbox_inches="tight")
 		plt.close()
 
+def figure_corr(data_dir,b,d,reps):
+
+	#Parameters
+	states = ['critical','subcritical', 'poisson']
+	threshold = 3
+	figSize = [8,6]
+	plot_types = ['corr', 'rate']
+
+	#Save path
+	str_savepath = 'figs/correlation/'
+	if not os.path.exists(str_savepath):
+		os.makedirs(str_savepath)
+
+	#Gets m and h for each state
+	state_dict = states_parameters()
+
+
+	#Plots data for both correlation and rate
+	for plot_type in plot_types:
+
+		#Sets up figure
+		plt.figure(figsize=(figSize[0]/2.54,figSize[1]/2.54))		
+		plt.xticks(ticks=np.arange(1,len(states)+1),labels=states)
+		
+		if plot_type == 'corr':
+			plt.ylabel('Correlation')
+			plt.ylim((0,1))
+		else:
+			plt.ylabel('Event rate (Hz)')
+
+		#Plots all barplots for the corr plot
+		for i in range(len(states)):
+			m = state_dict[states[i]]['m']
+			h = state_dict[states[i]]['h']
+			analysis.plot.sim_corr(m,h,d,b,threshold,reps,data_dir,type=plot_type, loc=i+1)
+
+
+		#Saves plot
+		str_save = str_savepath + plot_type + '_d{:02d}_b{:2d}_rep{:02d}.pdf'.format(d, b, reps)
+		plt.savefig(str_save,bbox_inches="tight")
+		plt.close()		
+
 if __name__ == "__main__":
 
 	parameters = parametersDefault()
 
 	#Plots selected figures
-	if parameters.fig == 1:
+	if parameters.fig == '1':
 		figure_1(
 			data_dir=parameters.datafolder,
 			b=parameters.b,
@@ -559,16 +601,22 @@ if __name__ == "__main__":
 			bw_filter=parameters.bw_filter, 
 			reps=parameters.reps)
 
-	elif parameters.fig == 2:
+	elif parameters.fig == '2':
 		figure_2(
 			data_dir=parameters.datafolder,
 			reps=parameters.reps,
 			bw_filter = parameters.bw_filter)
 
-	elif parameters.fig == 3:
+	elif parameters.fig == '3':
 		figure_3(
 			data_dir=parameters.datafolder,
 			d=parameters.d,
 			bw_filter=parameters.bw_filter, 
 			reps=parameters.reps,
 			datatype = parameters.datatype)
+
+	elif parameters.fig == 'corr':
+		figure_corr(data_dir=parameters.datafolder,
+			d=parameters.d,
+			b=parameters.b,
+			reps=parameters.reps)

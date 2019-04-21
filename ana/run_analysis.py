@@ -2,7 +2,7 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-20 23:19:40
+# @Last Modified time: 2019-04-20 23:23:15
 
 from analysis import avalanche, plot, fitting
 import numpy as np
