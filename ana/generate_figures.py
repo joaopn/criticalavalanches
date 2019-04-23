@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-21 15:32:35
+# @Last Modified time: 2019-04-21 16:06:51
 
 import analysis
 import matplotlib.pyplot as plt
@@ -550,7 +550,7 @@ def figure_corr(data_dir,b,d,reps):
 
 	#Parameters
 	states = ['critical','subcritical', 'poisson']
-	threshold = 3
+	thresholds = [2,3]
 	figSize = [8,6]
 	plot_types = ['corr', 'rate']
 
@@ -562,31 +562,32 @@ def figure_corr(data_dir,b,d,reps):
 	#Gets m and h for each state
 	state_dict = states_parameters()
 
+	#Plots for all thresholds
+	for threshold in thresholds:
+		#Plots data for both correlation and rate
+		for plot_type in plot_types:
 
-	#Plots data for both correlation and rate
-	for plot_type in plot_types:
+			#Sets up figure
+			plt.figure(figsize=(figSize[0]/2.54,figSize[1]/2.54))		
+			plt.xticks(ticks=np.arange(1,len(states)+1),labels=states)
 
-		#Sets up figure
-		plt.figure(figsize=(figSize[0]/2.54,figSize[1]/2.54))		
-		plt.xticks(ticks=np.arange(1,len(states)+1),labels=states)
-		
-		if plot_type == 'corr':
-			plt.ylabel('Correlation')
-			plt.ylim((0,1))
-		else:
-			plt.ylabel('Event rate (Hz)')
+			if plot_type == 'corr':
+				plt.ylabel('Correlation')
+				plt.ylim((0,1))
+			else:
+				plt.ylabel('Event rate (Hz)')
 
-		#Plots all barplots for the corr plot
-		for i in range(len(states)):
-			m = state_dict[states[i]]['m']
-			h = state_dict[states[i]]['h']
-			analysis.plot.sim_corr(m,h,d,b,threshold,reps,data_dir,type=plot_type, loc=i+1)
+			#Plots all barplots for the corr plot
+			for i in range(len(states)):
+				m = state_dict[states[i]]['m']
+				h = state_dict[states[i]]['h']
+				analysis.plot.sim_corr(m,h,d,b,threshold,reps,data_dir,type=plot_type, loc=i+1)
 
 
-		#Saves plot
-		str_save = str_savepath + plot_type + '_d{:02d}_b{:2d}_rep{:02d}.pdf'.format(d, b, reps)
-		plt.savefig(str_save,bbox_inches="tight")
-		plt.close()		
+			#Saves plot
+			str_save = str_savepath + plot_type + '_d{:02d}_b{:2d}_th{:0.1f}_rep{:02d}.pdf'.format(d, b, threshold, reps)
+			plt.savefig(str_save,bbox_inches="tight")
+			plt.close()		
 
 if __name__ == "__main__":
 
