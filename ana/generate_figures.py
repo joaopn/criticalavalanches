@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-21 16:06:51
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-04-26 18:18:27
 
 import analysis
 import matplotlib.pyplot as plt
@@ -132,6 +132,7 @@ def parametersDefault():
 	datafolderDefault = 'dat/'
 	bw_filterDefault = True
 	datatypeDefault = 'coarse'
+	thresholdDefault = 3
 
 	#Parse input
 	parser = argparse.ArgumentParser()
@@ -141,6 +142,8 @@ def parametersDefault():
 	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
 	parser.add_argument("-b",type=int,nargs='?',const=1,default=binsizeDefault)
 	parser.add_argument("-d",type=int,nargs='?',const=1,default=dDefault)
+	parser.add_argument("-d",type=int,nargs='?',const=1,default=dDefault)
+	parser.add_argument("--threshold",type=float,nargs='?',const=1,default=thresholdDefault)
 	parser.add_argument("--bw_filter",type=bool,nargs='?',const=1,default=bw_filterDefault)
 	parser.add_argument("--fig",type=str,nargs='?',const=1,default=figDefault)
 	parser.add_argument("--datatype",type=str,nargs='?',const=1,default=datatypeDefault)
@@ -546,7 +549,7 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 		plt.savefig(str_save,bbox_inches="tight")
 		plt.close()
 
-def figure_corr(data_dir,b,d,reps):
+def figure_corr(data_dir,b,d,reps, threshold):
 
 	#Parameters
 	states = ['critical','subcritical', 'poisson']
@@ -589,6 +592,11 @@ def figure_corr(data_dir,b,d,reps):
 			plt.savefig(str_save,bbox_inches="tight")
 			plt.close()		
 
+def figure_corr_d(data_dir,b,reps, threshold):
+	#Parameters
+	d_list = np.arange(1,11)
+	pass
+
 if __name__ == "__main__":
 
 	parameters = parametersDefault()
@@ -620,4 +628,5 @@ if __name__ == "__main__":
 		figure_corr(data_dir=parameters.datafolder,
 			d=parameters.d,
 			b=parameters.b,
-			reps=parameters.reps)
+			reps=parameters.reps,
+			threshold=parameters.threshold)
