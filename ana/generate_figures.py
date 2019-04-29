@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-26 18:18:27
+# @Last Modified time: 2019-04-29 19:03:20
 
 import analysis
 import matplotlib.pyplot as plt
@@ -113,15 +113,6 @@ def plot_compare_states(datatype,b,d,reps,threshold,data_dir,bw_filter):
 		color_data = color_picker(colors[i])
 		analysis.plot.sim_pS(m,h,d,b,datatype,reps,states[i],bw_filter,data_dir,threshold,color_data)
 
-	#Adjusts figure properties
-	plt.xlabel('Avalanche size S')
-	plt.ylabel('p(S)')
-	plt.yscale('log')
-	plt.xscale('log')
-	plt.xlim(1,300)
-	plt.ylim(1e-6,1)
-	plt.yticks([1e-6,1e-4,1e-2,1])
-
 def parametersDefault():
 
 	#default Parameters
@@ -141,7 +132,6 @@ def parametersDefault():
 	parser.add_argument("--datafolder",type=str,nargs='?',const=1,default=datafolderDefault)
 	parser.add_argument("--reps",type=int,nargs='?',const=1,default=repsDefault)
 	parser.add_argument("-b",type=int,nargs='?',const=1,default=binsizeDefault)
-	parser.add_argument("-d",type=int,nargs='?',const=1,default=dDefault)
 	parser.add_argument("-d",type=int,nargs='?',const=1,default=dDefault)
 	parser.add_argument("--threshold",type=float,nargs='?',const=1,default=thresholdDefault)
 	parser.add_argument("--bw_filter",type=bool,nargs='?',const=1,default=bw_filterDefault)
@@ -313,8 +303,9 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	N = 160000
 	threshold = 3
 	rep_activity = 0 #timeseries to plot the activity from
-	fig_activity_size = [5,2] #in cm
-	fig_pS_size = [6.5,6]
+	fig_activity_size = [5,3] #in cm
+	fig_pS_size = [6,6]
+	fig_pS_ylim = 1e-5
 
 	#Sets path
 	if bw_filter:
@@ -369,6 +360,14 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	plot_compare_states('sub',b,d,reps,threshold,data_dir,bw_filter)
 	#ax = plt.gca()
 	#ax.get_legend().remove()
+	#plt.xlabel('Avalanche size S')
+	#plt.ylabel('p(S)')
+	plt.yscale('log')
+	plt.xscale('log')
+	plt.xlim(1,300)
+	plt.ylim(fig_pS_ylim,1)
+	plt.yticks([1e-4,1e-2,1])
+
 	str_save = str_savepath + 'sub_b{:02d}_d{:02d}.pdf'.format(b,d)
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
@@ -381,6 +380,15 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	#plt.legend(loc=3, frameon=False)
 	# ax = plt.gca()
 	# ax.get_legend().remove()
+	#plt.xlabel('Avalanche size S')
+	#plt.ylabel('p(S)')
+	plt.yscale('log')
+	plt.xscale('log')
+	plt.xlim(1,300)
+	plt.ylim(fig_pS_ylim,1)
+	plt.yticks([1e-4,1e-2,1])
+	plt.minorticks_on()
+
 	str_save = str_savepath + 'coarse_b{:02d}_d{:02d}.pdf'.format(b,d)
 	plt.savefig(str_save,bbox_inches="tight")
 	plt.close()
