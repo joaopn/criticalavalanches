@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-29 19:03:20
+# @Last Modified time: 2019-04-30 19:44:45
 
 import analysis
 import matplotlib.pyplot as plt
@@ -231,7 +231,7 @@ def convert_rgba_rgb(colors):
 def figure_mav(data_dir,b,bw_filter):
 
 	#Parameters
-	fig_size = [7,7.5]
+	fig_size = [8,4]
 	Xticks = [2, 4, 6, 8, 10]
 	Xticklabels = np.array(Xticks)*50
 	linestyles = ['-','--', ':', '-.'] #Handles up to len(b) = 4
@@ -250,11 +250,11 @@ def figure_mav(data_dir,b,bw_filter):
 
 	#Sets up figure
 	plt.figure(figsize=(fig_size[0]/2.54,fig_size[1]/2.54))
-	plt.xlabel(r'IED d ($\mu$m)')
+	plt.xlabel(r'$d_E$ ($\mu$m)')
 	plt.ylabel(r'$m_{av}$')
 	plt.xlim(2,10)
-	plt.ylim(0.25,1.75)
-	plt.yticks([0.5,1.,1.5])
+	plt.ylim(0.6,1.8)
+	plt.yticks([0.6,1.,1.4, 1.8])
 	plt.xticks(Xticks)	
 	plt.grid(False)
 	ax = plt.gca()
@@ -263,7 +263,7 @@ def figure_mav(data_dir,b,bw_filter):
 
 	#Plots guiding line
 	#plt.plot([1,10],[1,1],'--', color='k')
-	plt.grid(True)
+	#plt.grid(True)
 
 	#Plots states
 	states = ['subcritical','critical']
@@ -273,7 +273,7 @@ def figure_mav(data_dir,b,bw_filter):
 	for j in range(len(b)):
 		for i in range(len(states)):
 
-			print('Plotting Fig 3 for the ' + states[i] + ' state.')
+			print('Plotting Fig. 2 for the ' + states[i] + ' state.')
 			#Get parameters
 			state_dict = states_parameters()
 			m = state_dict[states[i]]['m']
@@ -286,8 +286,8 @@ def figure_mav(data_dir,b,bw_filter):
 				bw_filter=bw_filter, plt_color=color_state,
 				linestyle=linestyles[j], label_plot=str_label)
 
-		if j ==1:
-			plt.legend(frameon=True)
+		# if j ==1:
+		# 	plt.legend(frameon=True)
 
 	#Saves figure
 	if len(b) == 1:
@@ -386,7 +386,7 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	plt.xscale('log')
 	plt.xlim(1,300)
 	plt.ylim(fig_pS_ylim,1)
-	plt.yticks([1e-4,1e-2,1])
+	plt.yticks([1e-4,1e-3,1e-2,1e-1,1])
 	plt.minorticks_on()
 
 	str_save = str_savepath + 'coarse_b{:02d}_d{:02d}.pdf'.format(b,d)
@@ -404,7 +404,7 @@ def figure_2(data_dir,reps,bw_filter):
 		os.makedirs(str_savepath)
 
 	#Parameters
-	fig_size = [7,7.5]
+	fig_size = [16,6]
 	b_mav = [2,4]
 	b_ps = [2,2,2]
 	d_ps = [1,4,10]
@@ -415,16 +415,17 @@ def figure_2(data_dir,reps,bw_filter):
 
 	#Plots comparison of different (b,d) configurations
 
-	#Sets up figure
-	plt.figure(figsize=(fig_size[0]/2.54,fig_size[1]/2.54))
 
 	#Plots states
-	states = ['subcritical', 'critical']
-	colors = ['blue', 'red']
-	offset_list = [1,5e-3,2.5e-5]
+	states = ['subcritical', 'reverberant','critical']
+	colors = ['blue', 'green','red']
+	#offset_list = [1,5e-3,2.5e-5]
 	state_dict = states_parameters()
 
-	for j in range(len(b_ps)):
+	for j in range(len(d_ps)):
+
+		#Sets up figure
+		plt.figure(figsize=(fig_size[0]/2.54,fig_size[1]/2.54))
 		for i in range(len(states)):
 
 			#Get parameters		
@@ -434,20 +435,26 @@ def figure_2(data_dir,reps,bw_filter):
 			#Plots distributions
 			color_plot = color_picker(colors[i])
 			str_leg = r'$Delta$t = {:02d}, '.format(2*b_ps[j]) + states[i]
-			analysis.plot.sim_pS(m,h,d_ps[j],b_ps[j],'coarse',reps,str_leg,bw_filter,data_dir,threshold,color_plot,True,offset_list[j])	
+			analysis.plot.sim_pS(m,h,d_ps[j],b_ps[j],'coarse',reps,str_leg,bw_filter,data_dir,threshold,color_plot,True)	
 
-	#Adjusts figure
-	plt.xlabel('Avalanche size S')
-	plt.ylabel('p(S)')
-	plt.yscale('log')
-	plt.xscale('log')
-	plt.xlim(1,100)
-	plt.ylim(1e-10,1)
-	plt.yticks([1e-9,1e-6,1e-3,1])
+		#Plots comparison line
+		X = np.arange(2,10)
+		Y = np.power(X,-1.5)
+		Y = 0.05*Y/np.sum(Y)
+		plt.plot(X,Y,linestyle='--',color='black',label=None)
 
-	str_save = str_savepath + 'ps_comparison.pdf'
-	plt.savefig(str_save,bbox_inches="tight")
-	plt.close()
+		#Adjusts figure
+		plt.xlabel('Avalanche size S')
+		plt.ylabel('p(S)')
+		plt.yscale('log')
+		plt.xscale('log')
+		plt.xlim(1,100)
+		plt.ylim(1e-5,1)
+		#plt.yticks([1e-4,1e-2,1])
+
+		str_save = str_savepath + 'ps_comparison_d{:02d}_b{:02d}.pdf'.format(d_ps[j], b_ps[j])
+		plt.savefig(str_save,bbox_inches="tight")
+		plt.close()
 
 def figure_3(data_dir,d,reps,bw_filter, datatype):
 

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-21 15:31:28
+# @Last Modified by:   Joao PN
+# @Last Modified time: 2019-04-30 14:37:26
 
 import os
 import matplotlib
@@ -92,24 +92,29 @@ def sim_pS(m,h,d,b,datatype,reps,label_plot=None,bw_filter = False,data_dir ='da
 
 		S,pS_mean, pS_std = np.loadtxt(str_load,delimiter='\t')
 
-		#Fixes vector bug
+		#Defines error band
+		pS_up = pS_mean + pS_std/2
+		pS_dw = pS_mean - pS_std/2
+
+		#Fixes vector bug for S_mean
 		S_rem = np.argwhere(pS_mean < S_lim)
 		pS_mean = np.delete(pS_mean,S_rem)
-		pS_std = np.delete(pS_std,S_rem)
-		S = np.delete(S,S_rem)
+		S_mean = np.delete(S,S_rem)
+		S_rem = np.argwhere(pS_dw < S_lim)
+		pS_dw = np.delete(pS_dw,S_rem)
+		pS_up = np.delete(pS_up,S_rem)
+		S_std = np.delete(S,S_rem)
 
 		#Plots data
 		if plt_std:
-			pS_up = pS_mean + pS_std/2
-			pS_dw = pS_mean - pS_std/2
-			plt.fill_between(S,offset*pS_up,offset*pS_dw,alpha=0.5,color=plt_color, lw=0)
+			plt.fill_between(S_std,offset*pS_up,offset*pS_dw,alpha=0.5,color=plt_color, lw=0)
 
 		if label_plot is None:
 			tau_rep = analysis.fitting.tau_sim_dataset(m,h,d[i],threshold,data_dir,bw_filter)
 			str_label = r'$\tau$ = {:0.1f} $\pm$ {:0.1f} ms'.format(np.mean(tau_rep), np.std(tau_rep))
-			plt.plot(S,offset*pS_mean,label= str_label,color=plt_color)
+			plt.plot(S_mean,offset*pS_mean,label= str_label,color=plt_color)
 		else:			
-			plt.plot(S,offset*pS_mean,label=label_plot[i],
+			plt.plot(S_mean,offset*pS_mean,label=label_plot[i],
 				color=plt_color)
 
 def sim_mav(m,h,b_list,data_dir,label_plot=None,bw_filter=False,threshold=3,plt_color='black', linestyle='-'):
