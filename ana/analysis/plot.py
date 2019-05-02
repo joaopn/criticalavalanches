@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-30 14:37:26
+# @Last Modified time: 2019-05-02 17:02:51
 
 import os
 import matplotlib
@@ -233,7 +233,7 @@ def analyze_pS(data, b, threshold=3):
 		analysis.plot.pS(S,label="b = {:d}".format(b[i]))
 
 
-def sim_corr(m,h,b,d,threshold,reps,data_dir,type='corr', loc=1):
+def sim_corr(m,h,b,d,threshold,reps,data_dir,type='corr', loc=1, color_state=[0,0,0]):
 
 	#Parameters
 	dir_corr = 'correlations/'
@@ -263,4 +263,6 @@ def sim_corr(m,h,b,d,threshold,reps,data_dir,type='corr', loc=1):
 	Y = [coarse_mean, sub_mean]
 	Y_err = [coarse_std, sub_std]
 	bar_loc = [loc-bar_width,loc+bar_width]
-	plt.bar(bar_loc,Y,yerr=Y_err, capsize=5, width=2*bar_width, color=[color_coarse, color_sub])
+
+	plt.bar(bar_loc[0],Y[0],yerr=Y_err[0], capsize=3, width=2*bar_width, color=[1,1,1], hatch='////', edgecolor=color_state, linewidth=1)
+	plt.bar(bar_loc[1],Y[1],yerr=Y_err[1], capsize=3, width=2*bar_width, color=color_state, linewidth=0.5)

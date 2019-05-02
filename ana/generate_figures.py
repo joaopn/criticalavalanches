@@ -2,18 +2,20 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-04-30 19:44:45
+# @Last Modified time: 2019-05-02 18:10:16
 
 import analysis
 import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 import h5py
 import os
 import argparse
 
 from matplotlib import rcParams, rc
-rcParams['font.family'] = 'sans-serif'
+matplotlib.rcParams['pdf.fonttype'] = 42
 rcParams['font.sans-serif'] = ['Arial']
+rcParams['font.family'] = 'sans-serif'
 rcParams['font.size'] = 10
 rc('legend', fontsize=8)
 
@@ -53,6 +55,17 @@ def color_picker(color_str):
 		color_rgb = [128,128,128]
 
 	return np.array(color_rgb)/255
+
+def set_size(w,h, ax=None):
+    """ w, h: width, height in inches """
+    if not ax: ax=plt.gca()
+    l = ax.figure.subplotpars.left
+    r = ax.figure.subplotpars.right
+    t = ax.figure.subplotpars.top
+    b = ax.figure.subplotpars.bottom
+    figw = float(w)/(r-l)
+    figh = float(h)/(t-b)
+    ax.figure.set_size_inches(figw, figh)	
 
 def pS_filepath(state,datatype,d,b,reps,threshold,data_dir, bw_filter):
 
@@ -231,7 +244,7 @@ def convert_rgba_rgb(colors):
 def figure_mav(data_dir,b,bw_filter):
 
 	#Parameters
-	fig_size = [8,4]
+	fig_size = [7,4]
 	Xticks = [2, 4, 6, 8, 10]
 	Xticklabels = np.array(Xticks)*50
 	linestyles = ['-','--', ':', '-.'] #Handles up to len(b) = 4
@@ -290,6 +303,7 @@ def figure_mav(data_dir,b,bw_filter):
 		# 	plt.legend(frameon=True)
 
 	#Saves figure
+	set_size(fig_size[0]/2.54,fig_size[1]/2.54)
 	if len(b) == 1:
 		str_save = str_savepath + 'mav_b{:02d}.pdf'.format(b)
 	else:
@@ -404,7 +418,7 @@ def figure_2(data_dir,reps,bw_filter):
 		os.makedirs(str_savepath)
 
 	#Parameters
-	fig_size = [16,6]
+	fig_size = [7,2]
 	b_mav = [2,4]
 	b_ps = [2,2,2]
 	d_ps = [1,4,10]
@@ -450,8 +464,21 @@ def figure_2(data_dir,reps,bw_filter):
 		plt.xscale('log')
 		plt.xlim(1,100)
 		plt.ylim(1e-5,1)
-		#plt.yticks([1e-4,1e-2,1])
+		plt.yticks([1e-5,1e-4,1e-3,1e-2,1e-1,1],['',r'$10^{-4}$','',r'$10^{-2}$','',r'$10^{0}$'])
 
+		#plt.yticks([1e-4,1e-2,1],[])
+
+		#Sets minor and major ticks
+		ax = plt.gca()
+		subs_loc = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8,0.9)
+		locmin = matplotlib.ticker.LogLocator(base=10.0,subs=subs_loc,numticks=6)
+		ax.yaxis.set_minor_locator(locmin)
+		ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+
+		#Set size correctly
+		set_size(fig_size[0]/2.54,fig_size[1]/2.54)
+
+		#Saves figures
 		str_save = str_savepath + 'ps_comparison_d{:02d}_b{:02d}.pdf'.format(d_ps[j], b_ps[j])
 		plt.savefig(str_save,bbox_inches="tight")
 		plt.close()
@@ -461,7 +488,7 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 	#Parameters
 	b = [1,2,4,8]
 	threshold = 3
-	fig_pS_size = [6,6]
+	fig_pS_size = [4,4]
 	fig_alpha_size = [2.5,2]
 	states = ['poisson', 'subcritical', 'reverberant', 'critical']
 	state_colors = {
@@ -497,12 +524,12 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 
 			#Sets up figure
 			plt.figure(figsize=(fig_alpha_size[0]/2.54,fig_alpha_size[1]/2.54))
-			plt.xlabel(r'$\Delta$t (ms)')
-			plt.ylabel(r'$\alpha$', rotation='horizontal')
+			#plt.xlabel(r'$\Delta$t (ms)')
+			#plt.ylabel(r'$\alpha$', rotation='horizontal')
 			plt.xscale('log')
 			plt.yscale('log')
 			plt.minorticks_off() #solves tick bu... "intended changes" in pyplot
-			plt.xlim(0.1,100)
+			plt.xlim(1,100)
 			plt.ylim(1.1,2.1)			
 			plt.xticks([1,10,100])
 			plt.yticks([1.1,1.5,2.1],['-1.1', '-1.5', '-2.1'])
@@ -520,6 +547,7 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 				file.write(str_fitdata)
 
 			#Saves plot of alpha vs b
+			set_size(fig_alpha_size[0]/2.54,fig_alpha_size[1]/2.54)
 			str_save = str_savepath + 'fit_' + datatype + '_' + state + '_d{:02d}.pdf'.format(d)
 			plt.savefig(str_save,bbox_inches="tight", transparent=True)
 			plt.close()
@@ -533,7 +561,7 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 		#plt.title(str_title)
 		#str_title = state + r' ($\bar\tau$ = {:0.1f} ms)'.format(states_tau_dict[state]['tau'])
 		str_title = state
-		plt.title(str_title)
+		#plt.title(str_title)
 
 		#Plots it
 		for i in range(len(b)):
@@ -545,21 +573,30 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 				bw_filter=bw_filter,
 				data_dir=data_dir,
 				plt_color=plt_color[i,:],
-				plt_std=False)		
+				plt_std=False)	
 
 		if state == 'poisson':
 			plt.legend(frameon=False)
 
 		#Sets up figure
-		plt.xlabel('Avalanche size S')
-		plt.ylabel('p(S)')
+		#plt.xlabel('Avalanche size S')
+		#plt.ylabel('p(S)')
 		plt.yscale('log')
 		plt.xscale('log')
 		plt.xlim(1,100)
 		plt.ylim(1e-7,1)
-		plt.yticks([1e-6,  1e-4, 1e-2,1])
+		ytick_str = ['',r'$10^{-6}$','',r'$10^{-4}$','',r'$10^{-2}$','',r'$10^{0}$']
+		plt.yticks([1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1],ytick_str)
+
+		#Sets minor and major ticks
+		ax = plt.gca()
+		subs_loc = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8,0.9)
+		locmin = matplotlib.ticker.LogLocator(base=10.0,subs=subs_loc,numticks=8)
+		ax.yaxis.set_minor_locator(locmin)
+		ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())	
 
 		#Saves plot
+		set_size(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54)
 		str_save = str_savepath + datatype + '_' + state + '_d{:02d}.pdf'.format(d)
 		plt.savefig(str_save,bbox_inches="tight")
 		plt.close()
@@ -567,9 +604,12 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 def figure_corr(data_dir,b,d,reps, threshold):
 
 	#Parameters
-	states = ['critical','subcritical', 'poisson']
+	states = ['critical','reverberant','subcritical','poisson']
+	state_labels = ['Critical', 'Reveberating', 'Subcritical', 'Poisson']
+	colors = ['red', 'green','blue', 'gray']
+
 	thresholds = [2,3]
-	figSize = [8,6]
+	figSize = [7,4]
 	plot_types = ['corr', 'rate']
 
 	#Save path
@@ -587,22 +627,27 @@ def figure_corr(data_dir,b,d,reps, threshold):
 
 			#Sets up figure
 			plt.figure(figsize=(figSize[0]/2.54,figSize[1]/2.54))		
-			plt.xticks(ticks=np.arange(1,len(states)+1),labels=states)
 
 			if plot_type == 'corr':
 				plt.ylabel('Correlation')
-				plt.ylim((0,1))
+				plt.ylim((0,0.8))
 			else:
 				plt.ylabel('Event rate (Hz)')
 
 			#Plots all barplots for the corr plot
 			for i in range(len(states)):
+				color_plot = color_picker(colors[i])
 				m = state_dict[states[i]]['m']
 				h = state_dict[states[i]]['h']
-				analysis.plot.sim_corr(m,h,d,b,threshold,reps,data_dir,type=plot_type, loc=i+1)
+				analysis.plot.sim_corr(m,h,d,b,threshold,reps,data_dir,type=plot_type, loc=i+1,color_state=color_plot)
 
+			#Sets up ticks	
+			ax = plt.gca()				
+			plt.xticks(ticks=np.arange(1,len(states)+1),labels=state_labels)	
+			ax.set_xticklabels(state_labels, fontsize=8)
 
 			#Saves plot
+			set_size(figSize[0]/2.54,figSize[1]/2.54)
 			str_save = str_savepath + plot_type + '_d{:02d}_b{:2d}_th{:0.1f}_rep{:02d}.pdf'.format(d, b, threshold, reps)
 			plt.savefig(str_save,bbox_inches="tight")
 			plt.close()		
