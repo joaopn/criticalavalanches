@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   Joao PN
-# @Last Modified time: 2019-05-02 18:10:16
+# @Last Modified time: 2019-05-08 17:08:47
 
 import analysis
 import matplotlib.pyplot as plt
@@ -418,10 +418,10 @@ def figure_2(data_dir,reps,bw_filter):
 		os.makedirs(str_savepath)
 
 	#Parameters
-	fig_size = [7,2]
+	fig_size = [3,2.7]
 	b_mav = [2,4]
 	b_ps = [2,2,2]
-	d_ps = [1,4,10]
+	d_ps = [1,5,10]
 	threshold = 3
 	
 	#Saves (m_av vs d) figure
@@ -458,8 +458,8 @@ def figure_2(data_dir,reps,bw_filter):
 		plt.plot(X,Y,linestyle='--',color='black',label=None)
 
 		#Adjusts figure
-		plt.xlabel('Avalanche size S')
-		plt.ylabel('p(S)')
+		#plt.xlabel('Avalanche size S')
+		#plt.ylabel('p(S)')
 		plt.yscale('log')
 		plt.xscale('log')
 		plt.xlim(1,100)
@@ -609,7 +609,7 @@ def figure_corr(data_dir,b,d,reps, threshold):
 	colors = ['red', 'green','blue', 'gray']
 
 	thresholds = [2,3]
-	figSize = [7,4]
+	figSize = [6,2.5]
 	plot_types = ['corr', 'rate']
 
 	#Save path
@@ -630,7 +630,7 @@ def figure_corr(data_dir,b,d,reps, threshold):
 
 			if plot_type == 'corr':
 				plt.ylabel('Correlation')
-				plt.ylim((0,0.8))
+				plt.ylim((0,0.7))
 			else:
 				plt.ylabel('Event rate (Hz)')
 
