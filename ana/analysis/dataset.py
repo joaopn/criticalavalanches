@@ -5,55 +5,135 @@
 # @Last Modified time: 2019-07-06 13:59:53
 
 from analysis import avalanche, fitting, plot
+import powerlaw
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Qt5Agg')
 
 def plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None):
+	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT
+	
+	Args:
+	    filepath (str): Path to the .hdf5 dataset
+	    deltaT (int): Binsize to use, *in timesteps*
+	    datatype (str): 'coarse', 'sub' or 'both' (compares both sampling types) 
+	    str_leg (str, optional): plot legend
+	    threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
+	    bw_filter (bool, optional): Toggles butterworth filtering (for coarse)
+	    timesteps (None, optional): Length of the dataset in timesteps
+	    channels (None, optional): Number of channels in the dataset
+	"""
+	if datatype is 'both':
+		for datatype_i in ['sub','coarse']:
+			#Loads and thresholds data
+			data_th = avalanche.analyze_sim_raw(filepath, threshold, datatype_i, bw_filter, timesteps, channels)
+
+			#Bins data
+			data_binned = avalanche.bin_data(data=data_th,binsize=deltaT)
+
+			#Gets S and plots it
+			S = avalanche.get_S(data_binned)
+			plot.pS(S,label=str_leg + ' ,' + datatype_i)			
+
+	else:
+		#Loads and thresholds data
+		data_th = avalanche.analyze_sim_raw(filepath, threshold, datatype, bw_filter, timesteps, channels)
+
+		#Bins data
+		data_binned = avalanche.bin_data(data=data_th,binsize=deltaT)
+
+		#Gets S and plots it
+		S = avalanche.get_S(data_binned)
+		plot.pS(S,label=str_leg)
+
+
+def plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=True,timesteps=None,channels=None):
+	"""Plots p(S), m_av and fits p(S)~S^-alpha, for a list of binsizes.
+	
+	Args:
+	    filepath (TYPE): Description
+	    deltaT (TYPE): Description
+	    datatype (TYPE): Description
+	    threshold (int, optional): Description
+	    S_fit_max (int, optional): Description
+	    bw_filter (bool, optional): Description
+	    timesteps (None, optional): Description
+	    channels (None, optional): Description
+	"""
+	#Parameters
+	timescale_ms = 2 #length of a timestep, in ms
+
+	#Lets avoid list shenenigans
+	deltaT = np.array(deltaT)
+	nbins = deltaT.size
 
 	#Loads and thresholds data
 	data_th = avalanche.analyze_sim_raw(filepath, threshold, datatype, bw_filter, timesteps, channels)
 
-	#Bins data
-	data_binned = avalanche.bin_data(data=data_th,binsize=deltaT)
+	#Observables
+	pS_list = []
+	alpha_exp = np.zeros(nbins)
+	m_av = np.zeros(nbins)
 
-	#Gets S and plots it
-	S = avalanche.get_S(data_binned)
-	plot.pS(S,label=str_leg)
+	#Bins data for each deltaT and calculates observables
+	for i in range(nbins):
+		data_binned = avalanche.bin_data(data=data_th,binsize=deltaT[i])
 
+		#Calculates p(S)
+		S = avalanche.get_S(data_binned)
+		S_max = int(S.max())
+		pS = np.zeros(S_max)
+		for j in range(S_max):
+			pS[j] = np.sum(S==j+1)
+		pS = pS/np.sum(pS)
+		pS_list.append(pS)
 
-def plot_deltaT(filepath,deltaT,datatype,timesteps=None,channels=None):
+		#Calculates alpha_exp
+		fit = powerlaw.Fit(S, discrete=True, estimate_discrete=False, xmin=1, xmax=S_fit_max)
+		alpha_exp[i] = fit.alpha
 
-	#Parameters
-	fs = 500
-	bw_freqs = [0.1, 200]
+		#Calculates m_av
+		m_av[i] = fitting.m_avalanche(data_binned)
 
-	#File location
-	h5_dir = 'data/'
-	h5_full_dir = 'data/activity'
+	#Sets up subplots
+	fig = plt.figure(constrained_layout=True)
+	gs = fig.add_gridspec(2,3)
+	ax_alpha = fig.add_subplot(gs[0,2])
+	ax_mav = fig.add_subplot(gs[1,2])
+	ax_ps = fig.add_subplot(gs[0:2,0:2])
 
-	file = h5py.File(filepath,'r')
+	# #Fix the horrible ticks
+	# for ax in [ax_mav,ax_alpha]:
+	# 	for axis in [ax.xaxis, ax.yaxis]:
+	# 		formatter = matplotlib.ticker.ScalarFormatter()
+	# 		formatter.set_scientific(False)
+	# 		axis.set_major_formatter(formatter)
 
-	#Gets timesteps and channels from dataset
-	if timesteps is None:
-		timesteps = file[h5_full_dir].shape[0]
-	if channels is None:
-		channels = file[h5_dir+datatype].shape[0]
+	#Plots pS
+	ax_ps.set_xlabel('S')
+	ax_ps.set_ylabel('p(S)')
+	plt.xlim(1,1e3)	
+	for i in range(nbins):
+		str_leg = r'$\Delta$t = {:d} ms'.format(timescale_ms*deltaT[i])
+		ax_ps.loglog(pS_list[i],label=str_leg)
+	ax_ps.legend()
 
-	#Analyses channel by channel and stacks results
-	data_th = np.zeros(timesteps)
-	for ch in range(channels):
-		
-		#Loads data
-		data_ch = file[h5_dir+datatype][ch,:]
+	#Plots alpha_exp
+	ax_alpha.set_xlabel(r'$\Delta$t (ms)')
+	ax_alpha.set_ylabel(r'$\alpha$')
+	ax_alpha.set_xscale('log')
+	ax_alpha.set_xticks([1,10])
+	ax_alpha.set_xlim([1,64])
+	ax_alpha.plot([1,100],[1.5,1.5],'--')
+	ax_alpha.plot(timescale_ms*deltaT,alpha_exp,'o-',color='k', fillstyle='full')
 
-		#Analyzes sub and coarse channel data accordingly
-		if datatype == 'coarse':
-			if bw_filter:
-				data_ch = avalanche.filter_bw_ch(data_ch,bw_freqs,fs)		
-			data_th_ch = avalanche.threshold_ch(data_ch,threshold)			
-		elif datatype == 'sub':
-			data_th_ch = avalanche.convert_timestamps(data_ch,timesteps)
-
-		data_th = data_th + data_th_ch
-
-	#Thresholds data for each binsize
-	for bs in deltaT:
-		data_binned = avalanche.bin_data(data=data_th,binsize=bs)
+	#Plots m_av
+	ax_mav.set_xlabel(r'$\Delta$t (ms)')
+	ax_mav.set_ylabel(r'$m_{av}$')
+	ax_mav.set_xscale('log')
+	ax_mav.set_xticks([1,10])
+	ax_alpha.set_xlim([1,64])
+	ax_mav.plot([1,100],[1,1],'--')
+	ax_mav.plot(timescale_ms*deltaT,m_av,'o-',color='k', fillstyle='full')
+	

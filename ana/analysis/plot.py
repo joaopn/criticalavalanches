@@ -16,7 +16,7 @@ import analysis.fitting
 def pS(S,label='data'):
 
 	#Calculates p(S) (no log-binning)
-	S_max = int(S.max())
+	S_max = int(S.max()+1)
 	pS = np.zeros(S_max)
 
 	for i in range(1,S_max):
