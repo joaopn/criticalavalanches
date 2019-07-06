@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-05-08 17:08:47
+# @Last Modified by:   Joao
+# @Last Modified time: 2019-07-05 17:24:30
 
 import analysis
 import matplotlib.pyplot as plt
@@ -279,8 +279,8 @@ def figure_mav(data_dir,b,bw_filter):
 	#plt.grid(True)
 
 	#Plots states
-	states = ['subcritical','critical']
-	colors = ['blue', 'red']
+	states = ['subcritical','reverberant','critical']
+	colors = ['blue','green','red']
 
 
 	for j in range(len(b)):
@@ -421,7 +421,7 @@ def figure_2(data_dir,reps,bw_filter):
 	fig_size = [3,2.7]
 	b_mav = [2,4]
 	b_ps = [2,2,2]
-	d_ps = [1,5,10]
+	d_ps = [2,5,10]
 	threshold = 3
 	
 	#Saves (m_av vs d) figure

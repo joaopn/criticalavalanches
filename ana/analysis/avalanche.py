@@ -5,8 +5,8 @@ Module for the avalanche analysis of MEA datasets.
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-08 15:18:06
+# @Last Modified by:   Joao
+# @Last Modified time: 2019-07-06 13:23:07
 
 import numpy as np
 import h5py
@@ -101,7 +101,7 @@ def analyze_sim_raw(
 	if timesteps is None:
 		timesteps = file[data_dir + 'activity'].shape[0]
 	if channels is None:
-		channels = int(file['meta/num_elec'][:])
+		channels = file[data_dir+datatype].shape[0]
 
 	#Analyses channel by channel
 	data_th = np.zeros(timesteps)
