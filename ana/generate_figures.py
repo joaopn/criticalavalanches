@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   Joao
-# @Last Modified time: 2019-07-05 17:24:30
+# @Last Modified time: 2019-07-07 13:22:46
 
 import analysis
 import matplotlib.pyplot as plt
@@ -583,7 +583,10 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 		#plt.ylabel('p(S)')
 		plt.yscale('log')
 		plt.xscale('log')
-		plt.xlim(1,100)
+		if datatype == 'sub':
+			plt.xlim(1,1000)
+		else:
+			plt.xlim(1,100)
 		plt.ylim(1e-7,1)
 		ytick_str = ['',r'$10^{-6}$','',r'$10^{-4}$','',r'$10^{-2}$','',r'$10^{0}$']
 		plt.yticks([1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1],ytick_str)
