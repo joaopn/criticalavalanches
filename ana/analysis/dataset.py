@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Qt5Agg')
 
-def plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None):
+def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT
 	
 	Args:
@@ -47,8 +47,34 @@ def plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,
 		S = avalanche.get_S(data_binned)
 		plot.pS(S,label=str_leg)
 
+def spk_plot_pS(filepath,deltaT,datapath,str_leg='Data', sampling_rate = 25000):
+	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT
+	
+	Args:
+	    filepath (str): Path to the .hdf5 dataset
+	    deltaT (int): Binsize to use, *in timesteps*
+	    datatype (str): 'coarse', 'sub' or 'both' (compares both sampling types) 
+	    str_leg (str, optional): plot legend
+	    threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
+	    bw_filter (bool, optional): Toggles butterworth filtering (for coarse)
+	    timesteps (None, optional): Length of the dataset in timesteps
+	    channels (None, optional): Number of channels in the dataset
+	"""
 
-def plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=True,timesteps=None,channels=None):
+	file = h5py.File(filepath,'r')
+	data_spk = file[datapath][:]
+
+	#Loads and thresholds data
+	data_th = avalanche.analyze_sim_raw(filepath, threshold, datatype, bw_filter, timesteps, channels)
+
+	#Bins data
+	data_binned = avalanche.bin_data(data=data_th,binsize=deltaT)
+
+	#Gets S and plots it
+	S = avalanche.get_S(data_binned)
+	plot.pS(S,label=str_leg)
+
+def sim_plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=True,timesteps=None,channels=None):
 	"""Plots p(S), m_av and fits p(S)~S^-alpha, for a list of binsizes.
 	
 	Args:
@@ -118,6 +144,7 @@ def plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=True
 		str_leg = r'$\Delta$t = {:d} ms'.format(timescale_ms*deltaT[i])
 		ax_ps.loglog(pS_list[i],label=str_leg)
 	ax_ps.legend()
+	ax_ps.set_title(datatype+'-sampled')
 
 	#Plots alpha_exp
 	ax_alpha.set_xlabel(r'$\Delta$t (ms)')
