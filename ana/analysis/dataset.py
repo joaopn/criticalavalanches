@@ -52,14 +52,14 @@ def plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=True
 	"""Plots p(S), m_av and fits p(S)~S^-alpha, for a list of binsizes.
 	
 	Args:
-	    filepath (TYPE): Description
-	    deltaT (TYPE): Description
-	    datatype (TYPE): Description
-	    threshold (int, optional): Description
-	    S_fit_max (int, optional): Description
-	    bw_filter (bool, optional): Description
-	    timesteps (None, optional): Description
-	    channels (None, optional): Description
+	    filepath (str): Path to the .hdf5 dataset
+	    deltaT (int): Vector of binsizes (in timesteps)
+	    datatype (str): 'coarse' or 'sub'
+	    threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
+	    S_fit_max (int, optional): Limit on the power law fit range (default 50)
+	    bw_filter (bool, optional): Whether to use a Butterworth filter to bandpass the signal (for coarse)
+	    timesteps (None, optional): Number of timesteps to use (default extracts from dataset)
+	    channels (None, optional): Number of electrode channels to use (default extracts from dataset)
 	"""
 	#Parameters
 	timescale_ms = 2 #length of a timestep, in ms

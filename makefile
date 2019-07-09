@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS = -std=c++11 -O3 -Wno-unused-result -DNDEBUG
 # adjust to path where hdf5 is installed
-IFLAGS = -L /usr/local/lib -I /usr/include/hdf5/serial
+IFLAGS = -L /usr/lib/x86_64-linux-gnu/hdf5/serial -I /usr/include/hdf5/serial
 LFLAGS = -lstdc++ -lz -lhdf5
 DEBUGFLAGS = -std=c++11 -g
 
