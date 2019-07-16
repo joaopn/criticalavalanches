@@ -46,6 +46,20 @@ class electrode_sampling {
 
   vec <electrode *> electrodes;    // vector of all electrodes
 
+  void print_parameters() {
+    printf("electrode sampling parameters:\n");
+    printf("\tNE       %lu [electrodes] \n", par.NE);
+    printf("\td_E      %.2e [neurons/mm2]\n", par.d_E);
+    printf("\td_zone   %.2e [um]\n", par.d_zone);
+    printf("\tgamma    %.2e\n", par.gamma);
+    printf("\tcache    %.0e\n", double(par.cache));
+    if (electrodes.size() > 0) {
+    printf("\textend   %.1f %.1f | %.1f %.1f [um]\n",
+      electrodes.front()->x, electrodes.front()->y,
+      electrodes.back()->x,  electrodes.back()->y);
+    }
+  }
+
   // signal recording
   size_t at_last = 0;
   vec <size_t> at_history;           // global activity trace
@@ -259,23 +273,19 @@ class dynamic_branching {
     double k0 = 0., k1=0., k2=0., p = 0.;
     for (size_t i = 0; i < neurons.size(); i++) {
       neuron *src = neurons[i];
-      if (src->outgoing_probability.size() == 1) {
-        // all connections share same probability (orlandi topology)
-        p += src->outgoing.size()*src->outgoing_probability[0];
-        k0 += 1./3.*src->outgoing.size();
-        k1 += 1./2.*src->outgoing.size();
-        k2 += 2./3.*src->outgoing.size();
-      } else {
-        // different prob for every connection (local gauss topology)
-        double p_temp = 0.;
-        for (size_t j = 0; j < src->outgoing_probability.size(); j++) {
+      double p_temp = 0.;
+      for (size_t j = 0; j < src->outgoing.size(); j++) {
+        if (src->outgoing_probability.size() == 1)
+          // all connections share same probability (orlandi topology)
+          p_temp += src->outgoing_probability[0];
+        else
+          // different prob for every connection (local gauss topology)
           p_temp += src->outgoing_probability[j];
-          if (p_temp < 1./3./par.m) k0+= 1;
-          if (p_temp < 1./2./par.m) k1+= 1;
-          if (p_temp < 2./3./par.m) k2+= 1;
-        }
-        p += p_temp;
+        if (p_temp < 1./3./par.m) k0+= 1;
+        if (p_temp < 1./2./par.m) k1+= 1;
+        if (p_temp < 2./3./par.m) k2+= 1;
       }
+      p += p_temp;
     }
     p  /= double(neurons.size());
     k0 /= double(neurons.size());

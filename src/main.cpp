@@ -38,6 +38,7 @@ int main(int argc, char *argv[]) {
   double h            = 4e-5;       // probability for spontaneous activation
   double delta_t      = 2.;         // [ms] time step size
   double cache_size   = 1e5;        // [num time steps] before writing history
+  size_t write_detail = 0;          // include topol. details (conn. matrix)
   std::string path    = "";         // output path for results
 
 
@@ -56,12 +57,18 @@ int main(int argc, char *argv[]) {
       if(std::string(argv[i])=="-ga")  gamma         = atof(argv[i+1]);
       if(std::string(argv[i])=="-h" )  h             = atof(argv[i+1]);
       if(std::string(argv[i])=="-c" )  cache_size    = atof(argv[i+1]);
+      if(std::string(argv[i])=="-x" )  write_detail  = atof(argv[i+1]);
       if(std::string(argv[i])=="-o" )  path          =      argv[i+1] ;
     }
   }
 
   if (path == "") {
     printf("specify output path with '-o'\n");
+    return -1;
+  }
+  if (write_detail == 1 && num_neur > 20000) {
+    printf("writing detailed output ('-x 1') is discouraged for large ");
+    printf("numbers of neurons > 20000\n\toverwrite with '-x 2'\n");
     return -1;
   }
 
@@ -86,6 +93,7 @@ int main(int argc, char *argv[]) {
   xy_offset = .5*sys_size - .5*sqrt(num_elec)*elec_dist;
   sam.init_electrodes(xy_offset);
   sam.init_writing_hdf5(h5file);
+  sam.print_parameters();
 
   // create neuron topology and avoid electrode positions
   #ifdef TPGAUSS
@@ -100,9 +108,20 @@ int main(int argc, char *argv[]) {
   tpl.par.N   = num_neur;
   tpl.par.d_N = neur_dist;
   #endif
-  tpl.init(neurons, -1, sam.electrodes, pow(sam.par.d_zone, 2.));
-  // tpl.init(neurons, h5file, sam.electrodes, pow(sam.par.d_zone, 2.));
+  if (write_detail > 0)
+    tpl.init(neurons, h5file, sam.electrodes, pow(sam.par.d_zone, 2.));
+  else
+    tpl.init(neurons, -1, sam.electrodes, pow(sam.par.d_zone, 2.));
   tpl.print_parameters();
+
+  // check that electrode array is within the culture
+  for (size_t i = 0; i < sam.electrodes.size(); i++) {
+    electrode *e = sam.electrodes[i];
+    if (e->x < 0 || e->x > tpl.par.L || e->y < 0 || e->y > tpl.par.L) {
+      printf("electrode array exceeds culture dimension\n");
+      return -1;
+    }
+  }
 
   // set contribution strength of spikes to electrode signals
   sam.set_contributions(neurons, tpl);
@@ -114,8 +133,10 @@ int main(int argc, char *argv[]) {
   sam.write_sampling_details(h5file);
   dyn.write_dynamic_details(h5file);
   tpl.write_topology_details(h5file);
-  // tpl.write_connectivty_matrix(neurons, h5file);
-  // tpl.write_neuron_details(neurons, h5file);
+  if (write_detail > 0) {
+    tpl.write_connectivty_matrix(neurons, h5file);
+    tpl.write_neuron_details(neurons, h5file);
+  }
 
 
   // ------------------------------------------------------------------ //

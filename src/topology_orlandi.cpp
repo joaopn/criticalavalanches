@@ -369,6 +369,7 @@ class topology_orlandi {
     }
   }
 
+  // 0 no connection, 1 successfull connection, 2 intersec but no connection
   void write_connectivty_matrix(vec <neuron *> &neurons, hid_t h5file) {
     hid_t h5_matrix = hdf5_create_appendable_nd(
                           h5file, "/connectivity_matrix", H5T_NATIVE_HSIZE,
