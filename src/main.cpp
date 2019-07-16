@@ -62,6 +62,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  setbuf(stdout, NULL); // print direct without calling flush, also on cluster
   if (path == "") {
     printf("specify output path with '-o'\n");
     return -1;
