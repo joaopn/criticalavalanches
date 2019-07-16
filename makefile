@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS = -std=c++11 -O3 -Wno-unused-result # -DNDEBUG
+CFLAGS = -std=c++11 -O3 -Wno-unused-result -DNDEBUG
 # adjust path to find hdf5, for example:
 IFLAGS = -L /usr/local/lib -L /usr/lib/x86_64-linux-gnu/hdf5/serial -I /usr/local/include -I /usr/include/hdf5/serial -I ./src/
 LFLAGS = -lstdc++ -lz -lhdf5
