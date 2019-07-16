@@ -19,9 +19,9 @@ export OMP_NUM_THREADS=1
 date
 
 vargs=$(awk "NR==$(($SGE_TASK_ID + 1))" ./run/parameters.tsv)
-echo "./exe/nocc ${vargs[$id]}"
+echo "${vargs[$id]}"
 
-./exe/nocc ${vargs[$id]}
+${vargs[$id]}
 
 date
 # notify "finished $JOB_NAME.$TASK_ID.$JOB_ID"

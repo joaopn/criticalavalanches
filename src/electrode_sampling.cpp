@@ -49,7 +49,7 @@ class electrode_sampling {
   void print_parameters() {
     printf("electrode sampling parameters:\n");
     printf("\tNE       %lu [electrodes] \n", par.NE);
-    printf("\td_E      %.2e [neurons/mm2]\n", par.d_E);
+    printf("\td_E      %.2e [um]\n", par.d_E);
     printf("\td_zone   %.2e [um]\n", par.d_zone);
     printf("\tgamma    %.2e\n", par.gamma);
     printf("\tcache    %.0e\n", double(par.cache));
