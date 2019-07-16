@@ -1,31 +1,30 @@
 CC=g++
-CFLAGS = -std=c++11 -O3 -Wno-unused-result -DNDEBUG
-# adjust to path where hdf5 is installed
-IFLAGS = -L /usr/lib/x86_64-linux-gnu/hdf5/serial -I /usr/include/hdf5/serial
+CFLAGS = -std=c++11 -O3 -Wno-unused-result # -DNDEBUG
+# adjust path to find hdf5, for example:
+IFLAGS = -L /usr/local/lib -L /usr/lib/x86_64-linux-gnu/hdf5/serial -I /usr/local/include -I /usr/include/hdf5/serial -I ./src/
 LFLAGS = -lstdc++ -lz -lhdf5
-DEBUGFLAGS = -std=c++11 -g
 
-all: findpar cc nocc
+all: cc nocc cc_orlandi nocc_orlandi
 
-# runs a loop to find drive that matches A=1Hz see main.cpp for arguments
-# WITHOUT coalescence compensation
-findpar: ./src/main.cpp
-	@mkdir -p ./exe
-	$(CC) $(CFLAGS) -DFINDPAR -DNOCC $(IFLAGS) ./src/main.cpp -o ./exe/findpar $(LFLAGS)
-
-# default (coalesence compensated) local branching network
+# default (coalesence compensated) local gauss branching network
 cc: ./src/main.cpp
 	@mkdir -p ./exe
-	$(CC) $(CFLAGS) $(IFLAGS) ./src/main.cpp -o ./exe/cc $(LFLAGS)
+	$(CC) $(CFLAGS) $(IFLAGS) -DTPGAUSS ./src/main.cpp -o ./exe/cc $(LFLAGS)
 
 # disables coalesence compensation
 nocc: ./src/main.cpp
 	@mkdir -p ./exe
-	$(CC) $(CFLAGS) -DNOCC $(IFLAGS) ./src/main.cpp -o ./exe/nocc $(LFLAGS)
+	$(CC) $(CFLAGS) $(IFLAGS) -DNOCC -DTPGAUSS  ./src/main.cpp -o ./exe/nocc $(LFLAGS)
 
-debug: ./src/main.cpp
+# default (coalesence compensated) local gauss branching network
+cc_orlandi: ./src/main.cpp
 	@mkdir -p ./exe
-	$(CC) $(DEBUGFLAGS) $(IFLAGS) ./src/main.cpp -o ./exe/debug $(LFLAGS)
+	$(CC) $(CFLAGS) $(IFLAGS) -DTPORLANDI ./src/main.cpp -o ./exe/cc_orlandi $(LFLAGS)
+
+# disables coalesence compensation
+nocc_orlandi: ./src/main.cpp
+	@mkdir -p ./exe
+	$(CC) $(CFLAGS) $(IFLAGS) -DNOCC -DTPORLANDI ./src/main.cpp -o ./exe/nocc_orlandi $(LFLAGS)
 
 clean:
 	@rm -rf ./exe/*

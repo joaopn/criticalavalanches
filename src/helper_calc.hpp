@@ -1,3 +1,6 @@
+#ifndef FPS_CALC
+#define FPS_CALC
+
 #include <cstdio>
 #include <cmath>
 #include <vector>
@@ -81,3 +84,4 @@ double variance(std::vector< T > &vector) {
   variance(vector, mean_value);
 }
 
+#endif
