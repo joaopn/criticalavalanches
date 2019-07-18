@@ -20,6 +20,8 @@
   #include "topology_orlandi.cpp"
 #elif defined TPGAUSS
   #include "topology_local_gauss.cpp"
+#elif defined TPRANDOM
+  #include "topology_random.cpp"
 #endif
 
 int main(int argc, char *argv[]) {
@@ -97,18 +99,23 @@ int main(int argc, char *argv[]) {
 
   // create neuron topology and avoid electrode positions
   #ifdef TPGAUSS
-  hdf5_write_string(h5file, "/meta/topology", "gauss");
   auto tpl = topology_local_gauss();
   tpl.set_N_and_d_N(num_neur, neur_dist);
   tpl.par.K   = num_outgoing;
   tpl.par.std = sigma;
   #elif defined TPORLANDI
-  hdf5_write_string(h5file, "/meta/topology", "orlandi");
   auto tpl = topology_orlandi();
   tpl.par.rho = 1000.*1000./4./neur_dist/neur_dist; // [1/mm2]
   tpl.par.L   = sys_size;                           // [um]
   tpl.par.N   = num_neur;
   tpl.par.d_N = neur_dist;
+  #elif defined TPRANDOM
+  auto tpl = topology_random();
+  tpl.par.rho = 1000.*1000./4./neur_dist/neur_dist; // [1/mm2]
+  tpl.par.L   = sys_size;                           // [um]
+  tpl.par.N   = num_neur;
+  tpl.par.K   = num_outgoing;
+  tpl.par.std = sigma;
   #endif
   if (write_detail > 0)
     tpl.init(neurons, h5file, sam.electrodes, pow(sam.par.d_zone, 2.));

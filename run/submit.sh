@@ -3,11 +3,11 @@
 # submit from project directory !!!
 
 #$ -S /bin/bash
-#$ -N nocc
+#$ -N tpl
 #$ -q rostam.q
 #$ -l h_vmem=6G # job is killed if exceeding this
 #$ -cwd
-#$ -o ./log/$JOB_NAME.$TASK_ID.$JOB_ID
+#$ -o ./log/
 #$ -j y
 
 export OPENBLAS_NUM_THREADS=1 # avoid multithreading in numpy

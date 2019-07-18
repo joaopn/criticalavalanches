@@ -171,7 +171,7 @@ class topology_orlandi {
 
     // need to add a check that it is possible to distribute all the neurons
     // in the given space
-    printf("placing neurons\n");
+    printf("placing neurons on orlandi topology\n");
     size_t num_outgoing = 0;
     size_t num_neur     = 0;
 
@@ -360,6 +360,7 @@ class topology_orlandi {
       printf("invalid h5file, no topology details written");
       return;
     } else {
+      hdf5_write_string(h5file, "/meta/topology", "orlandi");
       hdf5_write_scalar(h5file, "/meta/num_neur",
                         par.N, H5T_NATIVE_HSIZE);
       hdf5_write_scalar(h5file, "/meta/num_outgoing",

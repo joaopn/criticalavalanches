@@ -54,9 +54,9 @@ class electrode_sampling {
     printf("\tgamma    %.2e\n", par.gamma);
     printf("\tcache    %.0e\n", double(par.cache));
     if (electrodes.size() > 0) {
-    printf("\textend   %.1f %.1f | %.1f %.1f [um]\n",
-      electrodes.front()->x, electrodes.front()->y,
-      electrodes.back()->x,  electrodes.back()->y);
+      printf("\textend   %.1f %.1f | %.1f %.1f [um]\n",
+             electrodes.front()->x, electrodes.front()->y,
+             electrodes.back()->x,  electrodes.back()->y);
     }
   }
 
@@ -270,20 +270,24 @@ class dynamic_branching {
 
     // consistency checks and some insight into how local connectivity is
     // integrated probability, should equal one
-    double k0 = 0., k1=0., k2=0., p = 0.;
+    double k0 = 0., k1=0., k2=0., k3=0., p = 0.;
     for (size_t i = 0; i < neurons.size(); i++) {
       neuron *src = neurons[i];
       double p_temp = 0.;
       for (size_t j = 0; j < src->outgoing.size(); j++) {
-        if (src->outgoing_probability.size() == 1)
+        if (src->outgoing_probability.size() == 1) {
           // all connections share same probability (orlandi topology)
           p_temp += src->outgoing_probability[0];
-        else
+          // printf("%lu %lu %.4f\n", i, j, src->outgoing_probability[0]);
+        } else {
           // different prob for every connection (local gauss topology)
           p_temp += src->outgoing_probability[j];
-        if (p_temp < 1./3./par.m) k0+= 1;
-        if (p_temp < 1./2./par.m) k1+= 1;
-        if (p_temp < 2./3./par.m) k2+= 1;
+          // printf("%lu %lu %.4f\n", i, j, src->outgoing_probability[0]);
+        }
+        if (p_temp < 1./3./par.m) k0 += 1;
+        if (p_temp < 1./2./par.m) k1 += 1;
+        if (p_temp < 2./3./par.m) k2 += 1;
+        k3 += 1;
       }
       p += p_temp;
     }
@@ -291,9 +295,11 @@ class dynamic_branching {
     k0 /= double(neurons.size());
     k1 /= double(neurons.size());
     k2 /= double(neurons.size());
+    k3 /= double(neurons.size());
     printf("\tintegrated probability per neuron: %.2f\n", p);
-    printf("\tnumber of connections responsible for probabilty:\n");
-    printf("\t\tp 1/3 ~ %.2f | p 1/2 ~ %.2f | p 2/3 ~ %.2f \n", k0, k1, k2);
+    printf("\tnumber of connections responsible for probability:\n");
+    printf("\t\tp 1/3 ~ %.2f | p 1/2 ~ %.2f | p 2/3 ~ %.2f | p 1 ~ %.2f \n",
+           k0, k1, k2, k3);
     // would be good to do the same for the distance to the kth neuron
   }
 
