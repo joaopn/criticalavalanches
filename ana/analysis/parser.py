@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-07-19 12:33:04
-# @Last Modified by:   Joao
-# @Last Modified time: 2019-07-19 15:21:33
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-07-19 23:17:31
 
 """
 Parses file strings
@@ -10,16 +10,16 @@ Parses file strings
 
 import os, glob
 
-def sim_add_reps(datadir_base,reps):
+def sim_add_reps(filepath_base,reps):
 	"""Builds a list of filepaths in the format '[filepath]_rXX.hdf5'
 	
 	Args:
-	    datadir_base (str): Base filepath
+	    filepath_base (str): Base filepath
 	    reps (int): Number of files
 	"""	
 	filepath = []
 	for i in range(reps):
-		filepath.append(datadir_base+'_r{:02d}.hdf5'.format(i))
+		filepath.append(filepath_base+'_r{:02d}.hdf5'.format(i))
 
 	return filepath
 

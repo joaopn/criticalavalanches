@@ -2,7 +2,7 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-19 14:17:27
+# @Last Modified time: 2019-07-20 00:08:45
 
 """
 Module for directly handling datasets.
@@ -200,8 +200,10 @@ def sim_plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=
 	if save_fig is not None:
 		if not os.path.exists(fig_dir):
 			os.makedirs(fig_dir)
-		ax_ps.set_title(save_fig+', '+datatype+'-sampled')
-		fig.savefig(fig_dir+save_fig+'.png',bbox_inches="tight")		
+		ax_ps.set_title(save_fig)
+		ax_ps.set_ylabel(datatype+'-sampled p(S)')
+		str_save = fig_dir+save_fig+'_'+datatype+'.png'
+		fig.savefig(str_save,bbox_inches="tight")		
 
 def spk_plot_pS(filepath,deltaT,datapath,sampling_rate = 25000,str_leg='Data'):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT
