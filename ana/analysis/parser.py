@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-07-19 12:33:04
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-19 14:06:32
+# @Last Modified by:   Joao
+# @Last Modified time: 2019-07-19 15:21:33
 
 """
 Parses file strings
 """
 
-import os
+import os, glob
 
 def sim_add_reps(datadir_base,reps):
 	"""Builds a list of filepaths in the format '[filepath]_rXX.hdf5'
@@ -19,7 +19,7 @@ def sim_add_reps(datadir_base,reps):
 	"""	
 	filepath = []
 	for i in range(reps):
-		filepath.append(datadir_base+'_{:02d}.hdf5'.format(i))
+		filepath.append(datadir_base+'_r{:02d}.hdf5'.format(i))
 
 	return filepath
 
