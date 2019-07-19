@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
-# @Last Modified by:   Joao PN
-# @Last Modified time: 2019-05-02 17:02:51
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-07-19 12:40:18
 
 """
 
@@ -236,7 +236,6 @@ def analyze_pS(data, b, threshold=3):
 
 		#Plots pS
 		analysis.plot.pS(S,label="b = {:d}".format(b[i]))
-
 
 def sim_corr(m,h,b,d,threshold,reps,data_dir,type='corr', loc=1, color_state=[0,0,0]):
 

@@ -2,108 +2,15 @@
 # @Author: Joao PN
 # @Date:   2019-03-25 16:45:25
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-20 23:23:15
+# @Last Modified time: 2019-07-19 14:17:38
 
-from analysis import avalanche, plot, fitting
+from analysis import avalanche, plot, fitting, parser
 import numpy as np
 import matplotlib.pyplot as plt
 import os, argparse
 import glob
 import h5py
 import powerlaw
-
-def parse_sim_data(datadir, datamask = None):
-
-	#Lists all files
-	homedir = os.getcwd()
-	os.chdir(datadir)
-	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
-	os.chdir(homedir)
-
-	# only keep files for which path contains the mask
-	if datamask is not None:
-		datafiles = [item for item in datafiles if datamask in item]
-		# print(datafiles)
-
-	#Removes last part ('_r00')
-	data_removed = [datafiles[i][:-4] for i in range(len(datafiles))]
-	data_unique = list(set(data_removed))
-
-	return data_unique
-
-def parse_sim_thresholded(datadir, bw_filter=False, datamask = None):
-
-	if bw_filter:
-		dir_thresholded = 'thresholded_filtered/'
-	else:
-		dir_thresholded = 'thresholded_unfiltered/'
-
-	#Lists all files
-	homedir = os.getcwd()
-	os.chdir(datadir + dir_thresholded)
-	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
-	os.chdir(homedir)
-
-	# only keep files for which path contains the mask
-	if datamask is not None:
-		datafiles = [item for item in datafiles if datamask in item]
-		# print(datafiles)
-
-	return datafiles
-
-def parse_sim_thresholded_no_d(datadir, bw_filter=False, datamask = None):
-	#Returns the unique filenames with no e.g. "_d00_th3.0.hdf5". 
-	#ALL datasets must have same values for "dxx"
-
-	d_check_max = 30
-
-	#Gets datafiles
-	datafiles = parse_sim_thresholded(datadir,bw_filter,datamask)
-
-	#Checks all strings and adds present dxx to list
-	d_check_list = ["d{:02d}".format(d_i) for d_i in range(1,d_check_max+1)]
-	d_list = []
-	for d_i in d_check_list:
-		if any(d_i in data_i for data_i in datafiles):
-			d_list.append(int(d_i[1:]))
-
-	#Removes dxx_thyy from filename
-	for d in d_list:
-		datafiles = [f.partition("d{:02d}".format(d))[0] for f in datafiles]
-
-	#Gets unique strings
-	datafiles = list(set(datafiles))
-
-	return datafiles,d_list
-
-def parse_sim_no_d(datadir):
-	#Returns the unique filenames with no e.g. "_d00_th3.0.hdf5". 
-	#ALL datasets must have same values for "dxx"
-
-	#Parameters
-	d_check_max = 30
-
-	#Lists all files
-	homedir = os.getcwd()
-	os.chdir(datadir)
-	datafiles = [f.partition('.hdf5')[0] for f in glob.glob('*.hdf5')]
-	os.chdir(homedir)	
-
-	#Checks all strings and adds present dxx to list
-	d_check_list = ["d{:02d}".format(d_i) for d_i in range(1,d_check_max+1)]
-	d_list = []
-	for d_i in d_check_list:
-		if any(d_i in data_i for data_i in datafiles):
-			d_list.append(int(d_i[1:]))
-
-	#Removes dxx_thyy from filename
-	for d in d_list:
-		datafiles = [f.partition("d{:02d}".format(d))[0] for f in datafiles]
-
-	#Gets unique strings
-	datafiles = list(set(datafiles))
-
-	return datafiles,d_list
 
 def parametersDefault():
 
@@ -521,7 +428,7 @@ if __name__ == "__main__":
 
 	#Does the requested operation
 	if mode == 'save_plot':
-		dataset_list = parse_sim_data(datafolder, datamask)
+		dataset_list = parser.sim_find_unique(datafolder, datamask)
 		print('Analyzing and plotting')
 		for i in range(len(dataset_list)):
 			save_plot(data_dir=datafolder,
@@ -533,7 +440,7 @@ if __name__ == "__main__":
 				bw_filter=bw_filter)
 
 	elif mode == 'threshold':
-		dataset_list = parse_sim_data(datafolder, datamask)
+		dataset_list = parser.sim_find_unique(datafolder, datamask)
 		for i in range(len(dataset_list)):
 			print('Thresholding and saving: ' + dataset_list[i])
 			save_threshold(data_dir=datafolder,
@@ -543,7 +450,7 @@ if __name__ == "__main__":
 				bw_filter=bw_filter)
 
 	elif mode == 'save_ps':
-		dataset_list = parse_sim_thresholded(datafolder, bw_filter, datamask)
+		dataset_list = parser.sim_find_thresholded(datafolder, bw_filter, datamask)
 		for i in range(len(dataset_list)):
 			print('Analysing thresholded data and saving pS: ' + dataset_list[i])
 			save_ps(datafolder,
@@ -552,7 +459,7 @@ if __name__ == "__main__":
 				bw_filter=bw_filter)
 
 	elif mode == 'save_ps_alpha':
-		dataset_list = parse_sim_thresholded(datafolder, bw_filter, datamask)
+		dataset_list = parser.sim_find_thresholded(datafolder, bw_filter, datamask)
 		for i in range(len(dataset_list)):
 			print('Analysing thresholded data and fitting pS: ' + dataset_list[i])
 			save_ps_alpha(datafolder,
@@ -561,7 +468,7 @@ if __name__ == "__main__":
 				bw_filter=bw_filter)
 
 	elif mode == 'save_mav':
-		dataset_list, d_list = parse_sim_thresholded_no_d(datafolder, bw_filter, datamask)
+		dataset_list, d_list = parser.sim_find_thresholded_no_d(datafolder, bw_filter, datamask)
 		for i in range(len(dataset_list)):
 			print('Analysing thresholded data: ' + dataset_list[i])
 			save_mav(datafolder,
@@ -572,7 +479,7 @@ if __name__ == "__main__":
 				bw_filter=bw_filter)		
 
 	elif mode == 'save_corr':
-		dataset_list,d_list = parse_sim_no_d(datafolder)
+		dataset_list,d_list = parser.sim_find_unique_no_d(datafolder)
 		for i in range(len(dataset_list)):
 			print('Calculating timeseries correlations: ' + dataset_list[i])
 			save_corr(

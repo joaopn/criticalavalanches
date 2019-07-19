@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
-# @Last Modified by:   Joao
-# @Last Modified time: 2019-07-06 13:59:53
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-07-19 14:17:27
 
 """
 Module for directly handling datasets.
 """
 
-from analysis import avalanche, fitting, plot
+from analysis import avalanche, fitting, plot, parser
 import powerlaw
 import numpy as np
 import matplotlib.pyplot as plt
@@ -202,19 +202,6 @@ def sim_plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=
 			os.makedirs(fig_dir)
 		ax_ps.set_title(save_fig+', '+datatype+'-sampled')
 		fig.savefig(fig_dir+save_fig+'.png',bbox_inches="tight")		
-
-def build_filepath_reps(filepath_base,reps):
-	"""Builds a list of filepaths in the format '[filepath]_rXX.hdf5'
-	
-	Args:
-	    filepath_base (str): Base filepath
-	    reps (int): Number of files
-	"""	
-	filepath = []
-	for i in range(reps):
-		filepath.append(filepath_base+'_{:02d}.hdf5'.format(i))
-
-	return filepath
 
 def spk_plot_pS(filepath,deltaT,datapath,sampling_rate = 25000,str_leg='Data'):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT
