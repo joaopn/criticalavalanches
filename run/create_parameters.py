@@ -6,17 +6,17 @@ from itertools import product
 os.chdir(os.path.dirname(__file__))
 
 # seeds will not match if you rerun this, data has been copied.
-start_id = 0
+start_id = 15000 
 
 # settings for reverberating regime without cc
-l_exe = ["./exe/cc", "./exe/cc_orlandi"]
-l_folder = ["gauss", "orlandi"]
+l_exe = ["./exe/cc_random"]
+l_folder = ["random"]
 l_neur = [160000]
 l_m = [   0.9,   0.98]
 l_h = [2.0e-4, 4.0e-5]
 l_T = [1e6]
-l_de = [2, 4]
-l_ga = [-1.0, -1.25, -1.5, -1.75, -2.0]
+l_de = [4]
+l_ga = [-1.0]
 l_rep = range(0,50)
 
 arg_list = product(l_exe, l_neur, l_m, l_h, l_de, l_T, l_ga, l_rep)
