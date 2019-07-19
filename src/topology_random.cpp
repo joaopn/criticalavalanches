@@ -177,6 +177,7 @@ class topology_random {
       }
     } else {
       // set (constant) outgoing porbablity to 1/number_connections
+      // std = 0, non-local interaction
       for (size_t i = 0; i < neurons.size(); i++) {
         neuron *n = neurons[i];
         if (n->outgoing.size() > 0)
