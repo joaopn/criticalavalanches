@@ -4,50 +4,219 @@
 # @Last Modified by:   Joao
 # @Last Modified time: 2019-07-06 13:59:53
 
+"""
+Module for directly handling datasets.
+"""
+
 from analysis import avalanche, fitting, plot
 import powerlaw
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('Qt5Agg')
+import matplotlib, os
 
 def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None):
-	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT
+	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT. If [filepath] is a list, averages over datasets.
 	
 	Args:
 	    filepath (str): Path to the .hdf5 dataset
 	    deltaT (int): Binsize to use, *in timesteps*
-	    datatype (str): 'coarse', 'sub' or 'both' (compares both sampling types) 
+		    datatype (str): 'coarse', 'sub' or 'both' (compares both sampling types) 
 	    str_leg (str, optional): plot legend
 	    threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
 	    bw_filter (bool, optional): Toggles butterworth filtering (for coarse)
 	    timesteps (None, optional): Length of the dataset in timesteps
 	    channels (None, optional): Number of channels in the dataset
 	"""
+
+	if type(filepath) is not list:
+		filepath = [filepath]
+
 	if datatype is 'both':
 		for datatype_i in ['sub','coarse']:
+			S_list = []
+			for filepath_file in filepath:
+				#Loads and thresholds data
+				data_th = avalanche.analyze_sim_raw(filepath_file, threshold, datatype_i, bw_filter, timesteps, channels)
+
+				#Bins data
+				data_binned = avalanche.bin_data(data=data_th,binsize=deltaT)
+
+				#Gets S and plots it
+				S_list.append(avalanche.get_S(data_binned))
+
+			plot.pS_mean(S_list,label=str_leg + ' ,' + datatype_i)			
+
+	else:
+		S_list = []
+		for filepath_file in filepath:
 			#Loads and thresholds data
-			data_th = avalanche.analyze_sim_raw(filepath, threshold, datatype_i, bw_filter, timesteps, channels)
+			data_th = avalanche.analyze_sim_raw(filepath_file, threshold, datatype, bw_filter, timesteps, channels)
 
 			#Bins data
 			data_binned = avalanche.bin_data(data=data_th,binsize=deltaT)
 
 			#Gets S and plots it
-			S = avalanche.get_S(data_binned)
-			plot.pS(S,label=str_leg + ' ,' + datatype_i)			
+			S_list.append(avalanche.get_S(data_binned))
+		plot.pS_mean(S_list,label=str_leg)
 
-	else:
+def sim_plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=True,timesteps=None,channels=None, save_fig=None):
+	"""Plots p(S), m_av and fits p(S)~S^-alpha, for a list of binsizes. If [filepath] is a list, averages over datasets.
+	
+	Args:
+	    filepath (str): Path to the .hdf5 dataset
+	    deltaT (int): Vector of binsizes (in timesteps)
+	    datatype (str): 'coarse' or 'sub'
+	    threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
+	    S_fit_max (int, optional): Limit on the power law fit range (default 50)
+	    bw_filter (bool, optional): Whether to use a Butterworth filter to bandpass the signal (for coarse)
+	    timesteps (None, optional): Number of timesteps to use (default extracts from dataset)
+	    channels (None, optional): Number of electrode channels to use (default extracts from dataset)   
+	    save_fig (str, optional): Saves the figure under fig/[save_fig].png
+	"""
+
+	if type(filepath) is not list:
+		filepath = [filepath]
+
+	#Parameters
+	timescale_ms = 2 #length of a timestep, in ms
+	fig_dir = 'fig/'
+
+	#Lets avoid list shenenigans
+	deltaT = np.array(deltaT)
+	nbins = deltaT.size
+	nreps = len(filepath)
+
+	S_list = []
+	deltaT_ms = np.array(timescale_ms*deltaT)
+	alpha_exp = np.zeros((nreps, nbins))
+	m_av = np.zeros((nreps, nbins))
+
+	#Runs analysis for each dataset
+	for j in range(nreps):
+
+		S_list_rep = []
+
 		#Loads and thresholds data
-		data_th = avalanche.analyze_sim_raw(filepath, threshold, datatype, bw_filter, timesteps, channels)
+		data_th = avalanche.analyze_sim_raw(filepath[j],threshold, datatype, bw_filter, timesteps, channels)
 
-		#Bins data
-		data_binned = avalanche.bin_data(data=data_th,binsize=deltaT)
+		#Bins data for each deltaT and calculates observables
+		for i in range(nbins):
 
-		#Gets S and plots it
-		S = avalanche.get_S(data_binned)
-		plot.pS(S,label=str_leg)
+			data_binned = avalanche.bin_data(data=data_th,binsize=deltaT[i])
 
-def spk_plot_pS(filepath,deltaT,datapath,str_leg='Data', sampling_rate = 25000):
+			#Obtains avalanche list S
+			S = avalanche.get_S(data_binned)
+
+			#Saves S to list
+			S_list_rep.append(S)
+
+			#Calculates alpha_exp
+			fit = powerlaw.Fit(S, discrete=True, estimate_discrete=False, xmin=1, xmax=S_fit_max)
+			alpha_exp[j,i] = fit.alpha
+
+			#Calculates m_av
+			m_av[j,i] = fitting.m_avalanche(data_binned)
+
+		#Appends S list from each repetition to pS
+		S_list.append(S_list_rep)
+
+	#Sets up subplots
+	fig = plt.figure(constrained_layout=True)
+	gs = fig.add_gridspec(2,3)
+	ax_alpha = fig.add_subplot(gs[0,2])
+	ax_mav = fig.add_subplot(gs[1,2])
+	ax_ps = fig.add_subplot(gs[0:2,0:2])
+
+	#Plots pS_mean for each binsize
+	for k in range(nbins):
+
+		#Rebuild S_list for each binsize
+		S_bin = []
+		for j in range(nreps):
+			S_bin.append(S_list[j][k])
+
+		#Gets largest avalanche from the list (+1 for zero_index)
+		S_max = int(max([Si.max() for Si in S_bin]) + 1)
+
+		#Obtains pS
+		pS = np.zeros((nreps,S_max))
+
+		for i in range(nreps):
+			for j in range(S_max):
+				pS[i,j] = np.sum(S_bin[i]==j)
+			pS[i,:] = pS[i,:]/np.sum(pS[i,:])
+
+		#Obtains mean and STD
+		pS_mean = np.mean(pS,axis=0)
+		pS_std = np.std(pS,axis=0)
+		pS_up = pS_mean + pS_std/2
+		pS_dw = pS_mean - pS_std/2	
+
+		#Plots pS_mean
+		str_leg = r'$\Delta$t = {:d} ms'.format(timescale_ms*deltaT[k])
+		plt.fill_between(range(S_max),pS_up,pS_dw,alpha=0.25,lw=0)
+		plt.plot(range(S_max),pS_mean,label=str_leg)
+
+	#Plots alpha_exp
+	alpha_exp_mean = np.mean(alpha_exp,axis=0)
+	alpha_exp_std = np.std(alpha_exp,axis=0)
+	ax_alpha.errorbar(deltaT_ms,alpha_exp_mean,yerr=alpha_exp_std/2,fmt='o-',color='k', fillstyle='full')
+
+	#Plots m_av
+	m_av_mean = np.mean(m_av,axis=0)
+	m_av_std = np.std(m_av,axis=0)
+	ax_mav.errorbar(deltaT_ms,m_av_mean,yerr=m_av_std/2,fmt='o-',color='k', fillstyle='full')
+	
+	#Beatifies plots
+	ax_ps.set_xlabel('S')
+	ax_ps.set_ylabel('p(S)')
+	ax_ps.set_xlim(1,1e3)	
+	ax_ps.set_yscale('log')
+	ax_ps.set_xscale('log')
+	ax_ps.legend()
+	ax_ps.set_title(datatype+'-sampled')
+
+	ax_alpha.set_xlabel(r'$\Delta$t (ms)')
+	ax_alpha.set_ylabel(r'$\alpha$')
+	ax_alpha.set_xscale('log')
+	ax_alpha.set_xticks([1,10])
+	ax_alpha.set_xlim([1,64])
+	ax_alpha.plot([1,100],[1.5,1.5],'--')	
+
+	ax_mav.set_xlabel(r'$\Delta$t (ms)')
+	ax_mav.set_ylabel(r'$m_{av}$')
+	ax_mav.set_xscale('log')
+	ax_mav.set_xticks([1,10])
+	ax_alpha.set_xlim([1,64])
+	ax_mav.plot([1,100],[1,1],'--')	
+
+	# #Fix the horrible ticks
+	# for ax in [ax_mav,ax_alpha]:
+	# 	for axis in [ax.xaxis, ax.yaxis]:
+	# 		formatter = matplotlib.ticker.ScalarFormatter()
+	# 		formatter.set_scientific(False)
+	# 		axis.set_major_formatter(formatter)
+
+	if save_fig is not None:
+		if not os.path.exists(fig_dir):
+			os.makedirs(fig_dir)
+		ax_ps.set_title(save_fig+', '+datatype+'-sampled')
+		fig.savefig(fig_dir+save_fig+'.png',bbox_inches="tight")		
+
+def build_filepath_reps(filepath_base,reps):
+	"""Builds a list of filepaths in the format '[filepath]_rXX.hdf5'
+	
+	Args:
+	    filepath_base (str): Base filepath
+	    reps (int): Number of files
+	"""	
+	filepath = []
+	for i in range(reps):
+		filepath.append(filepath_base+'_{:02d}.hdf5'.format(i))
+
+	return filepath
+
+def spk_plot_pS(filepath,deltaT,datapath,sampling_rate = 25000,str_leg='Data'):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT
 	
 	Args:
@@ -73,94 +242,3 @@ def spk_plot_pS(filepath,deltaT,datapath,str_leg='Data', sampling_rate = 25000):
 	#Gets S and plots it
 	S = avalanche.get_S(data_binned)
 	plot.pS(S,label=str_leg)
-
-def sim_plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=True,timesteps=None,channels=None):
-	"""Plots p(S), m_av and fits p(S)~S^-alpha, for a list of binsizes.
-	
-	Args:
-	    filepath (str): Path to the .hdf5 dataset
-	    deltaT (int): Vector of binsizes (in timesteps)
-	    datatype (str): 'coarse' or 'sub'
-	    threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
-	    S_fit_max (int, optional): Limit on the power law fit range (default 50)
-	    bw_filter (bool, optional): Whether to use a Butterworth filter to bandpass the signal (for coarse)
-	    timesteps (None, optional): Number of timesteps to use (default extracts from dataset)
-	    channels (None, optional): Number of electrode channels to use (default extracts from dataset)
-	"""
-	#Parameters
-	timescale_ms = 2 #length of a timestep, in ms
-
-	#Lets avoid list shenenigans
-	deltaT = np.array(deltaT)
-	nbins = deltaT.size
-
-	#Loads and thresholds data
-	data_th = avalanche.analyze_sim_raw(filepath, threshold, datatype, bw_filter, timesteps, channels)
-
-	#Observables
-	pS_list = []
-	alpha_exp = np.zeros(nbins)
-	m_av = np.zeros(nbins)
-
-	#Bins data for each deltaT and calculates observables
-	for i in range(nbins):
-		data_binned = avalanche.bin_data(data=data_th,binsize=deltaT[i])
-
-		#Calculates p(S)
-		S = avalanche.get_S(data_binned)
-		S_max = int(S.max())
-		pS = np.zeros(S_max)
-		for j in range(S_max):
-			pS[j] = np.sum(S==j+1)
-		pS = pS/np.sum(pS)
-		pS_list.append(pS)
-
-		#Calculates alpha_exp
-		fit = powerlaw.Fit(S, discrete=True, estimate_discrete=False, xmin=1, xmax=S_fit_max)
-		alpha_exp[i] = fit.alpha
-
-		#Calculates m_av
-		m_av[i] = fitting.m_avalanche(data_binned)
-
-	#Sets up subplots
-	fig = plt.figure(constrained_layout=True)
-	gs = fig.add_gridspec(2,3)
-	ax_alpha = fig.add_subplot(gs[0,2])
-	ax_mav = fig.add_subplot(gs[1,2])
-	ax_ps = fig.add_subplot(gs[0:2,0:2])
-
-	# #Fix the horrible ticks
-	# for ax in [ax_mav,ax_alpha]:
-	# 	for axis in [ax.xaxis, ax.yaxis]:
-	# 		formatter = matplotlib.ticker.ScalarFormatter()
-	# 		formatter.set_scientific(False)
-	# 		axis.set_major_formatter(formatter)
-
-	#Plots pS
-	ax_ps.set_xlabel('S')
-	ax_ps.set_ylabel('p(S)')
-	plt.xlim(1,1e3)	
-	for i in range(nbins):
-		str_leg = r'$\Delta$t = {:d} ms'.format(timescale_ms*deltaT[i])
-		ax_ps.loglog(pS_list[i],label=str_leg)
-	ax_ps.legend()
-	ax_ps.set_title(datatype+'-sampled')
-
-	#Plots alpha_exp
-	ax_alpha.set_xlabel(r'$\Delta$t (ms)')
-	ax_alpha.set_ylabel(r'$\alpha$')
-	ax_alpha.set_xscale('log')
-	ax_alpha.set_xticks([1,10])
-	ax_alpha.set_xlim([1,64])
-	ax_alpha.plot([1,100],[1.5,1.5],'--')
-	ax_alpha.plot(timescale_ms*deltaT,alpha_exp,'o-',color='k', fillstyle='full')
-
-	#Plots m_av
-	ax_mav.set_xlabel(r'$\Delta$t (ms)')
-	ax_mav.set_ylabel(r'$m_{av}$')
-	ax_mav.set_xscale('log')
-	ax_mav.set_xticks([1,10])
-	ax_alpha.set_xlim([1,64])
-	ax_mav.plot([1,100],[1,1],'--')
-	ax_mav.plot(timescale_ms*deltaT,m_av,'o-',color='k', fillstyle='full')
-	

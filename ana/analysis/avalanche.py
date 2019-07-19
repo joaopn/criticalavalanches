@@ -1,16 +1,18 @@
-"""
-Module for the avalanche analysis of MEA datasets.
-
-"""
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
 # @Last Modified by:   Joao
 # @Last Modified time: 2019-07-06 13:23:07
 
+"""
+
+Module for the avalanche analysis of MEA datasets.
+
+
+"""
+
 import numpy as np
-import h5py
-import os
+import h5py, os
 from scipy.signal import butter, lfilter
 
 def threshold_ch(data, threshold):
@@ -67,7 +69,7 @@ def filter_bw_ch(data,freqs=[0.1,200],fs=500):
 def get_S(data):
 
 	#Finds crossings of the signal to positive
-	id_cross=np.where(np.sign(data[:-1]) != np.sign(data[1:]))[0] + 1
+	id_cross=	np.where(np.sign(data[:-1]) != np.sign(data[1:]))[0] + 1
 	id_cross_plus = id_cross[data[id_cross]>0]
 
 

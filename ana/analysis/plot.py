@@ -4,14 +4,17 @@
 # @Last Modified by:   Joao PN
 # @Last Modified time: 2019-05-02 17:02:51
 
-import os
-import matplotlib
-#if os.environ.get('DISPLAY', '') == '':
-#    matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import numpy as np
+"""
+
+Module for plotting distributions. 
+
+"""
 import analysis.avalanche
 import analysis.fitting
+import matplotlib, os
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 def pS(S,label='data'):
 
@@ -50,6 +53,8 @@ def pS_mean(S_list,label='data'):
 	#Plots confidence interval (1 std) and mean
 	plt.fill_between(range(S_max),pS_up,pS_dw,alpha=0.25,lw=0)
 	plt.plot(range(S_max),pS_mean,label=label)
+	plt.yscale('log')
+	plt.xscale('log')
 	plt.legend()
 
 def timeseries_threshold(data,th):

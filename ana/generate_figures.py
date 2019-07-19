@@ -376,8 +376,6 @@ def figure_1(data_dir,b,d,reps,bw_filter):
 	#ax.get_legend().remove()
 	#plt.xlabel('Avalanche size S')
 	#plt.ylabel('p(S)')
-	plt.yscale('log')
-	plt.xscale('log')
 	plt.xlim(1,300)
 	plt.ylim(fig_pS_ylim,1)
 	plt.yticks([1e-4,1e-2,1])
