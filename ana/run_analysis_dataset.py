@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-07-19 23:08:49
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-20 00:05:31
+# @Last Modified time: 2019-07-20 10:52:22
 
 """
 Runs the avalanche analysis for all datasets in a folder, averaring over unique filenames ending with '_rXX.hdf5'
@@ -68,10 +68,11 @@ if __name__ == "__main__":
 	#Runs it for each unique dataset
 	for dataset in datasets_unique:
 
+		print('Running: '+dataset)
+
 		#Rebuilds dataset list
 		filepath = parser.sim_add_reps(datafolder+dataset,reps)
 
-		print(filepath)
-
 		#Runs analysis
-		sim_plot_deltaT(filepath=filepath,deltaT=binsize, datatype=datatype,threshold=threshold,S_fit_max=fit_lim,bw_filter=bw_filter,save_fig=dataset)
+		fig_loc = datafolder + dataset
+		sim_plot_deltaT(filepath=filepath,deltaT=binsize, datatype=datatype,threshold=threshold,S_fit_max=fit_lim,bw_filter=bw_filter,save_fig=fig_loc)

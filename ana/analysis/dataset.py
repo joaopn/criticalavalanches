@@ -2,7 +2,7 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-20 00:08:45
+# @Last Modified time: 2019-07-20 11:35:38
 
 """
 Module for directly handling datasets.
@@ -198,8 +198,10 @@ def sim_plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=
 	# 		axis.set_major_formatter(formatter)
 
 	if save_fig is not None:
-		if not os.path.exists(fig_dir):
-			os.makedirs(fig_dir)
+		fig_path = fig_dir+'/'.join(save_fig.split('/')[:-1])+'/'
+		print(fig_path)
+		if not os.path.exists(fig_path):
+			os.makedirs(fig_path)
 		ax_ps.set_title(save_fig)
 		ax_ps.set_ylabel(datatype+'-sampled p(S)')
 		str_save = fig_dir+save_fig+'_'+datatype+'.png'
