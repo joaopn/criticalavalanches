@@ -4,6 +4,7 @@ output
 dat
 exe
 parameters.tsv
+__pycache__
 exe/*
 *.hdf5
 *.pyc
