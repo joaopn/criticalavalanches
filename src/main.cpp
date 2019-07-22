@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 
   // place electrode array in the middle of the culture
   sys_size  = 2.*sqrt(double(num_neur))*neur_dist;
-  xy_offset = .5*sys_size - .5*sqrt(num_elec)*elec_dist;
+  xy_offset = .5*sys_size - .5*sqrt(num_elec)*elec_dist*neur_dist;
   auto sam  = electrode_sampling();
   sam.par.NE     = num_elec;
   sam.par.d_E    = neur_dist*elec_dist;  // [um]

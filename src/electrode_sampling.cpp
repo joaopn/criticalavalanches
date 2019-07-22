@@ -54,7 +54,7 @@ class electrode_sampling {
     printf("\tgamma    %.2e\n", par.gamma);
     printf("\tcache    %.0e\n", double(par.cache));
     if (electrodes.size() > 0) {
-      printf("\textend   %.1f %.1f | %.1f %.1f [um]\n",
+      printf("\textend   %.2e %.2e | %.2e %.2e [um]\n",
              electrodes.front()->x, electrodes.front()->y,
              electrodes.back()->x,  electrodes.back()->y);
     }
