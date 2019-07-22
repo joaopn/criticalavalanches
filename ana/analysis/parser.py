@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-07-19 12:33:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-22 19:58:17
+# @Last Modified time: 2019-07-22 21:28:34
 
 """
 Parses file strings
@@ -11,7 +11,9 @@ Parses file strings
 import os, glob
 
 def sim_build_filename(m,h,de=None,ga=None,version='new'):
-	"""Builds a filename list using the syntax from the simulation (new version)
+	"""Builds a filename list using the syntax from the simulation (ex: 'm0.90000_h2.000e-04_de02_ga-1.00').
+	
+	If de=None or ga=None, returns reduced strings (ex: m0.90000_h2.000e-04' for de=None).
 	
 	Args:
 		m (float): Branching parameter
@@ -29,9 +31,9 @@ def sim_build_filename(m,h,de=None,ga=None,version='new'):
 		m = [m]
 	if type(h) is not list:
 		h = [h]
-	if type(de) is not list:
+	if type(de) is not list and de is not None:
 		de = [de]
-	if type(ga) is not list:
+	if type(ga) is not list and ga is not None:
 		ga = [ga]
 
 	#Parse input
@@ -40,12 +42,25 @@ def sim_build_filename(m,h,de=None,ga=None,version='new'):
 
 	#Builds paths
 	filenames = []
-	for i in range(len(m)):
-			for de_i in de:
-				for ga_i in ga:
-					str_file = 'm{:.5f}_h{:.3e}_de{:02d}_ga-{:0.2f}'.format(m[i],h[i],de_i,ga_i)
-					filenames.append(str_file)
 
+	#Builds filenames 
+	#I'm sure there is a non-horrible way to do it
+	if de is None:
+		for i in range(len(m)):
+			str_file = 'm{:.5f}_h{:.3e}'.format(m[i],h[i])
+			filenames.append(str_file)
+
+	elif ga is None:
+		for i in range(len(m)):
+			for de_i in de:
+				str_file = 'm{:.5f}_h{:.3e}_de{:02d}'.format(m[i],h[i],de_i)
+				filenames.append(str_file)
+	else:
+		for i in range(len(m)):
+				for de_i in de:
+					for ga_i in ga:
+						str_file = 'm{:.5f}_h{:.3e}_de{:02d}_ga-{:0.2f}'.format(m[i],h[i],de_i,ga_i)
+						filenames.append(str_file)
 	return filenames
 
 

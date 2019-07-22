@@ -2,10 +2,12 @@
 # @Author: joaopn
 # @Date:   2019-07-19 23:08:49
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-22 20:02:27
+# @Last Modified time: 2019-07-22 20:10:23
 
 """
-Runs the avalanche analysis for all datasets in a folder, averaring over unique filenames ending with '_rXX.hdf5'. Skips averaging for -reps 0.
+Runs the avalanche analysis for all datasets in a folder, averaging over unique filenames ending with '_rXX.hdf5'. 
+- Skips averaging for -reps 0.
+- Doesn't depend on specific filename syntax.
 """
 
 from analysis import parser, dataset
