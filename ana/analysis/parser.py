@@ -2,13 +2,52 @@
 # @Author: joaopn
 # @Date:   2019-07-19 12:33:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-19 23:17:31
+# @Last Modified time: 2019-07-22 19:58:17
 
 """
 Parses file strings
 """
 
 import os, glob
+
+def sim_build_filename(m,h,de=None,ga=None,version='new'):
+	"""Builds a filename list using the syntax from the simulation (new version)
+	
+	Args:
+		m (float): Branching parameter
+		h (float): drive per neuron
+		de (int, optional): Inter-electrode distance
+		ga (float, optional): electrode FOV exponent (Signal~1/R^ga)
+		version (str, optional): Syntax version [new/old]
+	
+	Returns:
+		list: List of filenames created from the combination of parameters
+	"""
+
+	#Make sure everything is a list
+	if type(m) is not list:
+		m = [m]
+	if type(h) is not list:
+		h = [h]
+	if type(de) is not list:
+		de = [de]
+	if type(ga) is not list:
+		ga = [ga]
+
+	#Parse input
+	if len(m) != len(h):
+		raise ValueError('m and h have different lengths')
+
+	#Builds paths
+	filenames = []
+	for i in range(len(m)):
+			for de_i in de:
+				for ga_i in ga:
+					str_file = 'm{:.5f}_h{:.3e}_de{:02d}_ga-{:0.2f}'.format(m[i],h[i],de_i,ga_i)
+					filenames.append(str_file)
+
+	return filenames
+
 
 def sim_add_reps(filepath_base,reps):
 	"""Builds a list of filepaths in the format '[filepath]_rXX.hdf5'
@@ -17,6 +56,9 @@ def sim_add_reps(filepath_base,reps):
 	    filepath_base (str): Base filepath
 	    reps (int): Number of files
 	"""	
+	if reps == 0:
+		return filepath_base
+
 	filepath = []
 	for i in range(reps):
 		filepath.append(filepath_base+'_r{:02d}.hdf5'.format(i))
@@ -28,11 +70,11 @@ def sim_find_unique(datadir, datamask = None):
 
 	
 	Args:
-	    datadir (str): Folder to search
-	    datamask (str, optional): Adds a mask, excluding some files
+		datadir (str): Folder to search
+		datamask (str, optional): Adds a mask, excluding some files
 	
 	Returns:
-	    str: List of unique dataset names in the folder.
+		str: List of unique dataset names in the folder.
 	"""
 
 	#Lists all files
@@ -85,12 +127,12 @@ def sim_find_thresholded(datadir, bw_filter=False, datamask = None):
 	"""Parses thresholded simulation data from a folder
 	
 	Args:
-	    datadir (str): Folder to search
-	    bw_filter (bool, optional): Whether the thresholded data is filtered
-	    datamask (None, optional): Adds a mask, excluding some files
+		datadir (str): Folder to search
+		bw_filter (bool, optional): Whether the thresholded data is filtered
+		datamask (None, optional): Adds a mask, excluding some files
 	
 	Returns:
-	    str: List of thresholded datasets in the folder
+		str: List of thresholded datasets in the folder
 	"""
 	if bw_filter:
 		dir_thresholded = 'thresholded_filtered/'
@@ -114,12 +156,12 @@ def sim_find_thresholded_no_d(datadir, bw_filter=False, datamask = None):
 	"""Parses thresholded simulation data from a folder, without termination
 	
 	Args:
-	    datadir (TYPE): Description
-	    bw_filter (bool, optional): Description
-	    datamask (None, optional): Description
+		datadir (TYPE): Description
+		bw_filter (bool, optional): Description
+		datamask (None, optional): Description
 	
 	Returns:
-	    TYPE: Description
+		TYPE: Description
 	"""
 	#Returns the unique filenames with no e.g. "_d00_th3.0.hdf5". 
 	#ALL datasets must have same values for "dxx"

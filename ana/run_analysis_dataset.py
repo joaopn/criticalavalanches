@@ -2,13 +2,13 @@
 # @Author: joaopn
 # @Date:   2019-07-19 23:08:49
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-20 10:52:22
+# @Last Modified time: 2019-07-22 20:02:27
 
 """
-Runs the avalanche analysis for all datasets in a folder, averaring over unique filenames ending with '_rXX.hdf5'
+Runs the avalanche analysis for all datasets in a folder, averaring over unique filenames ending with '_rXX.hdf5'. Skips averaging for -reps 0.
 """
 
-from analysis import parser, sim_plot_deltaT
+from analysis import parser, dataset
 import argparse
 
 def parametersDefault():
@@ -75,4 +75,4 @@ if __name__ == "__main__":
 
 		#Runs analysis
 		fig_loc = datafolder + dataset
-		sim_plot_deltaT(filepath=filepath,deltaT=binsize, datatype=datatype,threshold=threshold,S_fit_max=fit_lim,bw_filter=bw_filter,save_fig=fig_loc)
+		dataset.sim_plot_deltaT(filepath=filepath,deltaT=binsize, datatype=datatype,threshold=threshold,S_fit_max=fit_lim,bw_filter=bw_filter,save_fig=fig_loc)
