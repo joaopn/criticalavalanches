@@ -12,15 +12,15 @@ from analysis import avalanche, fitting, plot, parser
 import powerlaw
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib, os
+import matplotlib, os, pickle
 
-def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None):
+def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None, save_fig=None):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT. If [filepath] is a list, averages over datasets.
 	
 	Args:
 	    filepath (str): Path to the .hdf5 dataset
 	    deltaT (int): Binsize to use, *in timesteps*
-		    datatype (str): 'coarse', 'sub' or 'both' (compares both sampling types) 
+		datatype (str): 'coarse', 'sub'
 	    str_leg (str, optional): plot legend
 	    threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
 	    bw_filter (bool, optional): Toggles butterworth filtering (for coarse)
@@ -30,34 +30,32 @@ def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=T
 
 	if type(filepath) is not list:
 		filepath = [filepath]
+	nreps = len(filepath)
 
-	if datatype is 'both':
-		for datatype_i in ['sub','coarse']:
-			S_list = []
-			for filepath_file in filepath:
-				#Loads and thresholds data
-				data_th = avalanche.analyze_sim_raw(filepath_file, threshold, datatype_i, bw_filter, timesteps, channels)
 
-				#Bins data
-				data_binned = avalanche.bin_data(data=data_th,binsize=deltaT)
+	S_list = []
+	for filepath_file in filepath:
+		#Loads and thresholds data
+		data_th = avalanche.analyze_sim_raw(filepath_file, threshold, datatype, bw_filter, timesteps, channels)
 
-				#Gets S and plots it
-				S_list.append(avalanche.get_S(data_binned))
+		#Bins data
+		data_binned = avalanche.bin_data(data=data_th,binsize=deltaT)
 
-			plot.pS_mean(S_list,label=str_leg + ' ,' + datatype_i)			
+		#Gets S and plots it
+		S_list.append(avalanche.get_S(data_binned))
+	plot.pS_mean(S_list,label=str_leg)
 
-	else:
-		S_list = []
-		for filepath_file in filepath:
-			#Loads and thresholds data
-			data_th = avalanche.analyze_sim_raw(filepath_file, threshold, datatype, bw_filter, timesteps, channels)
+	#Sets up figure
+	fig = plt.gcf()
+	ax = plt.gca()
+	ax.set_xlim([1,500])
+	ax.set_ylim([1e-6,1])	
 
-			#Bins data
-			data_binned = avalanche.bin_data(data=data_th,binsize=deltaT)
-
-			#Gets S and plots it
-			S_list.append(avalanche.get_S(data_binned))
-		plot.pS_mean(S_list,label=str_leg)
+	if save_fig is not None:
+		#Saves figure png and pickled data
+		fig.savefig(save_fig+'.pdf',bbox_inches="tight")
+		with open(save_fig + '.pkl','wb') as file:
+			pickle.dump(fig, file)
 
 def sim_plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=True,timesteps=None,channels=None, save_fig=None):
 	"""Plots p(S), m_av and fits p(S)~S^-alpha, for a list of binsizes. If [filepath] is a list, averages over datasets.
@@ -206,6 +204,7 @@ def sim_plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=
 		ax_ps.set_ylabel(datatype+'-sampled p(S)')
 		str_save = fig_dir+save_fig+'_'+datatype+'.png'
 		fig.savefig(str_save,bbox_inches="tight")		
+
 
 def spk_plot_pS(filepath,deltaT,datapath,sampling_rate = 25000,str_leg='Data'):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT

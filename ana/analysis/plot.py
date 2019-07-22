@@ -58,7 +58,7 @@ def pS_mean(S_list,label='data'):
 	plt.legend()
 
 def timeseries_threshold(data,th):
-	data_th = analysis.avalanche.threshold_data(data,th)
+	data_th = analysis.avalanche.threshold_ch(data,th)
 
 	X = np.arange(data.size)
 
