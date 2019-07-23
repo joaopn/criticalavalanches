@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-07-19 23:08:49
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-22 21:02:06
+# @Last Modified time: 2019-07-23 04:15:24
 
 """
 Runs the avalanche analysis for all datasets in a folder, averaging over unique filenames ending with '_rXX.hdf5'. 
@@ -10,17 +10,30 @@ Runs the avalanche analysis for all datasets in a folder, averaging over unique 
 - Doesn't depend on specific filename syntax.
 """
 
-from analysis import parser, dataset
-import argparse
+from analysis import parser, dataset, plot
+import argparse, os, pickle
+import matplotlib.pyplot as plt
 
+def color_picker(color_str):
 
+	if color_str in ['red', 'r']:
+		color_rgb = [255,51,51]
+	elif color_str in ['blue', 'b']:
+		color_rgb = [51,102,153]
+	elif color_str in ['green', 'g']:
+		color_rgb = [0,153,51]
+	elif color_str in ['gray', 'grey']:
+		color_rgb = [128,128,128]
+
+	return np.array(color_rgb)/255	
 
 def parametersDefault():
 
 	#default Parameters
 	stateDefault = None
-	binsizeDefault=2
-	gaDefault = 1.00
+	binsizeDefault = 2
+	gaDefault = "1.,1.25,1.5,1.75,2."
+	deDefault = 2
 	thresholdDefault = 3
 	repsDefault = 1
 	datafolderDefault = 'dat/'
@@ -32,25 +45,25 @@ def parametersDefault():
 	#Add single parameters
 	parser.add_argument("--state",
 		type=str, nargs='?', const=1, default=stateDefault)
+	parser.add_argument("-b", "--binsize",
+		type=int, nargs='?', const=1, default=binsizeDefault)
+	parser.add_argument("--de",
+		type=int, nargs='?', const=1, default=deDefault)
 	parser.add_argument("-t", "--threshold",
 		type=float, nargs='?', const=1, default=thresholdDefault)
 	parser.add_argument("--reps",
 		type=int,   nargs='?', const=1, default=repsDefault)
-	parser.add_argument("--datatype",
-		type=str,   nargs='?', const=1, default=datatypeDefault)
 	parser.add_argument("--datafolder",
 		type=str,   nargs='?', const=1, default=datafolderDefault)
 	parser.add_argument("--datamask",
 		type=str,   nargs='?', const=1, default=None)
 	parser.add_argument("--bw_filter",
 		type=bool,  nargs='?', const=1, default=bw_filterDefault)
-	parser.add_argument("--fit_lim",
-		type=int,   nargs='?', const=1, default=fit_limDefault)
 
 	#Adds string of binsizes
-	parser.add_argument("-b","--binsize",type=str,nargs='?',const=1,default=binsizeDefault)
+	parser.add_argument("--ga",type=str,nargs='?',const=1,default=gaDefault)
 	args = parser.parse_args()
-	args.binsize = [int(item) for item in args.binsize.split(',')]
+	args.ga = [float(item) for item in args.ga.split(',')]
 
 	return args
 
@@ -60,33 +73,62 @@ if __name__ == "__main__":
 	args       = parametersDefault()
 	state 	= args.state
 	binsize    = args.binsize
+	de = args.de
 	threshold  = args.threshold
 	reps       = args.reps
 	datafolder = args.datafolder
 	bw_filter  = args.bw_filter
-	fit_lim = args.fit_lim
+	ga = args.ga
 
+	#Parameters
+	fig_pS_size = [6,6] #in cm
 
-	#Hard-coded variable values (for practicity)
-	states = {"subcritical": {"h": 2e-4, "m": 0.900}, "critical": {"h": 2e-06, "m": 0.999},
-	"poisson": {"h": 1e-3, "m": 0.000}, "reverberating": {"h": 4e-5, "m": 0.980}}
+	#Figure save path
+	figure_folder = 'fig/' + datafolder
+	if not os.path.exists(figure_folder):
+		os.makedirs(figure_folder)
+
+	#Hard-coded state values (for practicity)
+	states = {"subcritical": {"h": 2e-4, "m": 0.900, "color":'blue'}, "critical": {"h": 2e-06, "m": 0.999, "color":'red'},
+	"poisson": {"h": 1e-3, "m": 0.000, "color":'gray'}, "reverberating": {"h": 4e-5, "m": 0.980, "color":'green'}}
 
 	#Checks if the state is one of the given ones
 	if state not in states.keys():
 		raise ValueError('Invalid --state. Valid options: critical, reverberating, subcritical, poisson')
 
+	#Creates plot figure
+	fig = plt.figure(figsize=(fig_pS_size[0]/2.54,fig_pS_size[1]/2.54))
 
+	#Builds filelist path
+	filepath_list = parser.sim_build_filename(states[state]['m'], states[state]['h'],de,ga, prefix=datafolder)
+	filepath_noga = parser.sim_build_filename(states[state]['m'], states[state]['h'],de,None)
+	filepath_all = []
 
-	#Gets the unique datasets in the folder
-	datasets_unique = parser.sim_find_unique(datafolder)
+	#Sets colors for plots
+	base_color = plot._color_picker(states[state]["color"])
+	plt_color = plot._color_gradient_rgba(states[state]["color"],len(ga))
+	plt_color = plot._convert_rgba_rgb(plt_color)
 
-	#Runs it for each unique dataset
-	for dataset in datasets_unique:
+	#Plots the coarse-sampled data for each ga, and all reps
+	for i in range(len(ga)):
+		print('[coarse]: ' + filepath_list[i])
 
-		print('Running: '+dataset)
+		#Builds rep filepaths
+		filepath_reps = parser.sim_add_reps(filepath_list[i],reps)
+		filepath_all.append(filepath_reps)
+		
+		#Plots coarse-sampled data
+		str_plot = r'$\alpha$ = {:0.2f}'.format(ga[i])
+		dataset.sim_plot_pS(filepath_reps,binsize,'coarse',str_plot,threshold,bw_filter,save_fig=None, color=plt_color[i,:])
+		
+	#Plots the sub-sampled data, averaged over all ga and rep
+	filepath_all_flat = [item for sublist in filepath_all for item in sublist]
+	print('[sub]: ' + filepath_noga[0])
+	dataset.sim_plot_pS(filepath_all_flat,binsize,'sub','Spikes',threshold,bw_filter,save_fig=None, color=base_color, lineType='--')
 
-		#Rebuilds dataset list
-		filepath = parser.sim_add_reps(datafolder+dataset,reps)
-
-		#Runs analysis
-		fig_loc = datafolder + dataset
+	#Touches up figure and saves it
+	filepath_figure = figure_folder + filepath_noga[0]
+	fig.savefig(filepath_figure+'.pdf',bbox_inches="tight")
+	fig.savefig(filepath_figure+'.png',bbox_inches="tight")
+	with open(filepath_figure + '.pkl','wb') as file:
+		pickle.dump(fig, file)	

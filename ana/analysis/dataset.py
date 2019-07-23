@@ -2,7 +2,7 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-20 11:35:38
+# @Last Modified time: 2019-07-23 03:36:46
 
 """
 Module for directly handling datasets.
@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib, os, pickle
 
-def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None, save_fig=None):
+def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None, save_fig=None,color='k', lineType='-'):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT. If [filepath] is a list, averages over datasets.
 	
 	Args:
@@ -26,6 +26,7 @@ def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=T
 	    bw_filter (bool, optional): Toggles butterworth filtering (for coarse)
 	    timesteps (None, optional): Length of the dataset in timesteps
 	    channels (None, optional): Number of channels in the dataset
+	    color (str, optional): plot color
 	"""
 
 	if type(filepath) is not list:
@@ -43,7 +44,7 @@ def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=T
 
 		#Gets S and plots it
 		S_list.append(avalanche.get_S(data_binned))
-	plot.pS_mean(S_list,label=str_leg)
+	plot.pS_mean(S_list,label=str_leg,lineType=lineType,color=color)    
 
 	#Sets up figure
 	fig = plt.gcf()
@@ -197,7 +198,6 @@ def sim_plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=
 
 	if save_fig is not None:
 		fig_path = fig_dir+'/'.join(save_fig.split('/')[:-1])+'/'
-		print(fig_path)
 		if not os.path.exists(fig_path):
 			os.makedirs(fig_path)
 		ax_ps.set_title(save_fig)

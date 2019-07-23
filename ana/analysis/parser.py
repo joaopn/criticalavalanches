@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-07-19 12:33:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-22 21:28:34
+# @Last Modified time: 2019-07-22 22:52:18
 
 """
 Parses file strings
@@ -10,7 +10,7 @@ Parses file strings
 
 import os, glob
 
-def sim_build_filename(m,h,de=None,ga=None,version='new'):
+def sim_build_filename(m,h,de=None,ga=None,prefix=None):
 	"""Builds a filename list using the syntax from the simulation (ex: 'm0.90000_h2.000e-04_de02_ga-1.00').
 	
 	If de=None or ga=None, returns reduced strings (ex: m0.90000_h2.000e-04' for de=None).
@@ -61,7 +61,15 @@ def sim_build_filename(m,h,de=None,ga=None,version='new'):
 					for ga_i in ga:
 						str_file = 'm{:.5f}_h{:.3e}_de{:02d}_ga-{:0.2f}'.format(m[i],h[i],de_i,ga_i)
 						filenames.append(str_file)
-	return filenames
+	
+	#Adds prefix
+	if prefix is not None:
+		filenames_prefix = []
+		for filename in filenames:
+			filenames_prefix.append(prefix + filename)
+		return filenames_prefix
+	else:
+		return filenames
 
 
 def sim_add_reps(filepath_base,reps):

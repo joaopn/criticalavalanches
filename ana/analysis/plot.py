@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-19 12:40:18
+# @Last Modified time: 2019-07-23 04:06:00
 
 """
 
@@ -31,7 +31,7 @@ def pS(S,label='data'):
 	plt.xlim(1,1e3)
 	plt.legend()
 
-def pS_mean(S_list,label='data'):
+def pS_mean(S_list,label='data',lineType='-', color='k'):
 
 	#Gets largest avalanche from the list (+1 for zero_index)
 	S_max = int(max([Si.max() for Si in S_list]) + 1)
@@ -51,8 +51,8 @@ def pS_mean(S_list,label='data'):
 	pS_dw = pS_mean - pS_std/2
 
 	#Plots confidence interval (1 std) and mean
-	plt.fill_between(range(S_max),pS_up,pS_dw,alpha=0.25,lw=0)
-	plt.plot(range(S_max),pS_mean,label=label)
+	plt.fill_between(range(S_max),pS_up,pS_dw,alpha=0.25,lw=0,color=color)
+	plt.plot(range(S_max),pS_mean,lineType,label=label,color=color)
 	plt.yscale('log')
 	plt.xscale('log')
 	plt.legend()
@@ -270,3 +270,67 @@ def sim_corr(m,h,b,d,threshold,reps,data_dir,type='corr', loc=1, color_state=[0,
 
 	plt.bar(bar_loc[0],Y[0],yerr=Y_err[0], capsize=3, width=2*bar_width, color=[1,1,1], hatch='////', edgecolor=color_state, linewidth=1)
 	plt.bar(bar_loc[1],Y[1],yerr=Y_err[1], capsize=3, width=2*bar_width, color=color_state, linewidth=0.5)
+
+def _color_picker(color_str):
+
+	if color_str in ['red', 'r']:
+		color_rgb = [255,51,51]
+	elif color_str in ['blue', 'b']:
+		color_rgb = [51,102,153]
+	elif color_str in ['green', 'g']:
+		color_rgb = [0,153,51]
+	elif color_str in ['gray', 'grey']:
+		color_rgb = [128,128,128]
+
+	return np.array(color_rgb)/255
+
+def _color_gradient_rgba(color,num_colors, brightness_lim=0.8, primary_index = 0.545):
+	"""Creates gradient colors RGBA matrices for basic colors
+	
+	Args:
+		color: color string, accepts both e.g. 'r' and 'red'
+		num_colors: number of colors to generate
+		brightness_lim: maximum brightness (default: {0.8})
+		primary_index: index of the base color. Setting it to 1 generates a pure tone (default: {0.545})
+	
+	Returns:
+		color RGBA matrix
+		float: [num_colors,4]
+	"""
+
+	color_rgba = np.zeros((num_colors,4))
+	color_rgba[:,3] = np.linspace((1-brightness_lim),1,num_colors)
+
+	if color in ['r', 'red']:
+		color_rgba[:,0] = primary_index
+
+	if color in ['g', 'green']:
+		color_rgba[:,1] = primary_index
+
+	if color in ['b', 'blue']:
+		color_rgba[:,2] = primary_index
+
+	if color in ['gray', 'grey']:
+		color_rgba[:,0] = 0.2
+		color_rgba[:,1] = 0.2
+		color_rgba[:,2] = 0.2 
+
+	return color_rgba
+
+def _convert_rgba_rgb(colors):
+
+	#Deals with python dimentionality silliness
+	colors = np.array(colors)
+	if colors.ndim == 1:
+		colors = np.expand_dims(colors,0)
+
+	rgb_background = np.array([1,1,1], dtype = float)
+
+	n_colors = colors.shape[0]
+	colors_rgb = np.zeros((n_colors,3))
+
+	for i in range(n_colors):
+		alpha = colors[i,3]
+		colors_rgb[i,:] = (1-alpha)*rgb_background + alpha*colors[i,:3]
+
+	return colors_rgb
