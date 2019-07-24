@@ -6,20 +6,21 @@ from itertools import product
 os.chdir(os.path.dirname(__file__))
 
 # seeds will not match if you rerun this, data has been copied.
-start_id = 39000
+start_id = 40000
 
 
 # settings for reverberating regime without cc
-l_exe = ["./exe/cc_random"]
-l_folder = ["random_local", "random_nonlocal"]
+l_exe = ["./exe/cc", "./exe/cc_orlandi"]
+l_folder = ["gauss", "orlandi"]
 l_neur = [160000]
-l_m = [ 0.999]
-l_h = [2.0e-6]
+l_m = [   0.9,   0.98,  0.999]
+l_h = [2.0e-4, 4.0e-5, 2.0e-6]
 l_T = [1e6]
-l_de = [4]
-l_ga = [-1.0]
-l_g  = [6.0, 0.0]
+l_de = [8]
+l_ga = [-1.0, -1.5, -2.0]
+l_g  = [6.0]
 l_rep = range(0,50)
+
 
 arg_list = product(l_exe, l_neur, l_m, l_h, l_de, l_T, l_ga, l_g, l_rep)
 
@@ -31,7 +32,7 @@ with open('./parameters.tsv', 'w') as f:
 
     for i in arg_list:
         if (l_m.index(i[2]) != l_h.index(i[3])): continue
-        folder = l_folder[l_g.index(i[7])]
+        folder = l_folder[l_exe.index(i[0])]
         i = (i[0],) + (start_id,) + i[1:] + (f"./dat/{folder}/m{i[2]:.5f}_h{i[3]:.3e}_de{i[4]:02d}_ga{i[6]:.2f}_r{i[-1]:02d}.hdf5",)
         start_id += 1
         count += 1
