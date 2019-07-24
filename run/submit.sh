@@ -3,7 +3,7 @@
 # submit from project directory !!!
 
 #$ -S /bin/bash
-#$ -N tpl
+#$ -N random2
 #$ -q rostam.q
 #$ -l h_vmem=6G # job is killed if exceeding this
 #$ -cwd
