@@ -1,5 +1,5 @@
-#ifndef FPS_TOPOLOGY_LOCAL_GAUSS
-#define FPS_TOPOLOGY_LOCAL_GAUSS
+#ifndef FPS_TOPOLOGY_RANDOM
+#define FPS_TOPOLOGY_RANDOM
 
 #include "fstream"
 #include <sstream>        // std::stringstream, std::stringbuf
@@ -29,19 +29,19 @@ typedef float real_t;
 template<class T1>
 using vec = std::vector <T1>;
 
-class topology_local_gauss {
+class topology_random {
  public:
 
-  // global parameter, we need useful setters that alter values consistently
+  // global parameter
   struct parameters {
     size_t N   = 160000;                       // number neurons
     size_t K   = 1000;                         // number outgoing connection
     double rho = 100.0;                        // [neurons/mm2]
     double L   = 1000.0*sqrt(double(N)/rho);   // [um] dish size
-    double std = 6.0;                          // [d_N] eff. conn-length
 
-    // choose d so that approx K=num_outgoing neighbours are accessible
-    double d_max = sqrt(L *L *K/M_PI/double(N)); // [um] max dist. for connect
+    // this should really be changed to [um] ...
+    // optional for random topology. create local connectivity if > 0.
+    double std = 0.0;                          // [d_N] eff. conn-length
 
     // analytic solution (ideal gas) for nearest-neuron distance d_N
     double d_N = 0.5*L/sqrt(double(N));        // [um]
@@ -53,17 +53,16 @@ class topology_local_gauss {
     par.d_N   = d_N;
     par.L     = 2.0*sqrt(double(par.N))*par.d_N;
     par.rho   = double(par.N)/pow(par.L/1000.0, 2.0);
-    par.d_max = sqrt(par.L*par.L*par.K/M_PI/double(par.N));
   }
 
   void print_parameters() {
-    printf("local gauss topology prameters:\n");
+    printf("random topology prameters:\n");
+    if (par.std > 0.) printf("\tweights are distance dependent (std != 0)\n");
     printf("\tN       %lu [neurons]\n", par.N);
     printf("\tK       %lu [neurons]\n", par.K);
     printf("\trho     %.2e [neurons/mm2]\n", par.rho);
     printf("\tL       %.2e [um]\n", par.L);
     printf("\tstd     %.2e [d_N] = %.2e [um]\n", par.std, par.std*par.d_N);
-    printf("\td_max   %.2e [um]\n", par.d_max);
     printf("\td_N     %.2e [um]\n", par.d_N);
   }
 
@@ -92,9 +91,7 @@ class topology_local_gauss {
   template <typename T1>
   void init(vec <neuron *> &neurons, hid_t h5file, const vec <T1 *> &avoid_xy, double avoid_radius_squ) {
 
-    // need to add a check that it is possible to distribute all the neurons
-    // in the given space
-    printf("placing neurons on local gauss topology\n");
+    printf("placing neurons on random topology\n");
     for (size_t i = 0; i < neurons.size(); i++) delete neurons[i];
     neurons.resize(0);
     neurons.reserve(par.N);
@@ -126,54 +123,65 @@ class topology_local_gauss {
       neurons.push_back(n);
     }
 
-    // create physical connections with hard limit given by par.d_max
-    printf("connecting neurons with radius %.2e [um]\n", par.d_max);
-    double dist_squ_limit  = par.d_max*par.d_max;
+    // create hard-wired connections
+    printf("connecting neurons with K=%lu random partners\n", par.K);
     size_t num_connections = 0;
     for (size_t i = 0; i < neurons.size(); i++) {
       neuron *src = neurons[i];
       vec <std::pair <double, neuron *> > sortable;
-      sortable.reserve(size_t(par.K*1.1));
+      sortable.reserve(size_t(par.K));
 
-      for (size_t j = 0; j < neurons.size(); j++) {
+      for (size_t k = 0; k < par.K; k++) {
+        size_t j = i;
+        while (j == i)
+          j = size_t(udis(rng)*neurons.size());
+        assert(j < neurons.size());
         neuron *tar = neurons[j];
-        if (src == tar) continue;
         double dist_squ = get_dist_squ(src, tar);
-        if (dist_squ < dist_squ_limit) {
-          sortable.push_back( std::make_pair(dist_squ, tar) );
-          num_connections += 1;
-        }
+        sortable.push_back( std::make_pair(dist_squ, tar) );
+        num_connections += 1;
       }
+
       // sort outgoing connections by distance
       sort(sortable.begin(), sortable.end());
       src->outgoing.reserve(sortable.size());
       for (size_t j = 0; j < sortable.size(); j++)
         src->outgoing.push_back(sortable[j].second);
 
-      if(i==0 || is_percent(i, size_t(neurons.size()), 10.)) {
-        printf("\t%s, %lu/%lu\n", time_now().c_str(), i, neurons.size());
-      }
+      // if(i==0 || is_percent(i, size_t(neurons.size()), 10.)) {
+      //   printf("\t%s, %lu/%lu\n", time_now().c_str(), i, neurons.size());
+      // }
     }
 
-    // set synapctic weight (effective interaction radius) via std (sigma)
-    double sigma_squ = 2.*pow(par.std*par.d_N, 2.);
-    for (size_t i = 0; i < neurons.size(); i++) {
-      neuron *src   = neurons[i];
-      size_t n_cout = src->outgoing.size();
-      src->outgoing_probability.reserve(n_cout);
-      double norm = 0.;
+    // optionally set effective interaction radius via std (sigma)
+    if (par.std > 0.) {
+      double sigma_squ = 2.*pow(par.std*par.d_N, 2.);
+      for (size_t i = 0; i < neurons.size(); i++) {
+        neuron *src   = neurons[i];
+        size_t n_cout = src->outgoing.size();
+        src->outgoing_probability.reserve(n_cout);
+        double norm = 0.;
 
-      // activation probabilities based on distance
-      for (size_t j = 0; j < n_cout; j++) {
-        double dij_squ = get_dist_squ(src, src->outgoing[j]);
-        double pij     = exp(-dij_squ/sigma_squ);
-        src->outgoing_probability.push_back(pij);
-        norm += pij;
+        // activation probabilities based on distance
+        for (size_t j = 0; j < n_cout; j++) {
+          double dij_squ = get_dist_squ(src, src->outgoing[j]);
+          double pij     = exp(-dij_squ/sigma_squ);
+          src->outgoing_probability.push_back(pij);
+          norm += pij;
+        }
+
+        // normalize probabilities
+        for (size_t j = 0; j < src->outgoing_probability.size(); j++) {
+          src->outgoing_probability[j] /= norm;
+        }
       }
-
-      // normalize probabilities
-      for (size_t j = 0; j < n_cout; j++) {
-        src->outgoing_probability[j] /= norm;
+    } else {
+      // set (constant) outgoing porbablity to 1/number_connections
+      // std = 0, non-local interaction
+      for (size_t i = 0; i < neurons.size(); i++) {
+        neuron *n = neurons[i];
+        if (n->outgoing.size() > 0)
+          n->outgoing_probability.push_back(1./double(n->outgoing.size()));
       }
     }
 
@@ -183,10 +191,11 @@ class topology_local_gauss {
     printf("\trejections in dead zones: %lu\n", rejections);
     printf("\toutgoing connections per neuron: K=%lu\n", par.K);
     printf("\t\t(measured: %.2f)\n", num_connections/double(neurons.size()));
-    printf("\tconnections created within: d_max=%.2e [um]\n", par.d_max);
     printf("\taverage distance between nearest neighbours: %.2e [um]\n", par.d_N);
-    printf("\t\t(measured: %e)\n",
-           measure_avg_nearest_neighbour_distance(neurons));
+    if (neurons.size() <= 20000) {
+      printf("\t\t(measured: %e)\n",
+             measure_avg_nearest_neighbour_distance(neurons));
+    }
   }
 
   // constructor overload. call init after setting custom parameters
@@ -203,10 +212,9 @@ class topology_local_gauss {
     double avg_dist = 0;
     for (size_t i = 0; i < neurons.size(); i++) {
       double shortest_distance = std::numeric_limits<double>::max();
-      for (size_t j = 0; j < neurons[i]->outgoing.size(); j++) {
-        // if (neurons[i] == j) continue;
-        assert(neurons[i] != neurons[i]->outgoing[j]);
-        double d = get_dist_squ(neurons[i], neurons[i]->outgoing[j]);
+      for (size_t j = 0; j < neurons.size(); j++) {
+        if (neurons[i] == neurons[j]) continue;
+        double d = get_dist_squ(neurons[i], neurons[j]);
         if (d < shortest_distance) shortest_distance = d;
       }
       avg_dist += sqrt(shortest_distance);
@@ -251,7 +259,10 @@ class topology_local_gauss {
       printf("invalid h5file, no topology details written");
       return;
     } else {
-      hdf5_write_string(h5file, "/meta/topology", "local gauss");
+      std::string tpl_name;
+      if (par.std > 0.) tpl_name = "random local-gauss";
+      else tpl_name              = "random non-local";
+      hdf5_write_string(h5file, "/meta/topology", tpl_name);
       hdf5_write_scalar(h5file, "/meta/num_neur",
                         par.N, H5T_NATIVE_HSIZE);
       hdf5_write_scalar(h5file, "/meta/num_outgoing",
@@ -260,8 +271,6 @@ class topology_local_gauss {
                         par.L, H5T_NATIVE_DOUBLE);
       hdf5_write_scalar(h5file, "/meta/neuron_density",
                         par.rho, H5T_NATIVE_DOUBLE);
-      hdf5_write_scalar(h5file, "/meta/d_max",
-                        par.d_max, H5T_NATIVE_DOUBLE);
       hdf5_write_scalar(h5file, "/meta/sigma",
                         par.std, H5T_NATIVE_DOUBLE);
       hdf5_write_scalar(h5file, "/meta/neur_dist",

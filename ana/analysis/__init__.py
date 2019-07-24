@@ -4,7 +4,6 @@
 # @Last Modified by:   Joao
 # @Last Modified time: 2019-07-06 10:47:53
 
-from analysis import avalanche, plot, fitting, dataset
 
 import numpy as np
 import os
@@ -12,3 +11,5 @@ import matplotlib
 if os.environ.get('DISPLAY', '') == '':
     matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+from analysis import avalanche, plot, fitting, dataset
