@@ -3,11 +3,7 @@
 # submit from project directory !!!
 
 #$ -S /bin/bash
-<<<<<<< HEAD
-#$ -N gamma2 
-=======
-#$ -N tpl
->>>>>>> new_topology
+#$ -N gamma3
 #$ -q rostam.q
 #$ -l h_vmem=6G # job is killed if exceeding this
 #$ -cwd
