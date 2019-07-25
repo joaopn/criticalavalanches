@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-07-19 23:08:49
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-25 14:32:24
+# @Last Modified time: 2019-07-25 15:27:13
 
 """
 Runs the avalanche analysis for all datasets in a folder, averaging over unique filenames ending with '_rXX.hdf5'. 
@@ -126,19 +126,12 @@ if __name__ == "__main__":
 		
 		#Plots coarse-sampled data
 		str_plot = r'$\gamma$ = {:0.1f}'.format(ga[i])
-		dataset.sim_plot_pS(filepath_reps,binsize,'coarse',str_plot,threshold,bw_filter,save_fig=None, color=plt_color[i,:], show_error=False)
-
-		#Sets zorder
-		ax = plt.gca()
-		ax.set_zorder(zorder[i])
-		print(ax.get_label() + ' plotted with zorder {:d}'.format(zorder[i]))
+		dataset.sim_plot_pS(filepath_reps,binsize,'coarse',str_plot,threshold,bw_filter,save_fig=None, color=plt_color[i,:], show_error=False, zorder=zorder[i])
 
 	#Plots the sub-sampled data, averaged over all ga and rep
 	filepath_all_flat = [item for sublist in filepath_all for item in sublist]
 	print('[sub]: ' + filepath_noga[0])
-	dataset.sim_plot_pS(filepath_all_flat,binsize,'sub','spikes',threshold,bw_filter,save_fig=None, color=color_sub, lineType='-', show_error=False)
-	ax = plt.gca()
-	ax.set_zorder=1
+	dataset.sim_plot_pS(filepath_all_flat,binsize,'sub','spikes',threshold,bw_filter,save_fig=None, color=color_sub, lineType='-', show_error=False,zorder=-1)
 
 	#Touches up figure and saves it
 	plt.legend(loc=3,fontsize=8)

@@ -2,7 +2,7 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-25 11:15:02
+# @Last Modified time: 2019-07-25 15:22:01
 
 """
 Module for directly handling datasets.
@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib, os, pickle
 
-def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None, save_fig=None,color='k', lineType='-',show_error=True):
+def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None, save_fig=None,show_error=True,color='k', lineType='-', zorder=2):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT. If [filepath] is a list, averages over datasets.
 	
 	Args:
@@ -44,7 +44,7 @@ def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=T
 
 		#Gets S and plots it
 		S_list.append(avalanche.get_S(data_binned))
-	plot.pS_mean(S_list,label=str_leg,lineType=lineType,color=color,show_error=show_error)    
+	plot.pS_mean(S_list,label=str_leg,lineType=lineType,color=color,show_error=show_error, zorder=zorder)    
 
 	#Sets up figure
 	fig = plt.gcf()
