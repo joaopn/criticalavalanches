@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-23 04:06:00
+# @Last Modified time: 2019-07-25 15:07:12
 
 """
 
@@ -31,7 +31,7 @@ def pS(S,label='data'):
 	plt.xlim(1,1e3)
 	plt.legend()
 
-def pS_mean(S_list,label='data',lineType='-', color='k'):
+def pS_mean(S_list,label='data',lineType='-', color='k',show_error=True, zorder=2):
 
 	#Gets largest avalanche from the list (+1 for zero_index)
 	S_max = int(max([Si.max() for Si in S_list]) + 1)
@@ -51,8 +51,9 @@ def pS_mean(S_list,label='data',lineType='-', color='k'):
 	pS_dw = pS_mean - pS_std/2
 
 	#Plots confidence interval (1 std) and mean
-	plt.fill_between(range(S_max),pS_up,pS_dw,alpha=0.25,lw=0,color=color)
-	plt.plot(range(S_max),pS_mean,lineType,label=label,color=color)
+	if show_error:
+		plt.fill_between(range(S_max),pS_up,pS_dw,alpha=0.25,lw=0,color=color,zorder=zorder)
+	plt.plot(range(S_max),pS_mean,lineType,label=label,color=color,zorder=zorder)
 	plt.yscale('log')
 	plt.xscale('log')
 	plt.legend()

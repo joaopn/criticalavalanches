@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-07-19 23:08:49
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-23 04:15:24
+# @Last Modified time: 2019-07-25 15:27:13
 
 """
 Runs the avalanche analysis for all datasets in a folder, averaging over unique filenames ending with '_rXX.hdf5'. 
@@ -81,7 +81,10 @@ if __name__ == "__main__":
 	ga = args.ga
 
 	#Parameters
-	fig_pS_size = [6,6] #in cm
+	fig_pS_size = [6.5,6.5] #in cm
+	color_sub = [1,0.647,0] #orange
+	gradient_brightness = 0.6 #how bright the lightest color is
+	
 
 	#Figure save path
 	figure_folder = 'fig/' + datafolder
@@ -105,9 +108,13 @@ if __name__ == "__main__":
 	filepath_all = []
 
 	#Sets colors for plots
-	base_color = plot._color_picker(states[state]["color"])
-	plt_color = plot._color_gradient_rgba(states[state]["color"],len(ga))
+	plt_color = plot._color_gradient_rgba(states[state]["color"],len(ga),brightness_lim=gradient_brightness)
 	plt_color = plot._convert_rgba_rgb(plt_color)
+
+	#Plot zorder
+	zorder = list(range(len(ga)))
+	zorder.reverse()
+	zorder = [zi+2 for zi in zorder] #reserves zorder=1 for sub
 
 	#Plots the coarse-sampled data for each ga, and all reps
 	for i in range(len(ga)):
@@ -118,16 +125,17 @@ if __name__ == "__main__":
 		filepath_all.append(filepath_reps)
 		
 		#Plots coarse-sampled data
-		str_plot = r'$\alpha$ = {:0.2f}'.format(ga[i])
-		dataset.sim_plot_pS(filepath_reps,binsize,'coarse',str_plot,threshold,bw_filter,save_fig=None, color=plt_color[i,:])
-		
+		str_plot = r'$\gamma$ = {:0.1f}'.format(ga[i])
+		dataset.sim_plot_pS(filepath_reps,binsize,'coarse',str_plot,threshold,bw_filter,save_fig=None, color=plt_color[i,:], show_error=False, zorder=zorder[i])
+
 	#Plots the sub-sampled data, averaged over all ga and rep
 	filepath_all_flat = [item for sublist in filepath_all for item in sublist]
 	print('[sub]: ' + filepath_noga[0])
-	dataset.sim_plot_pS(filepath_all_flat,binsize,'sub','Spikes',threshold,bw_filter,save_fig=None, color=base_color, lineType='--')
+	dataset.sim_plot_pS(filepath_all_flat,binsize,'sub','spikes',threshold,bw_filter,save_fig=None, color=color_sub, lineType='-', show_error=False,zorder=-1)
 
 	#Touches up figure and saves it
-	filepath_figure = figure_folder + filepath_noga[0]
+	plt.legend(loc=3,fontsize=8)
+	filepath_figure = figure_folder + filepath_noga[0] + '_b{:02d}'.format(binsize)
 	fig.savefig(filepath_figure+'.pdf',bbox_inches="tight")
 	fig.savefig(filepath_figure+'.png',bbox_inches="tight")
 	with open(filepath_figure + '.pkl','wb') as file:
