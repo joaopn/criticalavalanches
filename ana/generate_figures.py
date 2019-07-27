@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   Joao
-# @Last Modified time: 2019-07-07 13:22:46
+# @Last Modified time: 2019-07-27 13:51:46
 
 import analysis
 import matplotlib.pyplot as plt
@@ -522,15 +522,15 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 
 			#Sets up figure
 			plt.figure(figsize=(fig_alpha_size[0]/2.54,fig_alpha_size[1]/2.54))
-			#plt.xlabel(r'$\Delta$t (ms)')
-			#plt.ylabel(r'$\alpha$', rotation='horizontal')
+			plt.xlabel(r'$\Delta$t (ms)')
+			plt.ylabel(r'$\alpha$', rotation='horizontal')
 			plt.xscale('log')
 			plt.yscale('log')
 			plt.minorticks_off() #solves tick bu... "intended changes" in pyplot
 			plt.xlim(1,100)
 			plt.ylim(1.1,2.1)			
 			plt.xticks([1,10,100])
-			plt.yticks([1.1,1.5,2.1],['-1.1', '-1.5', '-2.1'])
+			plt.yticks([1.1,1.5,2.1],['1.1', '1.5', '2.1'])
 			ax1 = plt.gca()
 			ax1.spines['right'].set_visible(False)
 			ax1.spines['top'].set_visible(False)
