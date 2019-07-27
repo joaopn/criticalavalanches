@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-31 18:46:04
 # @Last Modified by:   Joao
-# @Last Modified time: 2019-07-27 13:51:46
+# @Last Modified time: 2019-07-27 14:24:44
 
 import analysis
 import matplotlib.pyplot as plt
@@ -573,7 +573,7 @@ def figure_3(data_dir,d,reps,bw_filter, datatype):
 				plt_color=plt_color[i,:],
 				plt_std=False)	
 
-		if state == 'poisson':
+		if state == 'poisson' and datatype == 'coarse'
 			plt.legend(frameon=False)
 
 		#Sets up figure
