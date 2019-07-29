@@ -2,9 +2,11 @@
 # @Author: joaopn
 # @Date:   2019-07-19 23:08:49
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-25 15:27:13
+# @Last Modified time: 2019-07-28 18:16:59
 
 """
+Plots multiple --ga parameters.
+
 Runs the avalanche analysis for all datasets in a folder, averaging over unique filenames ending with '_rXX.hdf5'. 
 - Skips averaging for -reps 0.
 - Doesn't depend on specific filename syntax.
@@ -32,7 +34,7 @@ def parametersDefault():
 	#default Parameters
 	stateDefault = None
 	binsizeDefault = 2
-	gaDefault = "1.,1.25,1.5,1.75,2."
+	gaDefault = "1.0,1.5,2.0"
 	deDefault = 2
 	thresholdDefault = 3
 	repsDefault = 1

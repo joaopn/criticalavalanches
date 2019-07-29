@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-07-19 12:33:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-22 22:52:18
+# @Last Modified time: 2019-07-28 19:19:35
 
 """
 Parses file strings
@@ -79,6 +79,9 @@ def sim_add_reps(filepath_base,reps):
 	    filepath_base (str): Base filepath
 	    reps (int): Number of files
 	"""	
+	if type(filepath_base) is not str:
+		TypeError('filepath base is not a string.')
+
 	if reps == 0:
 		return filepath_base
 
