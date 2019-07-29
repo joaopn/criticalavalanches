@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-07-19 23:08:49
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-29 01:53:37
+# @Last Modified by:   Joao
+# @Last Modified time: 2019-07-29 12:41:23
 
 """
 Plots multiple dynamic states
@@ -50,7 +50,7 @@ def parametersDefault():
 	parser.add_argument("-b", "--binsize",
 		type=int, nargs='?', const=1, default=binsizeDefault)
 	parser.add_argument("--ga",
-		type=int, nargs='?', const=1, default=gaDefault)
+		type=float, nargs='?', const=1, default=gaDefault)
 	parser.add_argument("--de",
 		type=int, nargs='?', const=1, default=deDefault)
 	parser.add_argument("-t", "--threshold",
