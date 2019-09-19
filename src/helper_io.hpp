@@ -1,3 +1,10 @@
+#ifndef FPS_IO
+#define FPS_IO
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/utsname.h>
+
 #include <time.h>         // clock_t, clock, CLOCKS_PER_SEC
 #include <ctime>          // time_t
 #include <cstdio>
@@ -91,7 +98,7 @@ std::string time_since(const clock_t start) {
                 days_used, hours_used, minutes_used, int(seconds_used));
 }
 
-// returns current time as YYYY-MM_dd_HH-mm-ss
+// returns current time as YYYY-MM-dd HH-mm-ss
 std::string time_now() {
   time_t rawtime;
   struct tm *timeinfo;
@@ -102,10 +109,45 @@ std::string time_now() {
   return std::string(buffer);
 }
 
+
 // ------------------------------------------------------------------ //
 // hdf5 helper
 // ------------------------------------------------------------------ //
+
 herr_t status;
+
+void hdf5_write_string(hid_t h5file, std::string name, std::string str) {
+  const hsize_t dims[1] = {1};
+  hid_t memtype, dspace, dset;
+
+  memtype = H5Tcopy(H5T_C_S1);
+  status  = H5Tset_size(memtype, str.size());
+
+  dspace = H5Screate_simple(1, dims, nullptr);
+  dset   = H5Dcreate(h5file, name.c_str(), memtype, dspace, H5P_DEFAULT,
+                     H5P_DEFAULT,H5P_DEFAULT);
+  status = H5Dwrite(dset, memtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, str.c_str());
+
+  status = H5Dclose(dset);
+  status = H5Sclose(dspace);
+  status = H5Tclose(memtype);
+}
+
+void hdf5_write_platform_details(hid_t h5file) {
+  struct utsname buffer;
+
+  if (uname(&buffer) != 0) {
+    printf("unable to retreive platform details\n");
+    return;
+  }
+
+  hdf5_write_string(h5file, "/uname/system",  buffer.sysname);
+  hdf5_write_string(h5file, "/uname/node",    buffer.nodename);
+  hdf5_write_string(h5file, "/uname/release", buffer.release);
+  hdf5_write_string(h5file, "/uname/version", buffer.version);
+  hdf5_write_string(h5file, "/uname/machine", buffer.machine);
+
+}
 
 template<typename T>
 void hdf5_write_scalar(hid_t h5file, std::string name, T &scalar,
@@ -261,6 +303,36 @@ void hdf5_append_nd(hid_t dset, std::vector<T> &vector, hid_t h5dtype,
   status = H5Sclose(dspace);
 }
 
+hid_t hdf5_create_file(std::string filepath) {
+  if (filepath.rfind('/')!=std::string::npos) {
+    std::string dirname = filepath;
+    dirname.erase(dirname.rfind('/'));
+    system(("mkdir -p " + dirname).c_str());
+  }
+  printf("exporting files to %s\n", filepath.c_str());
+
+  // open file and create groups
+  hid_t h5file = H5Fcreate(filepath.c_str(), H5F_ACC_TRUNC,
+                           H5P_DEFAULT, H5P_DEFAULT);
+
+  if(h5file < 0) exit(-1);
+
+  H5Gcreate(h5file, "/data",       H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Gcreate(h5file, "/axons",      H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Gcreate(h5file, "/neurons",    H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Gcreate(h5file, "/electrodes", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Gcreate(h5file, "/meta",       H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Gcreate(h5file, "/uname",      H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+  hdf5_write_platform_details(h5file);
+  hdf5_write_string(h5file, "/uname/original_file_path",  filepath);
+
+  return h5file;
+}
+
+// ------------------------------------------------------------------ //
+// tests
+// ------------------------------------------------------------------ //
 
 void testnew() {
   hid_t h5file = H5Fcreate("/Users/paul/temp/ca_rep_1.hdf5", H5F_ACC_TRUNC,
@@ -309,3 +381,5 @@ void testnew() {
     hdf5_append_nd(dset_nd, blub, H5T_NATIVE_DOUBLE, 2, i*blub.size());
   }
 }
+
+#endif
