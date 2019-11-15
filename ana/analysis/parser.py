@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-07-19 12:33:04
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-28 19:19:35
+# @Last Modified time: 2019-11-14 11:23:53
 
 """
 Parses file strings
@@ -70,7 +70,6 @@ def sim_build_filename(m,h,de=None,ga=None,prefix=None):
 		return filenames_prefix
 	else:
 		return filenames
-
 
 def sim_add_reps(filepath_base,reps):
 	"""Builds a list of filepaths in the format '[filepath]_rXX.hdf5'

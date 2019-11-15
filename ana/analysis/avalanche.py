@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
-# @Last Modified by:   Joao
-# @Last Modified time: 2019-07-06 13:23:07
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-11-14 15:10:59
 
 """
 
@@ -82,6 +82,55 @@ def get_S(data):
 		S[i] = np.sum(data[id_cross_plus[i]:id_cross_plus[i+1]])
 
 	return S
+
+def get_D(data):
+
+	#Finds crossings of the signal to positive
+	id_cross=	np.where(np.sign(data[:-1]) != np.sign(data[1:]))[0] + 1
+	id_cross_plus = id_cross[data[id_cross]>0]
+
+
+	#Calculates duration D of avalanches
+	n_avalanches = id_cross_plus.size
+
+	D = np.zeros(n_avalanches-1)
+
+	for i in range(n_avalanches-1):
+		D[i] = np.sum(data[id_cross_plus[i]:id_cross_plus[i+1]]!=0)
+
+	return D
+
+def get_shape(data, size_d):
+	"""Returns the average avalanche shape with size D from a timeseries
+	
+	Args:
+		data (float): thresholded timeseries with events
+		D (float): size of the avalanches to get the shape
+	"""
+
+	shape_av = np.zeros(size_d)
+
+	#Finds crossings of the signal to positive
+	id_cross=	np.where(np.sign(data[:-1]) != np.sign(data[1:]))[0] + 1
+	id_cross_plus = id_cross[data[id_cross]>0]
+
+	#Gets the avalanches with size size_d
+	n_avalanches = id_cross_plus.size
+	id_avalanches = []
+	for i in range(n_avalanches-1):
+		if np.sum(data[id_cross_plus[i]:id_cross_plus[i+1]]!=0) == size_d:
+			id_avalanches.append(id_cross_plus[i])
+
+	print('{:d} avalanches with size {:d}'.format(len(id_avalanches),size_d))
+
+
+	#Calculates the number of events at each step of the avalanche
+	for i in range(size_d):
+		for j in range(len(id_avalanches)):
+			shape_av[i] = shape_av[i] + data[id_avalanches[j]+i]
+	shape_av = shape_av/len(id_avalanches)
+
+	return shape_av
 
 def analyze_sim_raw(
 	filepath,

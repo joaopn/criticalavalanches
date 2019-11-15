@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-25 15:07:12
+# @Last Modified time: 2019-11-15 12:12:29
 
 """
 
@@ -56,6 +56,20 @@ def pS_mean(S_list,label='data',lineType='-', color='k',show_error=True, zorder=
 	plt.plot(range(S_max),pS_mean,lineType,label=label,color=color,zorder=zorder)
 	plt.yscale('log')
 	plt.xscale('log')
+	plt.legend()
+
+def shape_mean(shape_list, size_d, label='data',lineType='-', color='k',show_error=True, zorder=2):
+
+	#Obtains mean and STD
+	shape_mean = np.mean(shape_list,axis=0)
+	shape_std = np.std(shape_list,axis=0)
+	shape_up = shape_mean + shape_std/2
+	shape_down = shape_mean - shape_std/2
+
+	#Plots confidence interval (1 std) and mean
+	if show_error:
+		plt.fill_between(range(1,size_d+1),shape_up,shape_down,alpha=0.25,lw=0,color=color,zorder=zorder)
+	plt.plot(range(1,size_d+1),shape_mean,lineType,label=label,color=color,zorder=zorder)
 	plt.legend()
 
 def timeseries_threshold(data,th):

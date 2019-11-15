@@ -2,7 +2,7 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-07-25 15:22:01
+# @Last Modified time: 2019-11-15 12:14:34
 
 """
 Module for directly handling datasets.
@@ -13,20 +13,21 @@ import powerlaw
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib, os, pickle
+import h5py
 
 def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None, save_fig=None,show_error=True,color='k', lineType='-', zorder=2):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT. If [filepath] is a list, averages over datasets.
 	
 	Args:
-	    filepath (str): Path to the .hdf5 dataset
-	    deltaT (int): Binsize to use, *in timesteps*
+		filepath (str): Path to the .hdf5 dataset
+		deltaT (int): Binsize to use, *in timesteps*
 		datatype (str): 'coarse', 'sub'
-	    str_leg (str, optional): plot legend
-	    threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
-	    bw_filter (bool, optional): Toggles butterworth filtering (for coarse)
-	    timesteps (None, optional): Length of the dataset in timesteps
-	    channels (None, optional): Number of channels in the dataset
-	    color (str, optional): plot color
+		str_leg (str, optional): plot legend
+		threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
+		bw_filter (bool, optional): Toggles butterworth filtering (for coarse)
+		timesteps (None, optional): Length of the dataset in timesteps
+		channels (None, optional): Number of channels in the dataset
+		color (str, optional): plot color
 	"""
 
 	if type(filepath) is not list:
@@ -62,15 +63,15 @@ def sim_plot_deltaT(filepath,deltaT,datatype,threshold=3,S_fit_max=50,bw_filter=
 	"""Plots p(S), m_av and fits p(S)~S^-alpha, for a list of binsizes. If [filepath] is a list, averages over datasets.
 	
 	Args:
-	    filepath (str): Path to the .hdf5 dataset
-	    deltaT (int): Vector of binsizes (in timesteps)
-	    datatype (str): 'coarse' or 'sub'
-	    threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
-	    S_fit_max (int, optional): Limit on the power law fit range (default 50)
-	    bw_filter (bool, optional): Whether to use a Butterworth filter to bandpass the signal (for coarse)
-	    timesteps (None, optional): Number of timesteps to use (default extracts from dataset)
-	    channels (None, optional): Number of electrode channels to use (default extracts from dataset)   
-	    save_fig (str, optional): Saves the figure under fig/[save_fig].png
+		filepath (str): Path to the .hdf5 dataset
+		deltaT (int): Vector of binsizes (in timesteps)
+		datatype (str): 'coarse' or 'sub'
+		threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
+		S_fit_max (int, optional): Limit on the power law fit range (default 50)
+		bw_filter (bool, optional): Whether to use a Butterworth filter to bandpass the signal (for coarse)
+		timesteps (None, optional): Number of timesteps to use (default extracts from dataset)
+		channels (None, optional): Number of electrode channels to use (default extracts from dataset)   
+		save_fig (str, optional): Saves the figure under fig/[save_fig].png
 	"""
 
 	if type(filepath) is not list:
@@ -210,14 +211,14 @@ def spk_plot_pS(filepath,deltaT,datapath,sampling_rate = 25000,str_leg='Data'):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT
 	
 	Args:
-	    filepath (str): Path to the .hdf5 dataset
-	    deltaT (int): Binsize to use, *in timesteps*
-	    datatype (str): 'coarse', 'sub' or 'both' (compares both sampling types) 
-	    str_leg (str, optional): plot legend
-	    threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
-	    bw_filter (bool, optional): Toggles butterworth filtering (for coarse)
-	    timesteps (None, optional): Length of the dataset in timesteps
-	    channels (None, optional): Number of channels in the dataset
+		filepath (str): Path to the .hdf5 dataset
+		deltaT (int): Binsize to use, *in timesteps*
+		datatype (str): 'coarse', 'sub' or 'both' (compares both sampling types) 
+		str_leg (str, optional): plot legend
+		threshold (int, optional): Threshold in standard deviations of the signal (for coarse) 
+		bw_filter (bool, optional): Toggles butterworth filtering (for coarse)
+		timesteps (None, optional): Length of the dataset in timesteps
+		channels (None, optional): Number of channels in the dataset
 	"""
 
 	file = h5py.File(filepath,'r')
@@ -232,3 +233,88 @@ def spk_plot_pS(filepath,deltaT,datapath,sampling_rate = 25000,str_leg='Data'):
 	#Gets S and plots it
 	S = avalanche.get_S(data_binned)
 	plot.pS(S,label=str_leg)
+
+
+def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,7], save_fig=False):
+	"""Analyzes and plots thresholded data in the format (reps,timesteps)
+	
+	Args:
+		filepath (str): Path to the .h5 file
+		datatype (str): Path (inside the .h5 file) to the data
+		deltaT (float): binsize (in timesteps)
+	"""
+
+	#Plotting fixed parameters
+	zorder = 2
+	lineType = '-'
+	color1 = 'r'
+	color2='b'
+	color3=plt.cm.get_cmap('Set1', len(shape_d)).colors
+	show_error = True
+	title = filepath.split('/')[-1]
+	fig_path = 'results/shape/'
+
+	if datatype not in ['coarse', 'sub']:
+		ValueError('Invalid datatype. Valid options: "coarse", "sub"')
+
+	#Loads data and bins it
+	data_thresholded = h5py.File(filepath,'r')
+	reps = data_thresholded[datatype].shape[0]
+	reps = 2
+
+	fig1 = plt.figure()
+
+	if str_leg is None:
+		str_leg =  datatype
+
+	#Plots p(S)
+	S_list = []
+	for i in range(reps):
+		data_rep = data_thresholded[datatype][i,:]
+		data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT)
+		S_list.append(avalanche.get_S(data_bin))
+	plot.pS_mean(S_list,label='p(S), '+ str_leg,lineType=lineType,color=color1,show_error=show_error, zorder=zorder)
+	
+	ax = plt.gca()
+	ax.set_xlim([1,500])
+	ax.set_ylim([1e-6,1])
+	ax.set_title(title)
+
+	#Plots p(D)
+	D_list = []
+	for i in range(reps):
+		data_rep = data_thresholded[datatype][i,:]
+		data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT)
+		D_list.append(avalanche.get_D(data_bin))
+	plot.pS_mean(D_list,label='p(D), '+ str_leg,lineType=lineType,color=color2,show_error=show_error, zorder=zorder)
+	
+	ax.set_ylabel('Probability')	
+
+	#Plots avalanche shapes
+	fig2 = plt.figure()
+	ax = plt.gca()
+	ax.set_xlim([1,max(shape_d)])
+
+	for j in range(len(shape_d)):
+		shape_list = []
+		for i in range(reps):
+			data_rep = data_thresholded[datatype][i,:]
+			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT)
+			shape_list.append(avalanche.get_shape(data_bin, shape_d[j]))
+		print(shape_list)
+		label_shape = 'D = {:d}, '.format(shape_d[j]) + str_leg
+		plot.shape_mean(shape_list,shape_d[j],label=label_shape,lineType=lineType,color=color3[j,:],show_error=show_error, zorder=zorder)
+
+	if save_fig is not None:
+		#Saves figure png and pickled data
+		if not os.path.exists(fig_path):
+				os.makedirs(fig_path)		
+		str_save1 = fig_path + title + '_' + datatype + '_distribution_bs{:d}.png'.format(deltaT)
+		str_save2 = fig_path + title + '_' + datatype + '_shape_bs{:d}.png'.format(deltaT)
+		fig1.savefig(str_save1,bbox_inches="tight")
+		fig2.savefig(str_save2,bbox_inches="tight")
+		plt.close(fig1)
+		plt.close(fig2)
+
+	
+
