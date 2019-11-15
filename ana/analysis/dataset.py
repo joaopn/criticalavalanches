@@ -2,7 +2,11 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   joaopn
+<<<<<<< HEAD
 # @Last Modified time: 2019-11-15 12:19:24
+=======
+# @Last Modified time: 2019-11-15 12:14:34
+>>>>>>> joao
 
 """
 Module for directly handling datasets.
@@ -260,6 +264,10 @@ def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,
 	#Loads data and bins it
 	data_thresholded = h5py.File(filepath,'r')
 	reps = data_thresholded[datatype].shape[0]
+<<<<<<< HEAD
+=======
+	reps = 2
+>>>>>>> joao
 
 	fig1 = plt.figure()
 
