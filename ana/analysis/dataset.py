@@ -2,11 +2,7 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   joaopn
-<<<<<<< HEAD
-# @Last Modified time: 2019-11-15 12:21:10
-=======
-# @Last Modified time: 2019-11-15 12:14:34
->>>>>>> joao
+# @Last Modified time: 2019-11-15 12:47:43
 
 """
 Module for directly handling datasets.
