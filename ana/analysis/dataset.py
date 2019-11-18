@@ -2,7 +2,7 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-11-15 12:47:43
+# @Last Modified time: 2019-11-18 15:11:42
 
 """
 Module for directly handling datasets.
@@ -245,6 +245,7 @@ def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,
 	"""
 
 	#Plotting fixed parameters
+	exp_avg = 2.00
 	zorder = 2
 	lineType = '-'
 	color1 = 'r'
@@ -260,13 +261,14 @@ def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,
 	#Loads data and bins it
 	data_thresholded = h5py.File(filepath,'r')
 	reps = data_thresholded[datatype].shape[0]
-
+	reps = 3
 	fig1 = plt.figure()
 
 	if str_leg is None:
 		str_leg =  datatype
 
 	#Plots p(S)
+	print('Plotting avalanche distributions')
 	S_list = []
 	for i in range(reps):
 		data_rep = data_thresholded[datatype][i,:]
@@ -290,19 +292,30 @@ def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,
 	ax.set_ylabel('Probability')	
 
 	#Plots avalanche shapes
-	fig2 = plt.figure()
-	ax = plt.gca()
-	ax.set_xlim([1,max(shape_d)])
+	print('Plotting avalanche shapes')
+	
+	fig2 = plt.figure('shapes')
+	ax2 = plt.gca()
+	ax2.set_xlim([1,max(shape_d)])
+
+	fig3 = plt.figure('shapes_collapsed')
+	ax3 = plt.gca()	
+	ax3.set_xlim([0,1])
 
 	for j in range(len(shape_d)):
 		shape_list = []
+
 		for i in range(reps):
 			data_rep = data_thresholded[datatype][i,:]
 			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT)
 			shape_list.append(avalanche.get_shape(data_bin, shape_d[j]))
-		print(shape_list)
 		label_shape = 'D = {:d}, '.format(shape_d[j]) + str_leg
-		plot.shape_mean(shape_list,shape_d[j],label=label_shape,lineType=lineType,color=color3[j,:],show_error=show_error, zorder=zorder)
+
+		plt.figure('shapes')
+		plot.shape_mean(shape_list,size_d=shape_d[j],label=label_shape,lineType=lineType,color=color3[j,:],show_error=show_error, zorder=zorder)
+
+		plt.figure('shapes_collapsed')
+		plot.shape_mean(shape_list,size_d=shape_d[j],label=label_shape,lineType=lineType,color=color3[j,:],show_error=show_error, zorder=zorder, collapse_exp=exp_avg)
 
 	if save_fig is not None:
 		#Saves figure png and pickled data
@@ -310,10 +323,13 @@ def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,
 				os.makedirs(fig_path)		
 		str_save1 = fig_path + title + '_' + datatype + '_distribution_bs{:d}.png'.format(deltaT)
 		str_save2 = fig_path + title + '_' + datatype + '_shape_bs{:d}.png'.format(deltaT)
+		str_save3 = fig_path + title + '_' + datatype + '_shape_collapsed_bs{:d}.png'.format(deltaT)
 		fig1.savefig(str_save1,bbox_inches="tight")
 		fig2.savefig(str_save2,bbox_inches="tight")
+		fig3.savefig(str_save3,bbox_inches="tight")
 		plt.close(fig1)
 		plt.close(fig2)
+		plt.close(fig3)
 
 	
 
