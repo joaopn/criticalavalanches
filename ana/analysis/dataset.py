@@ -2,7 +2,7 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-11-18 15:11:42
+# @Last Modified time: 2019-11-23 01:17:05
 
 """
 Module for directly handling datasets.
@@ -235,7 +235,7 @@ def spk_plot_pS(filepath,deltaT,datapath,sampling_rate = 25000,str_leg='Data'):
 	plot.pS(S,label=str_leg)
 
 
-def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,7], save_fig=False):
+def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,7], reps = None, save_fig=False):
 	"""Analyzes and plots thresholded data in the format (reps,timesteps)
 	
 	Args:
@@ -260,8 +260,8 @@ def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,
 
 	#Loads data and bins it
 	data_thresholded = h5py.File(filepath,'r')
-	reps = data_thresholded[datatype].shape[0]
-	reps = 3
+	if reps is None:
+		reps = data_thresholded[datatype].shape[0]
 	fig1 = plt.figure()
 
 	if str_leg is None:
