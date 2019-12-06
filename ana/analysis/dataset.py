@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-11-23 01:17:05
+# @Last Modified by:   Joao
+# @Last Modified time: 2019-12-06 10:37:13
 
 """
 Module for directly handling datasets.
@@ -332,4 +332,44 @@ def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,
 		plt.close(fig3)
 
 	
+def sim_plot_scaling(filepath, deltaT, str_leg=None, reps = None, save_fig=False):
 
+	#Loads data and bins it
+	data_thresholded = h5py.File(filepath,'r')
+	if reps is None:
+		reps = data_thresholded[datatype].shape[0]
+	fig1 = plt.figure()
+
+	#Creates figures
+	fig1 = plt.figure('pS')
+	fig2 = plt.figure('pD')
+	fig3 = plt.figure('average_S')
+	fig4 = plt.figure('shape_coarse')
+	fig5 = plt.figure('shape_sub')
+	
+
+
+	for datatype in ['coarse', 'sub']:
+
+		#Plots p(S)
+		plt.figure('pS')
+		S_list = []
+		for i in range(reps):
+			data_rep = data_thresholded[datatype][i,:]
+			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT)
+			S_list.append(avalanche.get_S(data_bin))
+		plot.pS_mean(S_list,label='p(S), '+ str_leg,lineType=lineType,color=color1,show_error=show_error, zorder=zorder)
+		
+		ax = plt.gca()
+		ax.set_xlim([1,500])
+		ax.set_ylim([1e-6,1])
+		ax.set_title(title)
+
+		#Plots p(D)
+		plt.figure('pS')
+		D_list = []
+		for i in range(reps):
+			data_rep = data_thresholded[datatype][i,:]
+			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT)
+			D_list.append(avalanche.get_D(data_bin))
+		plot.pS_mean(D_list,label='p(D), '+ str_leg,lineType=lineType,color=color2,show_error=show_error, zorder=zorder)
