@@ -100,6 +100,16 @@ def get_D(data):
 
 	return D
 
+def get_shape_all(data, min_samples):
+    """Returns a dict with all the average shapes from avalanches with at least min_samples
+    
+    Args:
+        data (float): thresholded timeseries with events
+        min_samples (int): minimum number of samples to return the average shape
+    """
+   pass
+
+
 def get_shape(data, size_d):
 	"""Returns the average avalanche shape with size D from a timeseries
 	

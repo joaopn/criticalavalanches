@@ -332,12 +332,37 @@ def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,
 		plt.close(fig3)
 
 	
-def sim_plot_scaling(filepath, deltaT, str_leg=None, reps = None, save_fig=False):
+def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None, save_fig=True):
+
+	#Plotting fixed parameters
+	zorder = 2
+	lineType = '-'
+	color_dist = {'sub':'b', 'coarse':'r'}
+	show_error = True
+	title = filepath.split('/')[-1]
+	fig_path = 'results/shape/'
+
+	#xmax
+	if xmax_S is None:
+		xmax_S = {'sub': 300, 'coarse':64}
+	if xmax_D is None:
+		xmax_D = {'sub': 100, 'coarse':8}
+
+	#deltaT
+	if len(deltaT) == 1:
+		deltaT = deltaT * 2
+	elif len(deltaT) > 2:
+		raise ValueError('deltaT needs one or two values')
+	deltaT_dict = {'coarse':deltaT[0], 'sub':deltaT[1]}
+
+	#Results dict
+	observables = ['alpha','beta','gamma','gamma_shape']
+	results = {}
 
 	#Loads data and bins it
 	data_thresholded = h5py.File(filepath,'r')
 	if reps is None:
-		reps = data_thresholded[datatype].shape[0]
+		reps = data_thresholded['coarse'].shape[0]
 	fig1 = plt.figure()
 
 	#Creates figures
@@ -346,30 +371,77 @@ def sim_plot_scaling(filepath, deltaT, str_leg=None, reps = None, save_fig=False
 	fig3 = plt.figure('average_S')
 	fig4 = plt.figure('shape_coarse')
 	fig5 = plt.figure('shape_sub')
-	
-
 
 	for datatype in ['coarse', 'sub']:
 
-		#Plots p(S)
-		plt.figure('pS')
+		results[datatype] = dict.fromkeys(observables)
+
+		#Gets p(S)
 		S_list = []
 		for i in range(reps):
 			data_rep = data_thresholded[datatype][i,:]
-			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT)
+			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT_dict[datatype])
 			S_list.append(avalanche.get_S(data_bin))
-		plot.pS_mean(S_list,label='p(S), '+ str_leg,lineType=lineType,color=color1,show_error=show_error, zorder=zorder)
-		
+
+		#Fits p(S)
+		S = [item for sublist in S_list for item in sublist]
+		fit = powerlaw.Fit(S, discrete=True, estimate_discrete=False, xmin=1, xmax=xmax_S[datatype])
+		results[datatype]['alpha'] = fit.alpha	
+
+		#Plots p(S)
+		plt.figure('pS')
+		str_leg = datatype + r': $\alpha$ = {:0.2f}'.format(fit.alpha)
+		plot.pS_mean(S_list,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
+
+		#Gets p(D)
+		D_list = []
+		for i in range(reps):
+			data_rep = data_thresholded[datatype][i,:]
+			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT_dict[datatype])
+			D_list.append(avalanche.get_D(data_bin))
+
+		#Fits p(D)
+		D = [item for sublist in D_list for item in sublist]
+		fit = powerlaw.Fit(D, discrete=True, estimate_discrete=False, xmin=1, xmax=xmax_D[datatype])
+		results[datatype]['beta'] = fit.alpha	
+
+		#Plots p(D)
+		plt.figure('pD')
+		str_leg = datatype + r': $\beta$ = {:0.2f}'.format(fit.alpha)
+		plot.pS_mean(D_list,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
+
+		#Gets <S>(D)
+		pass
+
+		#Beautifies plots
+		plt.figure('pS')
 		ax = plt.gca()
 		ax.set_xlim([1,500])
 		ax.set_ylim([1e-6,1])
 		ax.set_title(title)
+		ax.set_xlabel('S')
+		ax.set_ylabel('p(S)')
 
-		#Plots p(D)
-		plt.figure('pS')
-		D_list = []
-		for i in range(reps):
-			data_rep = data_thresholded[datatype][i,:]
-			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT)
-			D_list.append(avalanche.get_D(data_bin))
-		plot.pS_mean(D_list,label='p(D), '+ str_leg,lineType=lineType,color=color2,show_error=show_error, zorder=zorder)
+		plt.figure('pD')
+		ax = plt.gca()
+		ax.set_xlim([1,100])
+		ax.set_ylim([1e-6,1])
+		ax.set_title(title)
+		ax.set_xlabel('D')
+		ax.set_ylabel('p(D)')
+
+	print(results)
+
+	if save_fig is True:
+		#Saves figure png and pickled data
+		if not os.path.exists(fig_path):
+				os.makedirs(fig_path)		
+		str_save1 = fig_path + title + '_' + 'bs{:d}-{:d}_pS.png'.format(deltaT[0],deltaT[1])
+		str_save2 = fig_path + title + '_' + 'bs{:d}-{:d}_pD.png'.format(deltaT[0],deltaT[1])
+		str_save3 = fig_path + title + '_' + 'bs{:d}-{:d}_avgS.png'.format(deltaT[0],deltaT[1])
+		fig1.savefig(str_save1,bbox_inches="tight")
+		fig2.savefig(str_save2,bbox_inches="tight")
+		fig3.savefig(str_save3,bbox_inches="tight")
+		plt.close(fig1)
+		plt.close(fig2)
+		plt.close(fig3)
