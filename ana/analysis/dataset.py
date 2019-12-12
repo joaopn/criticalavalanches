@@ -2,13 +2,14 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   Joao
-# @Last Modified time: 2019-12-06 10:37:13
+# @Last Modified time: 2019-12-12 03:26:53
 
 """
 Module for directly handling datasets.
 """
 
 from analysis import avalanche, fitting, plot, parser
+from scipy.optimize import curve_fit
 import powerlaw
 import numpy as np
 import matplotlib.pyplot as plt
@@ -332,7 +333,7 @@ def sim_plot_thresholded(filepath, datatype, deltaT, str_leg=None, shape_d = [5,
 		plt.close(fig3)
 
 	
-def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None, save_fig=True):
+def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None, xmax_avg = None, save_fig=True):
 
 	#Plotting fixed parameters
 	zorder = 2
@@ -347,6 +348,8 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 		xmax_S = {'sub': 300, 'coarse':64}
 	if xmax_D is None:
 		xmax_D = {'sub': 100, 'coarse':8}
+	if xmax_avg is None:
+		xmax_avg = {'sub': 100, 'coarse':8}
 
 	#deltaT
 	if len(deltaT) == 1:
@@ -375,43 +378,117 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	for datatype in ['coarse', 'sub']:
 
 		results[datatype] = dict.fromkeys(observables)
+		all_avalanches = {}
 
-		#Gets p(S)
-		S_list = []
+		#Calculates avalanche statistics for all reps
 		for i in range(reps):
 			data_rep = data_thresholded[datatype][i,:]
-			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT_dict[datatype])
-			S_list.append(avalanche.get_S(data_bin))
+			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT_dict[datatype])		
+			all_avalanches[i] = avalanche.get_avalanches(data_bin)
+
+		#Obtains lists of S, D, and shape
+		S_list = [[all_avalanches[i][j]['S'] for j in range(len(all_avalanches[i]))] for i in range(reps)] 
+		D_list = [[all_avalanches[i][j]['D'] for j in range(len(all_avalanches[i]))] for i in range(reps)] 
+		shape_list = [[all_avalanches[i][j]['shape'] for j in range(len(all_avalanches[i]))] for i in range(reps)] 
+
+
+		#avgS_list = [[[all_avalanches[i][j]['S'] for j in range(len(all_avalanches[i]))] ] for i in range(reps)]
+
+		#Calculates average avalanche size
+		avgS_list = []		#List, averaged by rep
+		avgS = {}
+
+		D_max = int(max([max(Di) for Di in D_list]))
+		for r in range(reps):
+			S_rep = [[all_avalanches[r][V]['S'] for V in all_avalanches[r].keys() if all_avalanches[r][V]['D'] == i] for i in range(1,D_max+1)]
+			avgS_list.append([np.mean(V) for V in S_rep])
+
+			if r == 0:
+				avgS['D'] = [all_avalanches[r][V]['D'] for V in sorted(all_avalanches[r].keys())]
+				avgS['S'] = [all_avalanches[r][V]['S'] for V in sorted(all_avalanches[r].keys())]
+			else:
+				avgS['D'] = avgS['D'] + [all_avalanches[r][V]['D'] for V in sorted(all_avalanches[r].keys())]
+				avgS['S'] = avgS['S'] + [all_avalanches[r][V]['S'] for V in sorted(all_avalanches[r].keys())]
+
+		avgS['X'] = [*range(1,max(avgS['D'])+1)]
+		maxD = max(avgS['D'])
+
+		#Converts to a non-bullshit format
+		avgS['D'] = np.array(avgS['D'])
+		avgS['S'] = np.array(avgS['S'])
+		avgS['Savg'] = np.zeros(maxD)
+		avgS['Sstd'] = np.zeros(maxD)
+
+		for i in range(maxD):
+			S_select = avgS['S'][avgS['D']==i+1]
+			#S_select = avgS['S'][np.where(np.equal(avgS['D'],i+1))[0]]
+			if S_select.size > 0:
+				avgS['Savg'][i] = np.mean(S_select)
+				avgS['Sstd'][i] = np.std(S_select)
+
+		#Censors data to fit
+		bool_rem = np.less_equal(xmax_avg,avgS['D'])
+		avgS['Savg'] = np.delete(avgS['Savg'],bool_rem)
+		avgS['X'] = np.delete(avgS['X'],bool_rem)
+
+		#Flattens dict into lists
+		S = [item for sublist in S_list for item in sublist]
+		D = [item for sublist in D_list for item in sublist]
+
+		#print(avgS['Savg'])
+
+		#S = [all_avalanches[i]['S'] for i in range(len(all_avalanches))]
+		#D = [all_avalanches[i]['D'] for i in range(len(all_avalanches))]
+		#shape_av = [all_avalanches[i]['shape'] for i in range(len(all_avalanches))]
+
+		#Gets p(S)
+		# S_list = []
+		# for i in range(reps):
+		# 	data_rep = data_thresholded[datatype][i,:]
+		# 	data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT_dict[datatype])
+		# 	S_list.append(avalanche.get_S(data_bin))
 
 		#Fits p(S)
-		S = [item for sublist in S_list for item in sublist]
 		fit = powerlaw.Fit(S, discrete=True, estimate_discrete=False, xmin=1, xmax=xmax_S[datatype])
 		results[datatype]['alpha'] = fit.alpha	
 
 		#Plots p(S)
 		plt.figure('pS')
-		str_leg = datatype + r': $\alpha$ = {:0.2f}'.format(fit.alpha)
+		str_leg = datatype + r': $\alpha$ = {:0.2f}'.format(results[datatype]['alpha'])
 		plot.pS_mean(S_list,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
+		# plot.pS_mean(S_list,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
 
 		#Gets p(D)
-		D_list = []
-		for i in range(reps):
-			data_rep = data_thresholded[datatype][i,:]
-			data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT_dict[datatype])
-			D_list.append(avalanche.get_D(data_bin))
+		# D_list = []
+		# for i in range(reps):
+		# 	data_rep = data_thresholded[datatype][i,:]
+		# 	data_bin = avalanche.bin_data(data=data_rep, binsize=deltaT_dict[datatype])
+		# 	D_list.append(avalanche.get_D(data_bin))
 
 		#Fits p(D)
-		D = [item for sublist in D_list for item in sublist]
+		# D = [item for sublist in D_list for item in sublist]
 		fit = powerlaw.Fit(D, discrete=True, estimate_discrete=False, xmin=1, xmax=xmax_D[datatype])
 		results[datatype]['beta'] = fit.alpha	
 
 		#Plots p(D)
 		plt.figure('pD')
-		str_leg = datatype + r': $\beta$ = {:0.2f}'.format(fit.alpha)
+		str_leg = datatype + r': $\beta$ = {:0.2f}'.format(results[datatype]['beta'])
 		plot.pS_mean(D_list,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
+		# plot.pS_mean(D_list,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
 
-		#Gets <S>(D)
-		pass
+		#Fits avgS
+		kwargs = {'maxfev': 10000}
+		def __pl(x,a,b):
+			return a*np.power(x,b)
+		results_fit, pcov = curve_fit(__pl,avgS['X'],avgS['Savg'], method='lm', p0=[2,1], **kwargs)
+		results[datatype]['gamma'] = results_fit[1]
+		print(results[datatype]['gamma'])
+		#results[datatype]['gamma'] = 2
+
+		#Plots avgS
+		plt.figure('average_S')
+		str_leg = datatype + r': $\alpha$ = {:0.2f}'.format(results[datatype]['gamma'])
+		plot.avgS_mean(avgS_list,maxD,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
 
 		#Beautifies plots
 		plt.figure('pS')

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-22 12:54:07
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-11-15 17:39:44
+# @Last Modified by:   Joao
+# @Last Modified time: 2019-12-11 07:46:02
 
 """
 
@@ -100,14 +100,33 @@ def get_D(data):
 
 	return D
 
-def get_shape_all(data, min_samples):
-    """Returns a dict with all the average shapes from avalanches with at least min_samples
-    
-    Args:
-        data (float): thresholded timeseries with events
-        min_samples (int): minimum number of samples to return the average shape
-    """
-   pass
+def get_avalanches(data):
+	"""Returns a dict with shape, size and duration of all avalanches
+	
+	Args:
+		data (float): thresholded timeseries with events
+	"""
+
+	#Dict fields
+	observables = ['shape', 'S', 'D']
+	avalanches = {}
+
+	#Finds crossings of the signal to positive
+	id_cross = np.where(np.sign(data[:-1]) != np.sign(data[1:]))[0] + 1
+	id_cross_plus = id_cross[data[id_cross]>0]
+
+	#Obtain avalanche properties
+	n_avalanches = id_cross_plus.size
+
+	#avalanches = dict.fromkeys(range(0,n_avalanches))
+
+	for i in range(n_avalanches-1):
+		avalanches[i] = dict.fromkeys(observables)
+		avalanches[i]['shape'] = np.trim_zeros(data[id_cross_plus[i]:id_cross_plus[i+1]],'b')
+		avalanches[i]['S'] = int(np.sum(data[id_cross_plus[i]:id_cross_plus[i+1]]))
+		avalanches[i]['D'] = int(np.sum(data[id_cross_plus[i]:id_cross_plus[i+1]]!=0))
+
+	return avalanches
 
 
 def get_shape(data, size_d):

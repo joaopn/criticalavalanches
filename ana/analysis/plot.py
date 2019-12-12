@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-03-26 13:40:21
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-11-18 15:13:26
+# @Last Modified by:   Joao
+# @Last Modified time: 2019-12-12 02:36:35
 
 """
 
@@ -34,16 +34,17 @@ def pS(S,label='data'):
 def pS_mean(S_list,label='data',lineType='-', color='k',show_error=True, zorder=2):
 
 	#Gets largest avalanche from the list (+1 for zero_index)
-	S_max = int(max([Si.max() for Si in S_list]) + 1)
+	S_max = int(max([max(Si) for Si in S_list]) + 1)
+	#S_max = np.amax(S_list)
 
 	#Obtains pS
 	pS = np.zeros((len(S_list),S_max))
 
 	for i in range(len(S_list)):
 		for j in range(S_max):
-			pS[i,j] = np.sum(S_list[i]==j)
+			pS[i,j] = np.sum(np.equal(S_list[i],j))
 		pS[i,:] = pS[i,:]/np.sum(pS[i,:])
-
+		
 	#Obtains mean and STD
 	pS_mean = np.mean(pS,axis=0)
 	pS_std = np.std(pS,axis=0)
@@ -57,6 +58,22 @@ def pS_mean(S_list,label='data',lineType='-', color='k',show_error=True, zorder=
 	plt.yscale('log')
 	plt.xscale('log')
 	plt.legend()
+
+def avgS_mean(avgS_list,Dmax,label='data',lineType='-', color='k',show_error=True, zorder=2):
+		
+	#Obtains mean and STD
+	avgS_mean = np.mean(avgS_list,axis=0)
+	avgS_std = np.std(avgS_list,axis=0)
+	avgS_up = avgS_mean + avgS_std/2
+	avgS_down = avgS_mean - avgS_std/2
+
+	#Plots confidence interval (1 std) and mean
+	if show_error:
+		plt.fill_between(range(1,Dmax+1),avgS_up,avgS_down,alpha=0.25,lw=0,color=color,zorder=zorder)
+	plt.plot(range(1,Dmax+1),avgS_mean,lineType,label=label,color=color,zorder=zorder)
+	plt.yscale('log')
+	plt.xscale('log')
+	plt.legend()	
 
 def shape_mean(shape_list, size_d, label='data',lineType='-', color='k',show_error=True, zorder=2, collapse_exp=None):
 

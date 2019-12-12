@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-04-01 01:44:18
-# @Last Modified by:   joaopn
-# @Last Modified time: 2019-04-18 17:51:14
+# @Last Modified by:   Joao
+# @Last Modified time: 2019-12-08 23:36:55
 
 import numpy as np
 import h5py
@@ -100,3 +100,4 @@ def powerlaw(X,Y,Yerr):
 	fit_err = fit_err_all[1]
 
 	return fit_exp, fit_err, lin_coef
+
