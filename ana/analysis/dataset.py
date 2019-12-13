@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
-# @Last Modified by:   Joao
-# @Last Modified time: 2019-12-12 03:26:53
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-12-13 06:33:56
 
 """
 Module for directly handling datasets.
@@ -15,6 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib, os, pickle
 import h5py
+import pandas as pd
 
 def sim_plot_pS(filepath,deltaT,datatype,str_leg='Data', threshold=3,bw_filter=True,timesteps=None,channels=None, save_fig=None,show_error=True,color='k', lineType='-', zorder=2):
 	"""Plots the avalanche size distribution for a single hdf5 dataset, and a single deltaT. If [filepath] is a list, averages over datasets.
@@ -366,14 +367,21 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	data_thresholded = h5py.File(filepath,'r')
 	if reps is None:
 		reps = data_thresholded['coarse'].shape[0]
-	fig1 = plt.figure()
+	#fig1 = plt.figure()
 
 	#Creates figures
-	fig1 = plt.figure('pS')
-	fig2 = plt.figure('pD')
-	fig3 = plt.figure('average_S')
-	fig4 = plt.figure('shape_coarse')
-	fig5 = plt.figure('shape_sub')
+	# fig1 = plt.figure('pS')
+	# fig2 = plt.figure('pD')
+	# fig3 = plt.figure('average_S')
+	# fig4 = plt.figure('shape_coarse')
+	# fig5 = plt.figure('shape_sub')
+	# fig6 = plt.figure('bar_comparison')
+	fig = plt.figure(constrained_layout=True, figsize=(8,6))
+	gs = fig.add_gridspec(2,2)
+	ax_pS = fig.add_subplot(gs[0,0])
+	ax_pD = fig.add_subplot(gs[0,1])
+	ax_avgS = fig.add_subplot(gs[1,0])
+	ax_comparison = fig.add_subplot(gs[1,1])
 
 	for datatype in ['coarse', 'sub']:
 
@@ -425,11 +433,10 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 			if S_select.size > 0:
 				avgS['Savg'][i] = np.mean(S_select)
 				avgS['Sstd'][i] = np.std(S_select)
-
-		#Censors data to fit
-		bool_rem = np.less_equal(xmax_avg,avgS['D'])
-		avgS['Savg'] = np.delete(avgS['Savg'],bool_rem)
-		avgS['X'] = np.delete(avgS['X'],bool_rem)
+		
+		avgS_X = np.array(avgS['X'][:])
+		avgS_Y = avgS['Savg'][:]
+		avgS_Yerr = avgS['Sstd'][:]
 
 		#Flattens dict into lists
 		S = [item for sublist in S_list for item in sublist]
@@ -453,9 +460,13 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 		results[datatype]['alpha'] = fit.alpha	
 
 		#Plots p(S)
-		plt.figure('pS')
+		plt.sca(ax_pS)
 		str_leg = datatype + r': $\alpha$ = {:0.2f}'.format(results[datatype]['alpha'])
 		plot.pS_mean(S_list,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
+		X_fit = np.array(range(1,xmax_S[datatype]+1))
+		Y_fit = np.power(X_fit, -results[datatype]['alpha'])
+		plt.plot(X_fit, Y_fit/np.sum(Y_fit), '--', color=color_dist[datatype])
+
 		# plot.pS_mean(S_list,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
 
 		#Gets p(D)
@@ -471,54 +482,93 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 		results[datatype]['beta'] = fit.alpha	
 
 		#Plots p(D)
-		plt.figure('pD')
+		plt.sca(ax_pD)
 		str_leg = datatype + r': $\beta$ = {:0.2f}'.format(results[datatype]['beta'])
 		plot.pS_mean(D_list,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
+		X_fit = np.array(range(1,xmax_D[datatype]+1))
+		Y_fit = np.power(X_fit, -results[datatype]['beta'])
+		plt.plot(X_fit, Y_fit/np.sum(Y_fit), '--', color=color_dist[datatype])
+
 		# plot.pS_mean(D_list,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
 
+		#Gets estimation of gamma from pS and pD
+		results[datatype]['gamma_p'] = (results[datatype]['beta'] - 1)/(results[datatype]['alpha'] - 1)
+
+		#Censors data to fit
+		bool_keep = np.less(avgS_X,xmax_avg[datatype])
+		avgS_X = avgS_X[bool_keep]
+		avgS_Y = avgS_Y[bool_keep]
+		avgS_Yerr = avgS_Yerr[bool_keep]
+
 		#Fits avgS
-		kwargs = {'maxfev': 10000}
-		def __pl(x,a,b):
-			return a*np.power(x,b)
-		results_fit, pcov = curve_fit(__pl,avgS['X'],avgS['Savg'], method='lm', p0=[2,1], **kwargs)
-		results[datatype]['gamma'] = results_fit[1]
-		print(results[datatype]['gamma'])
-		#results[datatype]['gamma'] = 2
+		#kwargs = {'maxfev': 10000}
+		# def __pl(x,a,b):
+		# 	return a*np.power(x,b)
+		# results_fit, pcov = curve_fit(__pl,avgS_X,avgS_Y, method='lm', **kwargs)
+		#results[datatype]['gamma'] = results_fit[1]
+		results[datatype]['gamma'], fit_err, lin_coef = fitting.powerlaw(avgS_X, avgS_Y, avgS_Yerr, loglog=True)
 
 		#Plots avgS
-		plt.figure('average_S')
-		str_leg = datatype + r': $\alpha$ = {:0.2f}'.format(results[datatype]['gamma'])
+		plt.sca(ax_avgS)
+		str_leg = datatype + r': $\gamma$ = {:0.2f}'.format(results[datatype]['gamma'])
 		plot.avgS_mean(avgS_list,maxD,label=str_leg,lineType=lineType,color=color_dist[datatype],show_error=show_error, zorder=zorder)
 
-		#Beautifies plots
-		plt.figure('pS')
-		ax = plt.gca()
-		ax.set_xlim([1,500])
-		ax.set_ylim([1e-6,1])
-		ax.set_title(title)
-		ax.set_xlabel('S')
-		ax.set_ylabel('p(S)')
+		#Plots avgS fit
+		X_fit = np.array(range(1,xmax_avg[datatype]+1))
+		#plt.plot(X_fit, results_fit[0]*np.power(X_fit, results_fit[1]), '--', color=color_dist[datatype])
+		plt.plot(X_fit, lin_coef*np.power(X_fit, results[datatype]['gamma']), '--', color=color_dist[datatype])
 
-		plt.figure('pD')
-		ax = plt.gca()
-		ax.set_xlim([1,100])
-		ax.set_ylim([1e-6,1])
-		ax.set_title(title)
-		ax.set_xlabel('D')
-		ax.set_ylabel('p(D)')
+	#Beautifies plots
+	plt.sca(ax_pS)
+	ax = plt.gca()
+	ax.set_xlim([1,500])
+	ax.set_ylim([1e-6,1])
+	#ax.set_title(title)
+	ax.set_xlabel('S')
+	ax.set_ylabel('p(S)')
+
+	plt.sca(ax_pD)
+	ax = plt.gca()
+	ax.set_xlim([1,100])
+	ax.set_ylim([1e-6,1])
+	#ax.set_title(title)
+	ax.set_xlabel('D')
+	ax.set_ylabel('p(D)')
 
 	print(results)
+
+	#Plots bar plot
+	plt.sca(ax_comparison)
+	ax = plt.gca()
+	#ax.set_title(title)
+	ax.set_ylim([0,3.5])
+	str_gamma_P = r'($\beta-1$)/($\alpha-1$)'
+	str_gamma_avg = r'$\gamma$'
+	results_gamma = {'coarse-sampled':{str_gamma_P:results['coarse']['gamma_p'],str_gamma_avg:results['coarse']['gamma']}, 'sub-sampled':{str_gamma_P:results['sub']['gamma_p'],str_gamma_avg:results['sub']['gamma']}}
+	pd.DataFrame(results_gamma).T.plot(kind='bar', ax=ax)
+	plt.xticks(rotation='horizontal')
+
+
 
 	if save_fig is True:
 		#Saves figure png and pickled data
 		if not os.path.exists(fig_path):
-				os.makedirs(fig_path)		
-		str_save1 = fig_path + title + '_' + 'bs{:d}-{:d}_pS.png'.format(deltaT[0],deltaT[1])
-		str_save2 = fig_path + title + '_' + 'bs{:d}-{:d}_pD.png'.format(deltaT[0],deltaT[1])
-		str_save3 = fig_path + title + '_' + 'bs{:d}-{:d}_avgS.png'.format(deltaT[0],deltaT[1])
-		fig1.savefig(str_save1,bbox_inches="tight")
-		fig2.savefig(str_save2,bbox_inches="tight")
-		fig3.savefig(str_save3,bbox_inches="tight")
-		plt.close(fig1)
-		plt.close(fig2)
-		plt.close(fig3)
+				os.makedirs(fig_path)	
+		str_save = 	fig_path + title + '_' + 'bs{:d}-{:d}.png'.format(deltaT[0],deltaT[1])
+		# str_save1 = fig_path + title + '_' + 'bs{:d}-{:d}_pS.png'.format(deltaT[0],deltaT[1])
+		# str_save2 = fig_path + title + '_' + 'bs{:d}-{:d}_pD.png'.format(deltaT[0],deltaT[1])
+		# str_save3 = fig_path + title + '_' + 'bs{:d}-{:d}_avgS.png'.format(deltaT[0],deltaT[1])
+		# str_save6 = fig_path + title + '_' + 'bs{:d}-{:d}_comparison.png'.format(deltaT[0],deltaT[1])
+		# fig1.savefig(str_save1,bbox_inches="tight")
+		# fig2.savefig(str_save2,bbox_inches="tight")
+		# fig3.savefig(str_save3,bbox_inches="tight")
+		# fig6.savefig(str_save6,bbox_inches="tight")
+		fig.suptitle(title)
+		fig.savefig(str_save,bbox_inches="tight")
+		plt.close(fig)
+		# plt.close(fig1)
+		# plt.close(fig2)
+		# plt.close(fig3)
+		# plt.close(fig4)
+		# plt.close(fig5)
+		# plt.close(fig6)

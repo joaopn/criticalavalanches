@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # @Author: joaopn
 # @Date:   2019-04-01 01:44:18
-# @Last Modified by:   Joao
-# @Last Modified time: 2019-12-08 23:36:55
+# @Last Modified by:   joaopn
+# @Last Modified time: 2019-12-13 06:54:00
 
 import numpy as np
 import h5py
 import powerlaw
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, leastsq
 
 def tau_linear(data,deltaT = 2):
 
@@ -81,23 +81,43 @@ def m_avalanche(data):
 
 	return m_av
 
-def powerlaw(X,Y,Yerr):
+def powerlaw(X,Y,Yerr, loglog=False):
 	#Parameters
-	kwargs = {'maxfev': 10000}
+	kwargs = {'maxfev': 100000}
 
-	def pl(x,a,b):
-		return a*np.power(x,-b)
+	if loglog:
+		def lin(x,a,b):
+			return a*x+b
 
-	#Fits courve with a LM algorithm
-	results, pcov = curve_fit(pl,X,Y,sigma=Yerr, method='lm', p0=[2,0.1], **kwargs)
+		bool_keep = np.less(0,Y)
+		X = X[bool_keep]
+		Y = Y[bool_keep]
+		Yerr = Yerr[bool_keep]
+
+		X = np.log10(X)
+		Y = np.log10(Y)
+		Yerr = np.divide(Yerr,Y)
+
+		results, pcov = curve_fit(lin,X,Y, **kwargs)
+		#results, pcov = curve_fit(lin,X,Y, method='lm', p0=[0,2], **kwargs)
+		lin_coef = 10**results[1]
+		fit_exp = results[0]
+
+	else:
+		def pl(x,a,b):
+			return a*np.power(x,b)
+
+		#Fits courve with a LM algorithm
+		#results, pcov = curve_fit(pl,X,Y,sigma=Yerr, method='lm', p0=[2,0.1], **kwargs)
+		results, pcov = curve_fit(pl,X,Y, **kwargs)
+		lin_coef = results[0]
+		fit_exp = results[1]
 
 	#Gets error
 	fit_err_all = np.sqrt(np.diag(pcov))
 
 	#Gets relevant variables
-	lin_coef = results[0]
-	fit_exp = results[1]
+
 	fit_err = fit_err_all[1]
 
 	return fit_exp, fit_err, lin_coef
-
