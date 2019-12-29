@@ -2,7 +2,7 @@
 # @Author: joaopn
 # @Date:   2019-04-01 01:44:18
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-12-13 06:54:00
+# @Last Modified time: 2019-12-21 23:18:20
 
 import numpy as np
 import h5py
@@ -37,7 +37,7 @@ def tau_sim_dataset(m,h,d,threshold,data_dir,bw_filter):
 	if type(d) not in [list, np.ndarray]:
 		d = [d]
 
-	#Calculates tau for every d and rep	
+	# Calculates tau for every d and rep
 	tau_all = np.zeros(0)
 	for d_i in d:
 		#Sets up filepath
@@ -121,3 +121,7 @@ def powerlaw(X,Y,Yerr, loglog=False):
 	fit_err = fit_err_all[1]
 
 	return fit_exp, fit_err, lin_coef
+
+def shape_collapse(shape_list, min_d, min_rep):
+	pass
+	

@@ -2,7 +2,7 @@
 # @Author: Joao
 # @Date:   2019-07-05 17:56:44
 # @Last Modified by:   joaopn
-# @Last Modified time: 2019-12-13 06:33:56
+# @Last Modified time: 2019-12-21 22:57:09
 
 """
 Module for directly handling datasets.
@@ -399,7 +399,6 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 		D_list = [[all_avalanches[i][j]['D'] for j in range(len(all_avalanches[i]))] for i in range(reps)] 
 		shape_list = [[all_avalanches[i][j]['shape'] for j in range(len(all_avalanches[i]))] for i in range(reps)] 
 
-
 		#avgS_list = [[[all_avalanches[i][j]['S'] for j in range(len(all_avalanches[i]))] ] for i in range(reps)]
 
 		#Calculates average avalanche size
@@ -441,6 +440,7 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 		#Flattens dict into lists
 		S = [item for sublist in S_list for item in sublist]
 		D = [item for sublist in D_list for item in sublist]
+		shape_list_flat = [item for sublist in shape_list for item in sublist]
 
 		#print(avgS['Savg'])
 
