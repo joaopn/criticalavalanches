@@ -123,5 +123,32 @@ def powerlaw(X,Y,Yerr, loglog=False):
 	return fit_exp, fit_err, lin_coef
 
 def shape_collapse(shape_list, min_d, min_rep):
-	pass
+
+	from scipy.interpolate import interp1d, InterpolatedUnivariateSpline	
+
+	#Definitions
+	interp_points = 1000
 	
+
+	#Flattens list of reps
+	flat_list = np.array([item for sublist in shape_list for item in sublist])
+
+	#List of avalanche sizes
+	shape_size = np.zeros(len(flat_list))
+	for i in range(len(flat_list)):
+		shape_size[i] = flat_list[i].size
+
+	#Defines average size matrix
+	max_size = shape_size.max()
+	average_shape = np.zeros(max_size, interp_points)
+
+	#Averages shape for each duration and interpolates results
+	for i in range(max_size):
+
+		#Calculates average shape
+		avg_shape_i_y = np.mean(flat_list[shape_size==i+1])
+		avg_shape_i_x = np.arange(1:i+1)/i
+
+		#Interpolates results
+		fx = interp1d(avg_shape_i_x,avg_shape_i_y)
+		average_shape[i,:] = fx(np.linspace(0,1,num=interp_points))

@@ -399,6 +399,8 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 		D_list = [[all_avalanches[i][j]['D'] for j in range(len(all_avalanches[i]))] for i in range(reps)] 
 		shape_list = [[all_avalanches[i][j]['shape'] for j in range(len(all_avalanches[i]))] for i in range(reps)] 
 
+		return shape_list
+
 		#avgS_list = [[[all_avalanches[i][j]['S'] for j in range(len(all_avalanches[i]))] ] for i in range(reps)]
 
 		#Calculates average avalanche size
