@@ -125,10 +125,12 @@ def powerlaw(X,Y,Yerr, loglog=False):
 def shape_collapse(shape_list, min_d, min_rep):
 
 	from scipy.interpolate import interp1d, InterpolatedUnivariateSpline	
+	from scipy.optimize import minimize
 
 	#Definitions
 	interp_points = 1000
-	
+	gamma_x0 = 0.5
+	opt_bounds = (-1,5)
 
 	#Flattens list of reps
 	flat_list = np.array([item for sublist in shape_list for item in sublist])
@@ -138,17 +140,57 @@ def shape_collapse(shape_list, min_d, min_rep):
 	for i in range(len(flat_list)):
 		shape_size[i] = flat_list[i].size
 
-	#Defines average size matrix
 	max_size = shape_size.max()
-	average_shape = np.zeros(max_size, interp_points)
+
+	#Avalanche size count
+	shape_count,_ = np.histogram(shape_size,bins=np.arange(0,max_size+2))
+
+	#Censors flat_list
+	# censor_d_keep = list(shape_size>min_d)
+	# censor_rep_keep = [True for i in range(len(flat_list))]
+	# shape_count_rem = shape_count < min_rep
+	# for i in range(len(flat_list)):
+	# 	if shape_count_rem[int(shape_size[i])]:
+	# 		censor_rep_keep[i] = False
+	# censor_all =  [a and b for a, b in zip(censor_d_keep, censor_rep_keep)]
+	# flat_list_censored = flat_list[censor_all]
+
+	#Censors data by size
+	censor_d_keep = np.arange(0,max_size+1) >= min_d
+	censor_rep_keep = shape_count >= min_rep
+	censor_index =  np.where([a and b for a, b in zip(censor_d_keep, censor_rep_keep)])[0]
+
+	#Defines average size matrix
+	average_shape = np.zeros((censor_index.size, interp_points))
+
+	#Defines bottom interpolation range from data, to prevent extrapolation bias
+	x_min = 1/censor_index[0]
+	x_range = np.linspace(x_min,1,num=interp_points)
 
 	#Averages shape for each duration and interpolates results
-	for i in range(max_size):
+	for i in range(len(censor_index)):
 
 		#Calculates average shape
-		avg_shape_i_y = np.mean(flat_list[shape_size==i+1])
-		avg_shape_i_x = np.arange(1:i+1)/i
+		size_i = censor_index[i]
+		avg_shape_i_y = np.mean(flat_list[shape_size==size_i])
+		avg_shape_i_x = np.arange(1,size_i+1)/size_i
 
 		#Interpolates results
-		fx = interp1d(avg_shape_i_x,avg_shape_i_y)
-		average_shape[i,:] = fx(np.linspace(0,1,num=interp_points))
+		fx = InterpolatedUnivariateSpline(avg_shape_i_x,avg_shape_i_y)
+		average_shape[i,:] = fx(x_range)
+
+	#Error function for optimization	
+	def _error(gamma_shape, *params):
+		average_shape, censor_index = params
+		#shape_scaled = np.divide(average_shape.T,np.power(censor_index, gamma_shape)).T
+		shape_scaled = np.zeros((censor_index.size, interp_points))
+		for i in range(censor_index.size):
+			shape_scaled[i,:] = average_shape[i,:]/np.power(censor_index[i],gamma_shape)
+
+		err = np.mean(np.var(shape_scaled, axis=0))/np.power((np.max(np.max(shape_scaled))-np.min(np.min(shape_scaled))),2)
+		return err
+
+	#Minimizes error
+	minimize_obj = minimize(_error, x0=[gamma_x0], args=(average_shape,censor_index), bounds=[opt_bounds])
+
+	return minimize_obj.x - 1
