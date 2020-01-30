@@ -374,3 +374,64 @@ def _convert_rgba_rgb(colors):
 		colors_rgb[i,:] = (1-alpha)*rgb_background + alpha*colors[i,:3]
 
 	return colors_rgb
+
+def shape_collapse(shape_list, gamma_shape, min_d, min_rep, ax=None):
+
+	from scipy.interpolate import InterpolatedUnivariateSpline	
+
+	#Definitions
+	interp_points = 1000
+
+	if ax is None:
+		plt.figure()
+	else:
+		plt.sca(ax)
+
+	#Flattens list of reps
+	flat_list = np.array([item for sublist in shape_list for item in sublist])
+
+	#List of avalanche sizes
+	shape_size = np.zeros(len(flat_list))
+	for i in range(len(flat_list)):
+		shape_size[i] = flat_list[i].size
+
+	max_size = shape_size.max()
+
+	#Avalanche size count
+	shape_count,_ = np.histogram(shape_size,bins=np.arange(0,max_size+2))
+
+	#Censors data by size
+	censor_d_keep = np.arange(0,max_size+1) >= min_d
+	censor_rep_keep = shape_count >= min_rep
+	censor_index =  np.where([a and b for a, b in zip(censor_d_keep, censor_rep_keep)])[0]
+
+	#Defines average size matrix
+	average_shape = np.zeros((censor_index.size, interp_points))
+
+	#Defines bottom interpolation range from data, to prevent extrapolation bias
+	#x_min = 1/censor_index[0]
+	x_min = 0
+	x_range = np.linspace(x_min,1,num=interp_points)
+
+	#Averages shape for each duration and interpolates results
+	for i in range(len(censor_index)):
+
+		#Calculates average shape
+		size_i = censor_index[i]
+		avg_shape_i_y = np.mean(flat_list[shape_size==size_i])/np.power(size_i,gamma_shape-1)
+		avg_shape_i_x = np.arange(1,size_i+1)/size_i
+
+		#Interpolates results
+		fx = InterpolatedUnivariateSpline(avg_shape_i_x,avg_shape_i_y)
+		average_shape[i,:] = fx(x_range)
+
+		#Plots transparent subplots
+		plt.plot(avg_shape_i_x, avg_shape_i_y, alpha=0.2, color='k')
+
+	#Plots interpolated average curve
+	plt.plot(x_range, np.mean(average_shape, axis=0), color='r')
+
+	#Beautifies plot
+	ax = plt.gca()
+	ax.set_xlabel('Scaled size')
+	ax.set_ylabel('Scaled duration')

@@ -343,6 +343,8 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	show_error = True
 	title = filepath.split('/')[-1]
 	fig_path = 'results/shape/'
+	collapse_min_d = 4
+	collapse_min_rep = 20
 
 	#xmax
 	if xmax_S is None:
@@ -377,11 +379,13 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	# fig5 = plt.figure('shape_sub')
 	# fig6 = plt.figure('bar_comparison')
 	fig = plt.figure(constrained_layout=True, figsize=(8,6))
-	gs = fig.add_gridspec(2,2)
+	gs = fig.add_gridspec(2,3)
 	ax_pS = fig.add_subplot(gs[0,0])
 	ax_pD = fig.add_subplot(gs[0,1])
-	ax_avgS = fig.add_subplot(gs[1,0])
-	ax_comparison = fig.add_subplot(gs[1,1])
+	ax_avgS = fig.add_subplot(gs[0,2])
+	ax_collapse_coarse = fig.add_subplot(gs[1,0])
+	ax_collapse_sub = fig.add_subplot(gs[1,1])
+	ax_comparison = fig.add_subplot(gs[1,2])
 
 	for datatype in ['coarse', 'sub']:
 
@@ -399,7 +403,7 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 		D_list = [[all_avalanches[i][j]['D'] for j in range(len(all_avalanches[i]))] for i in range(reps)] 
 		shape_list = [[all_avalanches[i][j]['shape'] for j in range(len(all_avalanches[i]))] for i in range(reps)] 
 
-		return shape_list
+		#return shape_list
 
 		#avgS_list = [[[all_avalanches[i][j]['S'] for j in range(len(all_avalanches[i]))] ] for i in range(reps)]
 
@@ -520,6 +524,16 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 		#plt.plot(X_fit, results_fit[0]*np.power(X_fit, results_fit[1]), '--', color=color_dist[datatype])
 		plt.plot(X_fit, lin_coef*np.power(X_fit, results[datatype]['gamma']), '--', color=color_dist[datatype])
 
+		#Fits shape scaling
+		results[datatype]['gamma_shape'] = fitting.shape_collapse(shape_list, collapse_min_d, collapse_min_rep)
+
+		#Plots shape scaling
+		if datatype == 'coarse':
+			ax_scaled = ax_collapse_coarse
+		elif datatype == 'sub':
+			ax_scaled = ax_collapse_sub
+		plot.shape_collapse(shape_list,results[datatype]['gamma_shape'], collapse_min_d, collapse_min_rep, ax=ax_scaled)
+
 	#Beautifies plots
 	plt.sca(ax_pS)
 	ax = plt.gca()
@@ -546,7 +560,9 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	ax.set_ylim([0,3.5])
 	str_gamma_P = r'($\beta-1$)/($\alpha-1$)'
 	str_gamma_avg = r'$\gamma$'
-	results_gamma = {'coarse-sampled':{str_gamma_P:results['coarse']['gamma_p'],str_gamma_avg:results['coarse']['gamma']}, 'sub-sampled':{str_gamma_P:results['sub']['gamma_p'],str_gamma_avg:results['sub']['gamma']}}
+	str_gamma_shape = r'$\gamma_{s}$'
+	results_gamma = {'coarse-sampled':{str_gamma_P:results['coarse']['gamma_p'],str_gamma_avg:results['coarse']['gamma'], str_gamma_shape:results['coarse']['gamma_shape']},
+	 'sub-sampled':{str_gamma_P:results['sub']['gamma_p'],str_gamma_avg:results['sub']['gamma'], str_gamma_shape:results['sub']['gamma_shape']}}
 	pd.DataFrame(results_gamma).T.plot(kind='bar', ax=ax)
 	plt.xticks(rotation='horizontal')
 

@@ -122,7 +122,7 @@ def powerlaw(X,Y,Yerr, loglog=False):
 
 	return fit_exp, fit_err, lin_coef
 
-def shape_collapse(shape_list, min_d, min_rep):
+def shape_collapse(shape_list, min_d, min_rep, extrapolate=False):
 
 	from scipy.interpolate import interp1d, InterpolatedUnivariateSpline	
 	from scipy.optimize import minimize
@@ -164,7 +164,10 @@ def shape_collapse(shape_list, min_d, min_rep):
 	average_shape = np.zeros((censor_index.size, interp_points))
 
 	#Defines bottom interpolation range from data, to prevent extrapolation bias
-	x_min = 1/censor_index[0]
+	if extrapolate:
+		x_min = 0
+	else:
+		x_min = 1/censor_index[0]
 	x_range = np.linspace(x_min,1,num=interp_points)
 
 	#Averages shape for each duration and interpolates results
@@ -193,4 +196,4 @@ def shape_collapse(shape_list, min_d, min_rep):
 	#Minimizes error
 	minimize_obj = minimize(_error, x0=[gamma_x0], args=(average_shape,censor_index), bounds=[opt_bounds])
 
-	return minimize_obj.x - 1
+	return minimize_obj.x[0] + 1
