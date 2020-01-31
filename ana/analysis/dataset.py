@@ -348,11 +348,11 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 
 	#xmax
 	if xmax_S is None:
-		xmax_S = {'sub': 300, 'coarse':64}
+		xmax_S = {'sub': 100, 'coarse':64}
 	if xmax_D is None:
-		xmax_D = {'sub': 100, 'coarse':8}
+		xmax_D = {'sub': 50, 'coarse':8}
 	if xmax_avg is None:
-		xmax_avg = {'sub': 100, 'coarse':8}
+		xmax_avg = {'sub': 50, 'coarse':8}
 
 	#deltaT
 	if len(deltaT) == 1:
@@ -532,7 +532,8 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 			ax_scaled = ax_collapse_coarse
 		elif datatype == 'sub':
 			ax_scaled = ax_collapse_sub
-		plot.shape_collapse(shape_list,results[datatype]['gamma_shape'], collapse_min_d, collapse_min_rep, ax=ax_scaled)
+		str_leg_scaling = datatype + r': $\gamma_s$ = {:0.2f}'.format(results[datatype]['gamma_shape'])
+		plot.shape_collapse(shape_list,results[datatype]['gamma_shape'], collapse_min_d, collapse_min_rep, ax=ax_scaled, str_leg = str_leg_scaling)
 
 	#Beautifies plots
 	plt.sca(ax_pS)
