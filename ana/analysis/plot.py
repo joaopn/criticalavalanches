@@ -31,10 +31,14 @@ def pS(S,label='data'):
 	plt.xlim(1,1e3)
 	plt.legend()
 
-def pS_mean(S_list,label='data',lineType='-', color='k',show_error=True, zorder=2):
+def pS_mean(S_list,label='data',lineType='-', color='k',show_error=True, zorder=2, add_zero = False):
 
-	#Gets largest avalanche from the list (+1 for zero_index)
-	S_max = int(max([max(Si) for Si in S_list]) + 1)
+	if add_zero is True:
+		extra_av = 2
+	else:
+		extra_av = 1
+	#Gets largest avalanche from the list (+extra_av for zero_index)
+	S_max = int(max([max(Si) for Si in S_list]) + extra_av)
 	#S_max = np.amax(S_list)
 
 	#Obtains pS
@@ -57,7 +61,7 @@ def pS_mean(S_list,label='data',lineType='-', color='k',show_error=True, zorder=
 	plt.plot(range(S_max),pS_mean,lineType,label=label,color=color,zorder=zorder)
 	plt.yscale('log')
 	plt.xscale('log')
-	plt.legend()
+	plt.legend(loc='upper right')
 
 def avgS_mean(avgS_list,Dmax,label='data',lineType='-', color='k',show_error=True, zorder=2):
 		
@@ -375,7 +379,7 @@ def _convert_rgba_rgb(colors):
 
 	return colors_rgb
 
-def shape_collapse(shape_list, gamma_shape, min_d, min_rep, ax=None, str_leg = None):
+def shape_collapse(shape_list, gamma_shape, min_d, min_rep, ax=None, str_leg = None, extrapolate=False):
 
 	from scipy.interpolate import InterpolatedUnivariateSpline	
 
@@ -410,16 +414,25 @@ def shape_collapse(shape_list, gamma_shape, min_d, min_rep, ax=None, str_leg = N
 
 	#Defines bottom interpolation range from data, to prevent extrapolation bias
 	#x_min = 1/censor_index[0]
-	x_min = 0
+	if extrapolate is True:
+		x_min = 0
+	elif extrapolate is False:
+		x_min = 1/censor_index[0]
+	else:
+		error('extrapolate is not binary.')
 	x_range = np.linspace(x_min,1,num=interp_points)
 
 	#Averages shape for each duration and interpolates results
+	y_min = 100
 	for i in range(len(censor_index)):
 
 		#Calculates average shape
 		size_i = censor_index[i]
 		avg_shape_i_y = np.mean(flat_list[shape_size==size_i])/np.power(size_i,gamma_shape-1)
 		avg_shape_i_x = np.arange(1,size_i+1)/size_i
+
+		if np.min(avg_shape_i_y) < y_min:
+			y_min = np.min(avg_shape_i_y)
 
 		#Interpolates results
 		fx = InterpolatedUnivariateSpline(avg_shape_i_x,avg_shape_i_y)
@@ -429,12 +442,13 @@ def shape_collapse(shape_list, gamma_shape, min_d, min_rep, ax=None, str_leg = N
 		plt.plot(avg_shape_i_x, avg_shape_i_y, alpha=0.15, color='k')
 
 	#Plots interpolated average curve
-	plt.plot(x_range, np.mean(average_shape, axis=0), color='r', linewidth=4)
+	plt.plot(x_range, np.mean(average_shape, axis=0), color='r', linewidth=2)
 
 	#Beautifies plot
 	ax.set_xlabel('Scaled size')
 	ax.set_ylabel('Scaled duration')
-	_,ylim_1 = ax.get_ylim()
-	ax.set_ylim([0, ylim_1])
+	if extrapolate is True:
+		_,ylim_1 = ax.get_ylim()
+		ax.set_ylim([y_min, ylim_1])
 	if str_leg is not None:
 		plt.text(0.95, 0.95, str_leg, horizontalalignment='right',verticalalignment='top', transform=ax.transAxes, bbox=dict(facecolor='none', alpha=0.5))

@@ -164,10 +164,12 @@ def shape_collapse(shape_list, min_d, min_rep, extrapolate=False):
 	average_shape = np.zeros((censor_index.size, interp_points))
 
 	#Defines bottom interpolation range from data, to prevent extrapolation bias
-	if extrapolate:
+	if extrapolate is True:
 		x_min = 0
-	else:
+	elif extrapolate is False:
 		x_min = 1/censor_index[0]
+	else:
+		error('extrapolate is not binary.')
 	x_range = np.linspace(x_min,1,num=interp_points)
 
 	#Averages shape for each duration and interpolates results
