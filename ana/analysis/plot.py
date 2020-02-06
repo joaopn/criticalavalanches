@@ -61,7 +61,7 @@ def pS_mean(S_list,label='data',lineType='-', color='k',show_error=True, zorder=
 	plt.plot(range(S_max),pS_mean,lineType,label=label,color=color,zorder=zorder)
 	plt.yscale('log')
 	plt.xscale('log')
-	plt.legend(loc='upper right')
+	plt.legend(loc='upper right', frameon=False)
 
 def avgS_mean(avgS_list,Dmax,label='data',lineType='-', color='k',show_error=True, zorder=2):
 		
@@ -77,7 +77,7 @@ def avgS_mean(avgS_list,Dmax,label='data',lineType='-', color='k',show_error=Tru
 	plt.plot(range(1,Dmax+1),avgS_mean,lineType,label=label,color=color,zorder=zorder)
 	plt.yscale('log')
 	plt.xscale('log')
-	plt.legend()	
+	plt.legend(frameon=False)	
 
 def shape_mean(shape_list, size_d, label='data',lineType='-', color='k',show_error=True, zorder=2, collapse_exp=None):
 
@@ -379,7 +379,7 @@ def _convert_rgba_rgb(colors):
 
 	return colors_rgb
 
-def shape_collapse(shape_list, gamma_shape, min_d, min_rep, ax=None, str_leg = None, extrapolate=False):
+def shape_collapse(shape_list, gamma_shape, min_d, min_rep, ax=None, str_leg = None, extrapolate=False, color='r'):
 
 	from scipy.interpolate import InterpolatedUnivariateSpline	
 
@@ -439,16 +439,18 @@ def shape_collapse(shape_list, gamma_shape, min_d, min_rep, ax=None, str_leg = N
 		average_shape[i,:] = fx(x_range)
 
 		#Plots transparent subplots
-		plt.plot(avg_shape_i_x, avg_shape_i_y, alpha=0.15, color='k')
+		plt.plot(avg_shape_i_x, avg_shape_i_y, alpha=0.2, color=color)
 
 	#Plots interpolated average curve
-	plt.plot(x_range, np.mean(average_shape, axis=0), color='r', linewidth=2)
+	plt.plot(x_range, np.mean(average_shape, axis=0), color='k', linewidth=2)
 
 	#Beautifies plot
-	ax.set_xlabel('Scaled size')
-	ax.set_ylabel('Scaled duration')
+	ax.set_xlabel('Scaled time')
+	ax.set_ylabel('Scaled activity')
+	plt.xlim([0,1])
 	if extrapolate is True:
 		_,ylim_1 = ax.get_ylim()
 		ax.set_ylim([y_min, ylim_1])
 	if str_leg is not None:
-		plt.text(0.95, 0.95, str_leg, horizontalalignment='right',verticalalignment='top', transform=ax.transAxes, bbox=dict(facecolor='none', alpha=0.5))
+		#plt.text(0.95, 0.95, str_leg, horizontalalignment='right',verticalalignment='top', transform=ax.transAxes, bbox=dict(facecolor='none', alpha=0.5))
+		plt.text(0.95, 0.95, str_leg, horizontalalignment='right',verticalalignment='top', transform=ax.transAxes)

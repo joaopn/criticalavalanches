@@ -384,8 +384,8 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	ax_pS = fig.add_subplot(gs[0,0])
 	ax_pD = fig.add_subplot(gs[0,1])
 	ax_avgS = fig.add_subplot(gs[0,2])
-	ax_collapse_coarse = fig.add_subplot(gs[1,0])
-	ax_collapse_sub = fig.add_subplot(gs[1,1])
+	ax_collapse_sub = fig.add_subplot(gs[1,0])
+	ax_collapse_coarse = fig.add_subplot(gs[1,1])
 	ax_comparison = fig.add_subplot(gs[1,2])
 
 	for datatype in ['sub', 'coarse']:
@@ -537,7 +537,7 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 		elif datatype == 'sub':
 			ax_scaled = ax_collapse_sub
 		str_leg_scaling = datatype + r': $\gamma_s$ = {:0.2f}'.format(results[datatype]['gamma_shape'])
-		plot.shape_collapse(shape_list,results[datatype]['gamma_shape'], collapse_min_d, collapse_min_rep, ax=ax_scaled, str_leg = str_leg_scaling, extrapolate=extrapolate)
+		plot.shape_collapse(shape_list,results[datatype]['gamma_shape'], collapse_min_d, collapse_min_rep, ax=ax_scaled, str_leg = str_leg_scaling, extrapolate=extrapolate, color=color_dist[datatype])
 
 	#Beautifies plots
 	plt.sca(ax_pS)
@@ -562,7 +562,7 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	ax.set_ylim([1,10000])
 	#ax.set_title(title)
 	ax.set_xlabel('D')
-	ax.set_ylabel(r'$\langle S \rangle$')	
+	ax.set_ylabel(r'$\langle S \rangle (D)$')	
 
 	print(results)
 
@@ -579,6 +579,17 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	pd.DataFrame(results_gamma).T.plot(kind='bar', ax=ax)
 	plt.xticks(rotation='horizontal')
 	plt.ylim([0,3])
+	plt.legend(frameon=False)
+
+	#Adds letters
+	# plt.sca(ax_pS)
+	# ax = plt.gca() 
+	# plt.text(-0.4, 1, 'A', horizontalalignment='left',verticalalignment='top', size=15, weight = 'bold',transform=ax.transAxes)
+
+	# plt.sca(ax_pD)
+	# ax = plt.gca() 
+	# plt.text(-0.4, 1, 'B', horizontalalignment='left',verticalalignment='top', size=15, weight = 'bold',transform=ax.transAxes)
+
 
 
 
@@ -586,7 +597,7 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 		#Saves figure png and pickled data
 		if not os.path.exists(fig_path):
 				os.makedirs(fig_path)	
-		str_save = 	fig_path + title + '_' + 'bs{:d}-{:d}.png'.format(deltaT[0],deltaT[1])
+		str_save = 	fig_path + title + '_' + 'bs{:d}-{:d}.pdf'.format(deltaT[0],deltaT[1])
 		# str_save1 = fig_path + title + '_' + 'bs{:d}-{:d}_pS.png'.format(deltaT[0],deltaT[1])
 		# str_save2 = fig_path + title + '_' + 'bs{:d}-{:d}_pD.png'.format(deltaT[0],deltaT[1])
 		# str_save3 = fig_path + title + '_' + 'bs{:d}-{:d}_avgS.png'.format(deltaT[0],deltaT[1])
