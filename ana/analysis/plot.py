@@ -66,7 +66,7 @@ def pS_mean(S_list,label='data',lineType='-', color='k',show_error=True, zorder=
 def avgS_mean(avgS_list,Dmax,label='data',lineType='-', color='k',show_error=True, zorder=2):
 		
 	#Obtains mean and STD
-	avgS_mean = np.mean(avgS_list,axis=0)
+	avgS_mean = np.nanmean(avgS_list,axis=0)
 	avgS_std = np.std(avgS_list,axis=0)
 	avgS_up = avgS_mean + avgS_std/2
 	avgS_down = avgS_mean - avgS_std/2
