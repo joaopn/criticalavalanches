@@ -379,7 +379,7 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	# fig4 = plt.figure('shape_coarse')
 	# fig5 = plt.figure('shape_sub')
 	# fig6 = plt.figure('bar_comparison')
-	fig = plt.figure(constrained_layout=True, figsize=(9,5))
+	fig = plt.figure(constrained_layout=True, figsize=(9,6))
 	gs = fig.add_gridspec(2,3)
 	ax_pS = fig.add_subplot(gs[0,0])
 	ax_pD = fig.add_subplot(gs[0,1])
@@ -545,24 +545,24 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	ax.set_xlim([1,1000])
 	ax.set_ylim([1e-6,10])
 	#ax.set_title(title)
-	ax.set_xlabel('S')
-	ax.set_ylabel('p(S)')
+	ax.set_xlabel('Avalanche size S')
+	ax.set_ylabel('Probability p(S)')
 
 	plt.sca(ax_pD)
 	ax = plt.gca()
 	ax.set_xlim([1,100])
 	ax.set_ylim([1e-6,10])
 	#ax.set_title(title)
-	ax.set_xlabel('D')
-	ax.set_ylabel('p(D)')
+	ax.set_xlabel('Avalanche duration D')
+	ax.set_ylabel('Probability p(D)')
 
 	plt.sca(ax_avgS)
 	ax = plt.gca()
 	ax.set_xlim([1,100])
 	ax.set_ylim([1,10000])
 	#ax.set_title(title)
-	ax.set_xlabel('D')
-	ax.set_ylabel(r'$\langle S \rangle (D)$')	
+	ax.set_xlabel('Avalanche duration D')
+	ax.set_ylabel(r'Average size $\langle S \rangle (D)$')	
 
 	print(results)
 
@@ -572,11 +572,25 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 	#ax.set_title(title)
 	ax.set_ylim([0,3.5])
 	str_gamma_P = r'($\beta-1$)/($\alpha-1$)'
-	str_gamma_avg = r'$\gamma$'
-	str_gamma_shape = r'$\gamma_{s}$'
-	results_gamma = {'coarse':{str_gamma_P:results['coarse']['gamma_p'],str_gamma_avg:results['coarse']['gamma'], str_gamma_shape:results['coarse']['gamma_shape']},
-	 'sub':{str_gamma_P:results['sub']['gamma_p'],str_gamma_avg:results['sub']['gamma'], str_gamma_shape:results['sub']['gamma_shape']}}
-	pd.DataFrame(results_gamma).T.plot(kind='bar', ax=ax)
+	str_gamma_avg = r'$\gamma$ (from Eq. 4)'
+	str_gamma_shape = r'$\gamma$ (from Eq. 5)'
+	results_gamma = {'sub':{str_gamma_P:results['sub']['gamma_p'],str_gamma_avg:results['sub']['gamma'], str_gamma_shape:results['sub']['gamma_shape']},'coarse':{str_gamma_P:results['coarse']['gamma_p'],str_gamma_avg:results['coarse']['gamma'], str_gamma_shape:results['coarse']['gamma_shape']}}
+	pd.DataFrame(results_gamma).T.plot(kind='bar', ax=ax, edgecolor='k', linewidth=2)
+	bars = ax.patches
+	hatches = ['///','///','','','','']
+	bar_color = ['#E85285','#6A1B9A','#E85285','#6A1B9A','#E85285','#6A1B9A']
+
+	for bar, color in zip(bars, bar_color):
+	    bar.set_facecolor([1,1,1])
+	    bar.set_edgecolor(color)
+	for bar, hatch in zip(bars, hatches):
+	    bar.set_hatch(hatch)
+	bars[4].set_facecolor('#E85285')
+	bars[5].set_facecolor('#6A1B9A')
+
+	#ax.legend(loc='center right', bbox_to_anchor=(1, 1), ncol=4)
+
+
 	plt.xticks(rotation='horizontal')
 	plt.ylim([0,3])
 	plt.legend(frameon=False)
