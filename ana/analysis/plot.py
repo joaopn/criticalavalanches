@@ -445,9 +445,11 @@ def shape_collapse(shape_list, gamma_shape, min_d, min_rep, ax=None, str_leg = N
 	plt.plot(x_range, np.mean(average_shape, axis=0), color='k', linewidth=2)
 
 	#Beautifies plot
-	ax.set_xlabel('Scaled time')
-	ax.set_ylabel('Scaled activity')
+	ax.set_xlabel(r'Scaled time $t/D$')
+	ax.set_ylabel(r'Scaled activity $s(t,D)$')
 	plt.xlim([0,1])
+	plt.locator_params(axis='y', nbins=5)
+	plt.xticks([0,0.5,1])
 	if extrapolate is True:
 		_,ylim_1 = ax.get_ylim()
 		ax.set_ylim([y_min, ylim_1])

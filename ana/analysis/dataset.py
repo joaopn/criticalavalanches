@@ -536,7 +536,7 @@ def sim_plot_scaling(filepath, deltaT, reps = None, xmax_S = None, xmax_D = None
 			ax_scaled = ax_collapse_coarse
 		elif datatype == 'sub':
 			ax_scaled = ax_collapse_sub
-		str_leg_scaling = datatype + r': $\gamma_s$ = {:0.2f}'.format(results[datatype]['gamma_shape'])
+		str_leg_scaling = datatype + r': $\gamma$ = {:0.2f}'.format(results[datatype]['gamma_shape'])
 		plot.shape_collapse(shape_list,results[datatype]['gamma_shape'], collapse_min_d, collapse_min_rep, ax=ax_scaled, str_leg = str_leg_scaling, extrapolate=extrapolate, color=color_dist[datatype])
 
 	#Beautifies plots
