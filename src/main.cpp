@@ -40,6 +40,8 @@ int main(int argc, char *argv[]) {
   double h            = 4e-5;       // probability for spontaneous activation
   double delta_t      = 2.;         // [ms] time step size
   double cache_size   = 1e5;        // [num time steps] before writing history
+  double dp_cutoff    = std::numeric_limits<double>::max();
+    // [um] cutoff radius, neurons that are further away do not contribute to electodes
   size_t write_detail = 0;          // include topol. details (conn. matrix)
   std::string path    = "";         // output path for results
 
@@ -58,6 +60,7 @@ int main(int argc, char *argv[]) {
       if(std::string(argv[i])=="-g" )  sigma         = atof(argv[i+1]);
       if(std::string(argv[i])=="-ga")  gamma         = atof(argv[i+1]);
       if(std::string(argv[i])=="-h" )  h             = atof(argv[i+1]);
+      if(std::string(argv[i])=="-dp")  dp_cutoff     = atof(argv[i+1]);
       if(std::string(argv[i])=="-c" )  cache_size    = atof(argv[i+1]);
       if(std::string(argv[i])=="-x" )  write_detail  = atof(argv[i+1]);
       if(std::string(argv[i])=="-o" )  path          =      argv[i+1] ;
@@ -93,6 +96,7 @@ int main(int argc, char *argv[]) {
   sam.par.d_zone = neur_dist/5.;         // [um]
   sam.par.gamma  = gamma;
   sam.par.cache  = cache_size;
+  sam.par.dp_cutoff = dp_cutoff;
   sam.init_electrodes(xy_offset);
   sam.init_writing_hdf5(h5file);
   sam.print_parameters();

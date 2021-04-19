@@ -59,8 +59,8 @@ class topology_orlandi {
     double R_s     = 7.5;    // [um] radius of soma
 
     // dendritic tree, sphere with variable diameter
-    double std_d   = 40.0;   // [um] std of Gauss dist. for diameter
-    double mu_d    = 300;    // [um] mean of Gauss dist. for diameter
+    double std_d   = 20.0;   // [um] std of Gauss dist. for diameter
+    double mu_d    = 150.0;  // [um] mean of Gauss dist. for diameter
 
     // connection probability alpha when axons intersect dendritic tree
     double alpha = .66;

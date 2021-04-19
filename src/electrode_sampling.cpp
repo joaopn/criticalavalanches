@@ -42,6 +42,8 @@ class electrode_sampling {
     double d_zone = 10.0;   // [um] dist. (radius) of dead zone around elec.
     double gamma  = -1.0;   // dist-scaling of spike contrib. to elec: r^gamma
     size_t cache  = 1e5;    // cache_size before histories are written to disk
+    double dp_cutoff = std::numeric_limits<double>::max();
+      // [um] cut-off radius, if neuron is further away, any contributions will be ignored
   } par;
 
   vec <electrode *> electrodes;    // vector of all electrodes
@@ -51,6 +53,7 @@ class electrode_sampling {
     printf("\tNE       %lu [electrodes] \n", par.NE);
     printf("\td_E      %.2e [um]\n", par.d_E);
     printf("\td_zone   %.2e [um]\n", par.d_zone);
+    printf("\tcutoff   %.2e [um]\n", par.dp_cutoff);
     printf("\tgamma    %.2e\n", par.gamma);
     printf("\tcache    %.0e\n", double(par.cache));
     if (electrodes.size() > 0) {
@@ -113,6 +116,9 @@ class electrode_sampling {
 
         // coarse sampling contribution
         double irik = pow(rik_squ, par.gamma/2.);
+        if (rik_squ > par.dp_cutoff * par.dp_cutoff) {
+          irik = 0.0;
+        }
         src->electrode_contributions.push_back(irik);
 
         // subsampling closest neurons
@@ -122,6 +128,22 @@ class electrode_sampling {
         }
       }
     }
+
+    #ifndef NDEBUG
+    printf("contributions to electrodes:\n");
+    for (size_t k = 0; k < electrodes.size(); k++) {
+      size_t contributing = 0;
+      for (size_t i = 0; i < neurons.size(); i++) {
+        neuron *src = neurons[i];
+        if (src->electrode_contributions.at(k) > 0.0) {
+          contributing += 1;
+        }
+      }
+      printf("\t%lu: %lu\n", k, contributing);
+    }
+    #endif
+
+
   }
 
   void init_writing_hdf5(hid_t h5file) {
@@ -161,6 +183,8 @@ class electrode_sampling {
                         par.d_zone, H5T_NATIVE_DOUBLE);
       hdf5_write_scalar(h5file, "/meta/elec_contribution_exponent",
                         par.gamma, H5T_NATIVE_DOUBLE);
+      hdf5_write_scalar(h5file, "/meta/dp_cutoff",
+        par.dp_cutoff, H5T_NATIVE_DOUBLE);
 
       vec <real_t> x(electrodes.size(), 0);
       vec <real_t> y(electrodes.size(), 0);
